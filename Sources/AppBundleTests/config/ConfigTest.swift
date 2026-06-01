@@ -368,6 +368,21 @@ final class ConfigTest: XCTestCase {
         assertEquals(errors, [])
     }
 
+    func testParseOnWindowDetectedArrayAppIds() {
+        let (config, errors) = parseConfig(
+            """
+            [[on-window-detected]]
+                if.app-id = ['org.mozilla.firefox', 'com.google.Chrome', 'com.brave.Browser']
+                run = ['move-node-to-workspace 3']
+            """,
+        )
+        assertEquals(errors, [])
+        let callback = config.onWindowDetected.singleOrNil()!
+        assertEquals(callback.matcher.appIds, ["org.mozilla.firefox", "com.google.Chrome", "com.brave.Browser"])
+        // Test backward compatibility
+        assertEquals(callback.matcher.appId, "org.mozilla.firefox")
+    }
+
     func testTomlParser() {
         // https://github.com/nikitabobko/AeroSpace/issues/1064
         let errors = parseConfig(
