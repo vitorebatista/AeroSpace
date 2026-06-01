@@ -14,13 +14,13 @@ final class TestCommandTest: XCTestCase {
                 .copy(\.infixOperator, .initialized(.equals))
                 .copy(\.rhs, .initialized("foo")),
         )
-        testParseCommandFail("test %{foo} .= foo", msg: "ERROR: Can\'t parse \'foo\'.\n       Possible values: (window-id|window-is-fullscreen|window-title|window-layout|window-parent-container-layout|workspace|workspace-is-focused|workspace-is-visible|workspace-root-container-layout|app-bundle-id|app-name|app-pid|app-exec-path|app-bundle-path|monitor-id|monitor-appkit-nsscreen-screens-id|monitor-name|monitor-is-main)", exitCode: 2)
+        testParseCommandFail("test %{foo} .= foo", msg: "ERROR: Can\'t parse \'foo\'.\n       Possible values: (window-id|window-is-fullscreen|window-title|window-layout|window-parent-container-layout|window-parent-container-orientation|workspace|workspace-is-focused|workspace-is-visible|workspace-root-container-layout|workspace-root-container-orientation|app-bundle-id|app-name|app-pid|app-exec-path|app-bundle-path|monitor-id|monitor-appkit-nsscreen-screens-id|monitor-name|monitor-is-main)", exitCode: 2)
         testParseCommandFail("test foo .= foo", msg: "ERROR: Left hand side must be a single interpolation variable", exitCode: 2)
         testParseCommandFail("test foo%{app-bundle-id} .= foo", msg: "ERROR: Left hand side must be a single interpolation variable", exitCode: 2)
         testParseCommandFail("test", msg: "ERROR: Argument \'<lhs>\' is mandatory\nERROR: Argument \'<operator>\' is mandatory\nERROR: Argument \'<rhs>\' is mandatory", exitCode: 2)
         testParseCommandFail("test foo .= %{app-bundle-id}", msg: "ERROR: Left hand side must be a single interpolation variable\nERROR: Right hand side doesn\'t allow interpolation variables", exitCode: 2)
         testParseCommandFail("test %{app-bundle-id} .= %{app-bundle-id}", msg: "ERROR: Right hand side doesn\'t allow interpolation variables", exitCode: 2)
-        testParseCommandFail("test %{newline} .= foo", msg: "ERROR: Can\'t parse \'newline\'.\n       Possible values: (window-id|window-is-fullscreen|window-title|window-layout|window-parent-container-layout|workspace|workspace-is-focused|workspace-is-visible|workspace-root-container-layout|app-bundle-id|app-name|app-pid|app-exec-path|app-bundle-path|monitor-id|monitor-appkit-nsscreen-screens-id|monitor-name|monitor-is-main)", exitCode: 2)
+        testParseCommandFail("test %{newline} .= foo", msg: "ERROR: Can\'t parse \'newline\'.\n       Possible values: (window-id|window-is-fullscreen|window-title|window-layout|window-parent-container-layout|window-parent-container-orientation|workspace|workspace-is-focused|workspace-is-visible|workspace-root-container-layout|workspace-root-container-orientation|app-bundle-id|app-name|app-pid|app-exec-path|app-bundle-path|monitor-id|monitor-appkit-nsscreen-screens-id|monitor-name|monitor-is-main)", exitCode: 2)
     }
 
     func testExec() async throws {
@@ -54,7 +54,7 @@ final class TestCommandTest: XCTestCase {
 
         assertEquals(
             try await parseCommand("test %{window-id} .= 1").cmdOrDie.run(.defaultEnv, .emptyStdin),
-            CmdResult(stdout: [], stderr: ["Unknown interpolation variable \'window-id\'. Possible values:\n  workspace\n  workspace-is-focused\n  workspace-is-visible\n  workspace-root-container-layout\n  monitor-id\n  monitor-appkit-nsscreen-screens-id\n  monitor-name\n  monitor-is-main\n  right-padding\n  newline\n  tab", "No window is focused"], exitCode: Int32ExitCode(rawValue: 2)),
+            CmdResult(stdout: [], stderr: ["Unknown interpolation variable \'window-id\'. Possible values:\n  workspace\n  workspace-is-focused\n  workspace-is-visible\n  workspace-root-container-layout\n  workspace-root-container-orientation\n  monitor-id\n  monitor-appkit-nsscreen-screens-id\n  monitor-name\n  monitor-is-main\n  right-padding\n  newline\n  tab", "No window is focused"], exitCode: Int32ExitCode(rawValue: 2)),
         )
     }
 }
