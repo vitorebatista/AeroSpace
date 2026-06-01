@@ -19,4 +19,16 @@ final class WorkspaceCommandTest: XCTestCase {
         testParseCommandSucc("workspace --stdin next", WorkspaceCmdArgs(target: .relative(.next)).copy(\.explicitStdinFlag, true))
         testParseCommandSucc("workspace --no-stdin next", WorkspaceCmdArgs(target: .relative(.next)).copy(\.explicitStdinFlag, false))
     }
+
+    @MainActor
+    func testRelativeWorkspaceUnresolvableEmitsError() async throws {
+        // stdin lists only the focused workspace, so `next` (without wrap-around)
+        // has no workspace to resolve to. The command must fail with an error message
+        // instead of silently returning a non-zero code with empty stderr.
+        let focusedName = focus.workspace.name
+        let args = WorkspaceCmdArgs(target: .relative(.next)).copy(\.explicitStdinFlag, true)
+        let result = try await WorkspaceCommand(args: args).run(.defaultEnv, .init(focusedName))
+        assertEquals(result.exitCode.rawValue, 2)
+        assertEquals(result.stderr, ["Can't resolve next or prev workspace"])
+    }
 }
