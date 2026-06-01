@@ -5,8 +5,66 @@ struct ResizeCommand: Command { // todo cover with tests
     let args: ResizeCmdArgs
     /*conforms*/ let shouldResetClosedWindowsCache = true
 
-    func run(_ env: CmdEnv, _ io: CmdIo) -> BinaryExitCode {
+    func run(_ env: CmdEnv, _ io: CmdIo) async throws -> BinaryExitCode {
         guard let target = args.resolveTargetOrReportError(env, io) else { return .fail }
+
+        if let window = target.windowOrNil, window.isFloating {
+            guard let rect = try await window.getAxRect() else { return .fail }
+            let size = rect.size
+            let topLeftCorner = rect.topLeftCorner
+            let monitorRect = target.workspace.workspaceMonitor.rect
+
+            let computeTopLeftCornerAndSize = { (diffSize: CGSize) -> (CGPoint, CGSize) in
+                let newX = if topLeftCorner.x + size.width + diffSize.width / 2 > monitorRect.maxX {
+                    max(monitorRect.minX, monitorRect.maxX - size.width - diffSize.width)
+                } else {
+                    max(monitorRect.minX, topLeftCorner.x - diffSize.width / 2)
+                }
+
+                let newY = if topLeftCorner.y + size.height + diffSize.height / 2 > monitorRect.maxY {
+                    max(monitorRect.minY, monitorRect.maxY - size.height - diffSize.height)
+                } else {
+                    topLeftCorner.y - diffSize.height / 2
+                }
+
+                return (CGPoint(x: newX, y: newY), CGSize(width: size.width + diffSize.width, height: size.height + diffSize.height))
+            }
+
+            let isWidthDominant = size.width >= size.height
+            let diff: CGFloat = switch (args.units.val, args.dimension.val) {
+                case (.set(let unit), .width): CGFloat(unit) - size.width
+                case (.set(let unit), .height): CGFloat(unit) - size.height
+                case (.set(let unit), .smart): CGFloat(unit) - (isWidthDominant ? size.width : size.height)
+                case (.set(let unit), .smartOpposite): CGFloat(unit) - (isWidthDominant ? size.height : size.width)
+                case (.add(let unit), _): CGFloat(unit)
+                case (.subtract(let unit), _): -CGFloat(unit)
+            }
+
+            let newTopLeftCorner: CGPoint
+            let newSize: CGSize
+            switch args.dimension.val {
+                case .width:
+                    (newTopLeftCorner, newSize) = computeTopLeftCornerAndSize(CGSize(width: diff, height: 0))
+                case .height:
+                    (newTopLeftCorner, newSize) = computeTopLeftCornerAndSize(CGSize(width: 0, height: diff))
+                case .smart:
+                    let diffSize = if isWidthDominant {
+                        CGSize(width: diff, height: diff * (size.height / size.width))
+                    } else {
+                        CGSize(width: diff * (size.width / size.height), height: diff)
+                    }
+                    (newTopLeftCorner, newSize) = computeTopLeftCornerAndSize(diffSize)
+                case .smartOpposite:
+                    let diffSize = if isWidthDominant {
+                        CGSize(width: diff * (size.width / size.height), height: diff)
+                    } else {
+                        CGSize(width: diff, height: diff * (size.height / size.width))
+                    }
+                    (newTopLeftCorner, newSize) = computeTopLeftCornerAndSize(diffSize)
+            }
+            window.setAxFrame(newTopLeftCorner, newSize)
+            return .succ
+        }
 
         let candidates = target.windowOrNil?.parentsWithSelf
             .filter { ($0.parent as? TilingContainer)?.layout == .tiles }
