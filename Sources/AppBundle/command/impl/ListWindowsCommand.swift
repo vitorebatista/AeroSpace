@@ -48,7 +48,7 @@ struct ListWindowsCommand: Command {
                 _list.append(try await .resolveWindow(window, for: args.format))
             }
             _list = _list.filter { $0.window.isBound }
-            _list = _list.sortedBy([{ $0.window.app.name ?? "" }, { $0.title ?? "" }])
+            _list = _list.sorted { Self.sortLess($0, $1, by: args.sort) }
 
             let list = _list.map { AeroObj.window($0) }
             if args.json {
@@ -63,5 +63,28 @@ struct ListWindowsCommand: Command {
                 }
             }
         }
+    }
+
+    @MainActor
+    static func sortLess(_ lhs: WindowWithPrefetchedTitle, _ rhs: WindowWithPrefetchedTitle, by sort: [SortOption]) -> Bool {
+        for criterion in sort {
+            switch criterion {
+                case .recent:
+                    // Sort by lastFocusedAt descending (most recent first)
+                    if lhs.window.lastFocusedAt > rhs.window.lastFocusedAt { return true }
+                    if lhs.window.lastFocusedAt < rhs.window.lastFocusedAt { return false }
+                case .appName:
+                    let lhsName = lhs.window.app.name ?? ""
+                    let rhsName = rhs.window.app.name ?? ""
+                    if lhsName < rhsName { return true }
+                    if lhsName > rhsName { return false }
+                case .windowTitle:
+                    let lhsTitle = lhs.title ?? ""
+                    let rhsTitle = rhs.title ?? ""
+                    if lhsTitle < rhsTitle { return true }
+                    if lhsTitle > rhsTitle { return false }
+            }
+        }
+        return false
     }
 }

@@ -33,6 +33,45 @@ final class ListWindowsTest: XCTestCase {
         assertNil(parseCommand("list-windows --all --format '%{window-title}' --json").errorOrNil)
     }
 
+    func testParseSort() {
+        // Default sort
+        assertEquals((parseCommand("list-windows --all").cmdOrNil as? ListWindowsCommand)?.args.sort, [.appName, .windowTitle])
+        // Single value
+        assertEquals((parseCommand("list-windows --all --sort recent").cmdOrNil as? ListWindowsCommand)?.args.sort, [.recent])
+        // Comma-separated multi value
+        assertEquals(
+            (parseCommand("list-windows --all --sort recent,app-name,window-title").cmdOrNil as? ListWindowsCommand)?.args.sort,
+            [.recent, .appName, .windowTitle],
+        )
+        // Invalid value
+        assertEquals(parseCommand("list-windows --all --sort bogus").errorOrNil, "ERROR: Invalid sort option 'bogus'. Valid options: recent, app-name, window-title")
+        // Missing value
+        assertEquals(parseCommand("list-windows --all --sort").errorOrNil, "ERROR: '--sort' requires a value. Valid options: recent, app-name, window-title")
+    }
+
+    func testSortOrdering() {
+        Workspace.get(byName: name).rootTilingContainer.apply {
+            let w1 = TestWindow.new(id: 1, parent: $0)
+            let w2 = TestWindow.new(id: 2, parent: $0)
+            let w3 = TestWindow.new(id: 3, parent: $0)
+            w1.lastFocusedAt = 3
+            w2.lastFocusedAt = 1
+            w3.lastFocusedAt = 2
+
+            let o1 = WindowWithPrefetchedTitle.forTest(window: w1, title: "b")
+            let o2 = WindowWithPrefetchedTitle.forTest(window: w2, title: "a")
+            let o3 = WindowWithPrefetchedTitle.forTest(window: w3, title: "c")
+
+            // recent => most recently focused first (descending lastFocusedAt): w1(3), w3(2), w2(1)
+            let byRecent = [o1, o2, o3].sorted { ListWindowsCommand.sortLess($0, $1, by: [.recent]) }
+            assertEquals(byRecent.map { $0.window.windowId }, [1, 3, 2])
+
+            // window-title => ascending title: a(w2), b(w1), c(w3)
+            let byTitle = [o1, o2, o3].sorted { ListWindowsCommand.sortLess($0, $1, by: [.windowTitle]) }
+            assertEquals(byTitle.map { $0.window.windowId }, [2, 1, 3])
+        }
+    }
+
     func testInterpolationVariablesConsistency() {
         for kind in AeroObjKind.allCases {
             switch kind {
