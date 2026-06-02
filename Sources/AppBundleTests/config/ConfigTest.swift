@@ -383,6 +383,28 @@ final class ConfigTest: XCTestCase {
         assertEquals(callback.matcher.appId, "org.mozilla.firefox")
     }
 
+    func testParseOnWindowDetectedEmptyAppIdsArrayError() {
+        let (_, errors) = parseConfig(
+            """
+            [[on-window-detected]]
+                if.app-id = []
+                run = ['move-node-to-workspace 3']
+            """,
+        )
+        assertEquals(errors, ["on-window-detected[0].if.app-id: The array must not be empty"])
+    }
+
+    func testParseOnWindowDetectedNonStringAppIdsArrayElementError() {
+        let (_, errors) = parseConfig(
+            """
+            [[on-window-detected]]
+                if.app-id = ['org.mozilla.firefox', 42]
+                run = ['move-node-to-workspace 3']
+            """,
+        )
+        assertEquals(errors, ["on-window-detected[0].if.app-id[1]: Expected type is \'string\'. But actual type is \'int\'"])
+    }
+
     func testTomlParser() {
         // https://github.com/nikitabobko/AeroSpace/issues/1064
         let errors = parseConfig(
