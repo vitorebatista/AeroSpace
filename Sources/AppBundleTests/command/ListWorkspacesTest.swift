@@ -2,7 +2,10 @@
 import Common
 import XCTest
 
+@MainActor
 final class ListWorkspacesTest: XCTestCase {
+    override func setUp() async throws { setUpWorkspacesForTests() }
+
     func testParse() {
         assertNotNil(parseCommand("list-workspaces --all").cmdOrNil)
         assertNil(parseCommand("list-workspaces --all --visible").cmdOrNil)
@@ -21,5 +24,43 @@ final class ListWorkspacesTest: XCTestCase {
         assertEquals(parseCommand("list-workspaces --all --format '%{all} %{workspace}'").errorOrNil, "'%{all}' format option must be used alone and cannot be combined with other variables")
         assertEquals(parseCommand("list-workspaces --all --format '%{is-focused} %{all}'").errorOrNil, "'%{all}' format option must be used alone and cannot be combined with other variables")
         assertNotNil(parseCommand("list-workspaces --all --format ' %{all} ' --json").cmdOrNil)
+    }
+
+    func testWorkspaceRootOrientationVariable() {
+        Workspace.get(byName: name).rootTilingContainer.apply {
+            $0.changeOrientation(.h)
+            let workspace = Workspace.get(byName: name)
+            let workspaces = [AeroObj.workspace(workspace)]
+            assertEquals(
+                workspaces.format([.interVar("workspace-root-container-orientation")]),
+                .success(["horizontal"]),
+            )
+        }
+
+        Workspace.get(byName: name).rootTilingContainer.apply {
+            $0.changeOrientation(.v)
+            let workspace = Workspace.get(byName: name)
+            let workspaces = [AeroObj.workspace(workspace)]
+            assertEquals(
+                workspaces.format([.interVar("workspace-root-container-orientation")]),
+                .success(["vertical"]),
+            )
+        }
+
+        Workspace.get(byName: name).rootTilingContainer.apply {
+            $0.changeOrientation(.h)
+            let workspace = Workspace.get(byName: name)
+            let workspaces = [AeroObj.workspace(workspace)]
+            assertEquals(
+                workspaces.format([
+                    .interVar("workspace"),
+                    .literal(" | "),
+                    .interVar("workspace-root-container-orientation"),
+                    .literal(" | "),
+                    .interVar("workspace-root-container-layout"),
+                ]),
+                .success(["\(name) | horizontal | h_tiles"]),
+            )
+        }
     }
 }
