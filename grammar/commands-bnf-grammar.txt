@@ -101,8 +101,8 @@ aerospace -h;
 
     | list-monitors [--focused [no] | --mouse [no] | --format <output_format> | --count | --json]...
 
-    | list-windows [<list_windows_filter_flag> | --format <output_format> | --count | --json]...
-    | list-windows [--format <output_format>|--count|--json] (--all|--focused) [--format <output_format>|--count|--json]
+    | list-windows [<list_windows_filter_flag> | --format <output_format> | --count | --json | --sort <sort_option>]...
+    | list-windows [--format <output_format>|--count|--json|--sort <sort_option>] (--all|--focused) [--format <output_format>|--count|--json|--sort <sort_option>]
 
     | list-workspaces [<list_workspaces1_flag>]... --monitor <monitor_id>... [<list_workspaces1_flag>]...
     | list-workspaces [--format <output_format>|--count|--json] (--all|--focused) [--format <output_format>|--count|--json]
@@ -136,6 +136,7 @@ aerospace -h;
     | --app-bundle-id <app_bundle_id>
     ;
 <output_format> ::= {{{ true }}};
+<sort_option> ::= {{{ true }}};
 
 <app_bundle_id> ::= {{{ aerospace list-apps --format '%{app-bundle-id}%{tab}%{app-name}' }}};
 <pid> ::= {{{ aerospace list-apps --format '%{app-pid}%{tab}%{app-name}' }}};
