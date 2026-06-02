@@ -141,6 +141,17 @@ final class MacApp: AbstractApp {
             try disableAnimations(app: axApp, job) {
                 try setFrame(window, topLeft, size, job)
             }
+            // Nudge the window size by 1px and back after AXEnhancedUserInterface is
+            // restored.  Some toolkits (e.g. GTK3's Quartz backend) don't redraw after
+            // AX-driven frame changes made while AXEnhancedUserInterface is disabled,
+            // leaving windows visually stale.  A no-op re-set of the same size is
+            // optimized away by macOS, so a real geometry change is needed to trigger
+            // the resize notification that prompts the app to redraw.
+            try job.checkCancellation()
+            if let size {
+                window.set(Ax.sizeAttr, CGSize(width: size.width + 1, height: size.height))
+                window.set(Ax.sizeAttr, size)
+            }
         }
     }
 
@@ -150,6 +161,11 @@ final class MacApp: AbstractApp {
             guard let axApp = axApp.threadGuardedOrNil else { return }
             try disableAnimations(app: axApp, job) {
                 try setFrame(window, topLeft, size, job)
+            }
+            try job.checkCancellation()
+            if let size {
+                window.set(Ax.sizeAttr, CGSize(width: size.width + 1, height: size.height))
+                window.set(Ax.sizeAttr, size)
             }
         }
     }
