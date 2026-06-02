@@ -48,6 +48,15 @@ struct LayoutCommand: Command {
             window.bindAsFloatingWindow(to: targetWorkspace)
             if let size = window.lastFloatingSize { window.setAxFrame(nil, size) }
             return .succ
+        case .sticky:
+            guard let macWindow = window as? MacWindow else { return .fail }
+            if macWindow.isSticky {
+                macWindow.isSticky = false
+            } else {
+                guard window.parent is Workspace else { return .fail }
+                macWindow.isSticky = true
+            }
+            return .succ
         default:
             return .fail // unreachable: tilingMapping above handles all tiling layouts
     }
@@ -97,7 +106,7 @@ extension LayoutCmdArgs.LayoutDescription {
             case .tiles:       (.tiles, nil)
             case .horizontal:  (nil, .h)
             case .vertical:    (nil, .v)
-            case .tiling, .floating: nil
+            case .tiling, .floating, .sticky: nil
         }
     }
 }
@@ -115,6 +124,7 @@ extension TilingContainer {
             case .v_tiles:     self.layout == .tiles && orientation == .v
             case .tiling:      true  // a TilingContainer is by definition tiling
             case .floating:    false // a TilingContainer is never floating; rejected at parse time with --root
+            case .sticky:      false // a TilingContainer is never a sticky floating window
         }
     }
 }
@@ -132,6 +142,7 @@ extension Window {
             case .v_tiles:     (parent as? TilingContainer).map { $0.layout == .tiles && $0.orientation == .v } == true
             case .tiling:      parent is TilingContainer
             case .floating:    parent is Workspace
+            case .sticky:      (parent is Workspace) && (self as? MacWindow)?.isSticky == true
         }
     }
 }
