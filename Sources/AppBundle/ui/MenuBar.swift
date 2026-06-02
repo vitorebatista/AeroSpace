@@ -14,24 +14,8 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
         if let token: RunSessionGuard = .isServerEnabled {
             Text("Workspaces:")
 
-            // Sort Workspaces, generate a lut by persistent WS first
-            let persistentOrderIndex: [String: Int] =
-                Dictionary(uniqueKeysWithValues: config.persistentWorkspaces.enumerated().map { ($0.element, $0.offset) })
-
-            let sortedWorkspaces = viewModel.workspaces.sorted { a, b in
-                let ia = persistentOrderIndex[a.name]
-                let ib = persistentOrderIndex[b.name]
-
-                if let ia, let ib {
-                    return ia < ib                // both are in persistent list
-                } else if ia != nil {
-                    return true                   // only a is in persistent list
-                } else if ib != nil {
-                    return false                  // only b is in persistent list
-                } else {
-                    return a.name < b.name        // neither is in persistent list
-                }
-            }
+            // Persistent workspaces first (in config order), then the rest alphabetically.
+            let sortedWorkspaces = sortWorkspacesForMenuBar(viewModel.workspaces, persistentWorkspaces: config.persistentWorkspaces)
 
             ForEach(sortedWorkspaces, id: \.name) { workspace in
                 Button {
@@ -124,6 +108,30 @@ func shortcutGroup(label: some View, content: some View) -> some View {
             label
                 .foregroundStyle(Color.secondary)
             content
+        }
+    }
+}
+
+/// Orders workspaces for the menu bar: persistent workspaces first (in `persistentWorkspaces`
+/// config order), followed by all remaining workspaces sorted alphabetically by name.
+/// Pure function extracted from the menu bar view so the ordering is unit-testable.
+func sortWorkspacesForMenuBar(_ workspaces: [WorkspaceViewModel], persistentWorkspaces: some Sequence<String>) -> [WorkspaceViewModel] {
+    // Build a lookup of persistent workspace name -> position in the config order.
+    let persistentOrderIndex: [String: Int] =
+        Dictionary(uniqueKeysWithValues: persistentWorkspaces.enumerated().map { ($0.element, $0.offset) })
+
+    return workspaces.sorted { a, b in
+        let ia = persistentOrderIndex[a.name]
+        let ib = persistentOrderIndex[b.name]
+
+        if let ia, let ib {
+            return ia < ib                // both are in persistent list
+        } else if ia != nil {
+            return true                   // only a is in persistent list
+        } else if ib != nil {
+            return false                  // only b is in persistent list
+        } else {
+            return a.name < b.name        // neither is in persistent list
         }
     }
 }
