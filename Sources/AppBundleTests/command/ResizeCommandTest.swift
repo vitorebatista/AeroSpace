@@ -87,4 +87,21 @@ final class ResizeCommandTest: XCTestCase {
         assertEquals(rect.topLeftX, 1720)
         assertEquals(rect.width, 200)
     }
+
+    func testFloating_addHeight_clampsToMonitorBottomEdge() async throws {
+        // Window near the bottom edge of the monitor (maxY = 1080): growing height would push
+        // topLeftY + height + diff/2 below the monitor, so newY is pinned to keep the grown
+        // window inside the monitor.
+        let (_, window) = newFocusedFloatingWindow(rect: Rect(topLeftX: 100, topLeftY: 1000, width: 200, height: 100))
+        let result = try await ResizeCommand(args: ResizeCmdArgs(rawArgs: [], dimension: .height, units: .add(100)))
+            .run(.defaultEnv, .emptyStdin)
+        assertEquals(result.exitCode.rawValue, 0)
+        let rect = try await window.getAxRect().orDie()
+        // 1000 + 100 + 50 = 1150 > 1080 -> newY = max(0, 1080 - 100 - 100) = 880.
+        // newX is unaffected (width fits), so it stays recentered at 100.
+        assertEquals(rect.topLeftX, 100)
+        assertEquals(rect.topLeftY, 880)
+        assertEquals(rect.width, 200)
+        assertEquals(rect.height, 200)
+    }
 }
