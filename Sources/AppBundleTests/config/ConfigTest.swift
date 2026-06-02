@@ -302,6 +302,10 @@ final class ConfigTest: XCTestCase {
                 run = ['move-node-to-workspace S', 'move-node-to-workspace W']
             [[on-window-detected]] # 5
                 run = ['move-node-to-workspace S', 'layout h_tiles']
+            [[on-window-detected]] # 6
+                if.app-id-regex-substring = '^com\\.apple\\..+$'
+                if.app-name-regex-substring = 'settings'
+                run = []
             """,
         )
         assertEquals(parsed.onWindowDetected, [
@@ -342,6 +346,15 @@ final class ConfigTest: XCTestCase {
                     MoveNodeToWorkspaceCommand(args: MoveNodeToWorkspaceCmdArgs(workspace: "S")),
                     LayoutCommand(args: LayoutCmdArgs(rawArgs: [], toggleBetween: [.h_tiles])),
                 ],
+            ),
+            WindowDetectedCallback( // 6
+                matcher: WindowDetectedCallbackMatcher(
+                    appId: nil,
+                    appIdRegexSubstring: CaseInsensitiveRegex.new("^com\\.apple\\..+$").getOrNil(),
+                    appNameRegexSubstring: CaseInsensitiveRegex.new("settings").getOrNil(),
+                    windowTitleRegexSubstring: nil,
+                ),
+                rawRun: [],
             ),
         ])
 
