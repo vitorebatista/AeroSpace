@@ -25,17 +25,60 @@ struct WindowDetectedCallback: ConvenienceCopyable, Equatable {
 }
 
 struct WindowDetectedCallbackMatcher: ConvenienceCopyable, Equatable {
-    var appId: String?
+    var appIds: [String]?
     var appIdRegexSubstring: CaseInsensitiveRegex?
     var appNameRegexSubstring: CaseInsensitiveRegex?
     var windowTitleRegexSubstring: CaseInsensitiveRegex?
     var workspace: String?
     var duringAeroSpaceStartup: Bool?
 
+    // Backward compatibility - computed property for single appId
+    var appId: String? {
+        get { appIds?.first }
+        set { appIds = newValue.map { [$0] } }
+    }
+
+    init(
+        appIds: [String]? = nil,
+        appIdRegexSubstring: CaseInsensitiveRegex? = nil,
+        appNameRegexSubstring: CaseInsensitiveRegex? = nil,
+        windowTitleRegexSubstring: CaseInsensitiveRegex? = nil,
+        workspace: String? = nil,
+        duringAeroSpaceStartup: Bool? = nil,
+    ) {
+        self.appIds = appIds
+        self.appIdRegexSubstring = appIdRegexSubstring
+        self.appNameRegexSubstring = appNameRegexSubstring
+        self.windowTitleRegexSubstring = windowTitleRegexSubstring
+        self.workspace = workspace
+        self.duringAeroSpaceStartup = duringAeroSpaceStartup
+    }
+
+    // Backward compatibility initializer with old single appId parameter
+    init(
+        appId: String?,
+        appIdRegexSubstring: CaseInsensitiveRegex? = nil,
+        appNameRegexSubstring: CaseInsensitiveRegex? = nil,
+        windowTitleRegexSubstring: CaseInsensitiveRegex? = nil,
+        workspace: String? = nil,
+        duringAeroSpaceStartup: Bool? = nil,
+    ) {
+        self.appIds = appId.map { [$0] }
+        self.appIdRegexSubstring = appIdRegexSubstring
+        self.appNameRegexSubstring = appNameRegexSubstring
+        self.windowTitleRegexSubstring = windowTitleRegexSubstring
+        self.workspace = workspace
+        self.duringAeroSpaceStartup = duringAeroSpaceStartup
+    }
+
     var debugJson: Json {
         var resultParts: [String] = []
-        if let appId {
-            resultParts.append("appId=\"\(appId)\"")
+        if let appIds {
+            if appIds.count == 1 {
+                resultParts.append("appId=\"\(appIds[0])\"")
+            } else {
+                resultParts.append("appIds=\(appIds)")
+            }
         }
         if let appIdRegexSubstring {
             resultParts.append("appIdRegexSubstring=\"\(appIdRegexSubstring.origin)\"")
@@ -63,7 +106,7 @@ private let windowDetectedParser: [String: any ParserProtocol<WindowDetectedCall
 ]
 
 private let matcherParsers: [String: any ParserProtocol<WindowDetectedCallbackMatcher>] = [
-    "app-id": Parser(\.appId, upcast(parseString)),
+    "app-id": Parser(\.appIds, upcast(parseAppIds)),
     "workspace": Parser(\.workspace, upcast(parseString)),
     "app-id-regex-substring": Parser(\.appIdRegexSubstring, upcast(parseCaseInsensitiveRegex)),
     "app-name-regex-substring": Parser(\.appNameRegexSubstring, upcast(parseCaseInsensitiveRegex)),
@@ -88,6 +131,26 @@ func parseOnWindowDetectedArray(_ raw: Json, _ backtrace: ConfigBacktrace, _ err
 
 private func parseCaseInsensitiveRegex(_ raw: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<CaseInsensitiveRegex> {
     parseString(raw, backtrace).flatMap { CaseInsensitiveRegex.new($0).toParsedConfig(backtrace) }
+}
+
+func parseAppIds(_ raw: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<[String]> {
+    if let rawString = raw.asStringOrNil {
+        return .success([rawString])
+    } else if let rawArray = raw.asArrayOrNil {
+        var appIds: [String] = []
+        for (index, item) in rawArray.enumerated() {
+            guard let str = item.asStringOrNil else {
+                return .failure(expectedActualTypeError(expected: .string, actual: item.tomlType, backtrace + .index(index)))
+            }
+            appIds.append(str)
+        }
+        if appIds.isEmpty {
+            return .failure(.semantic(backtrace, "The array must not be empty"))
+        }
+        return .success(appIds)
+    } else {
+        return .failure(expectedActualTypeError(expected: [.string, .array], actual: raw.tomlType, backtrace))
+    }
 }
 
 private func parseMatcher(_ raw: Json, _ backtrace: ConfigBacktrace, _ errors: inout [ConfigParseError]) -> WindowDetectedCallbackMatcher {
