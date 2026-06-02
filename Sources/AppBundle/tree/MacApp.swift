@@ -26,8 +26,30 @@ final class MacApp: AbstractApp {
     //      and make deinitialization automatic in deinit
     @MainActor static var allAppsMap: [pid_t: MacApp] = [:]
     @MainActor private static var wipPids: [pid_t: AwaitableOneTimeBroadcastLatch] = [:]
-    @MainActor private static var failedRegistrationRetryAfter: [pid_t: Date] = [:]
-    private static let failedRegistrationRetryDelay: TimeInterval = 5
+    @MainActor static var failedRegistrationRetryAfter: [pid_t: Date] = [:]
+    static let failedRegistrationRetryDelay: TimeInterval = 5
+
+    /// Decides whether a failed-registration retry for `pid` should be throttled (skipped).
+    /// If a throttle deadline is set and still in the future, returns `true` (skip).
+    /// If the deadline has passed, it is cleared and `false` is returned (proceed).
+    /// `now` is injectable to keep this pure and testable.
+    @MainActor static func shouldThrottleFailedRegistration(_ pid: pid_t, now: Date = Date()) -> Bool {
+        if let retryAfter = failedRegistrationRetryAfter[pid] {
+            if retryAfter > now { return true }
+            failedRegistrationRetryAfter[pid] = nil
+        }
+        return false
+    }
+
+    /// Records a failed registration for `pid`, throttling retries until `now + failedRegistrationRetryDelay`.
+    @MainActor static func recordFailedRegistration(_ pid: pid_t, now: Date = Date()) {
+        failedRegistrationRetryAfter[pid] = now.addingTimeInterval(failedRegistrationRetryDelay)
+    }
+
+    /// Clears any throttle state for `pid` (called on successful registration and on destroy).
+    @MainActor static func clearFailedRegistration(_ pid: pid_t) {
+        failedRegistrationRetryAfter[pid] = nil
+    }
 
     private init(_ nsApp: NSRunningApplication, _ axApp: AXUIElement, _ axSubscriptions: [AxSubscription], _ thread: Thread) {
         self.nsApp = nsApp
@@ -52,10 +74,7 @@ final class MacApp: AbstractApp {
 
         while true {
             if let existing = allAppsMap[pid] { return existing }
-            if let retryAfter = failedRegistrationRetryAfter[pid] {
-                if retryAfter > Date() { return nil }
-                failedRegistrationRetryAfter[pid] = nil
-            }
+            if shouldThrottleFailedRegistration(pid) { return nil }
             try checkCancellation()
             if let wip = wipPids[pid] {
                 try await wip.await()
@@ -77,9 +96,9 @@ final class MacApp: AbstractApp {
                     Task { @MainActor in
                         if let app {
                             allAppsMap[pid] = app
-                            failedRegistrationRetryAfter[pid] = nil
+                            clearFailedRegistration(pid)
                         } else {
-                            failedRegistrationRetryAfter[pid] = Date().addingTimeInterval(failedRegistrationRetryDelay)
+                            recordFailedRegistration(pid)
                         }
                         await wip.signalToAll()
                         wipPids[pid] = nil
@@ -313,7 +332,7 @@ final class MacApp: AbstractApp {
     private func destroy() async {
         _ = await Task { @MainActor [pid] in
             _ = MacApp.allAppsMap.removeValue(forKey: pid)
-            MacApp.failedRegistrationRetryAfter[pid] = nil
+            MacApp.clearFailedRegistration(pid)
         }.result
         for (_, job) in setFrameJobs {
             job.cancel()
