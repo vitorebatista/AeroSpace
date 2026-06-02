@@ -708,4 +708,6 @@ You can also use `on-window-detected` to force tile or force float all windows o
 
 If you can't make AeroSpace handle some keys in your config, please make sure that you don't have keys conflict with other software that might listen to global keys (e.g. skhd, Karabiner-Elements, Raycast)
 
-If you have KeePassXC installed and up-to-date (v2.7.10 at the time of writing), you may notice that bindings which use the `option` key will stop working after some time. This is a known issue where KeePassXC gets stuck in secure input mode (see: https://github.com/keepassxreboot/keepassxc/issues/11906[#11906]). The recommendation for now is to downgrade to v2.7.9.
+If bindings that use the `option` (`opt`/`alt`) key stop working after some time, the root cause is usually macOS **"secure input"** (also known as **Secure Keyboard Entry**). When a background app enables secure input mode and fails to release it, macOS suppresses delivery of certain global key events, which breaks AeroSpace's `opt`-key bindings.
+
+A common culprit is KeePassXC: at the time of writing, v2.7.10 can get stuck holding secure input mode (see: https://github.com/keepassxreboot/keepassxc/issues/11906[#11906]). The current workaround is to downgrade to v2.7.9. Other apps (e.g. Ferdium) can trigger the same problem, so if you don't use KeePassXC, check whether another running app is holding secure input.
