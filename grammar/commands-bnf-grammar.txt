@@ -72,7 +72,7 @@ aerospace -h;
 
     | true
 
-    | summon-workspace [--fail-if-noop] <workspace> [--fail-if-noop]
+    | summon-workspace [--fail-if-noop|--when-visible (focus|swap)] <workspace> [--fail-if-noop|--when-visible (focus|swap)]
 
     | trigger-binding <binding> --mode <mode_id>
     | trigger-binding --mode <mode_id> <binding>

@@ -7,26 +7,38 @@ struct SummonWorkspaceCommand: Command {
 
     func run(_ env: CmdEnv, _ io: CmdIo) -> BinaryExitCode {
         let workspace = Workspace.get(byName: args.target.val.raw)
-        let monitor = focus.workspace.workspaceMonitor
-        if monitor.activeWorkspace == workspace {
+        let focusedMonitor = focus.workspace.workspaceMonitor
+
+        if focusedMonitor.activeWorkspace == workspace {
             return switch args.failIfNoop {
                 case true: .fail
                 case false:
                     .succ(io.err("Workspace '\(workspace.name)' is already visible on the focused monitor. Tip: use --fail-if-noop to exit with non-zero code"))
             }
         }
-        let prevMonitor = workspace.isVisible ? workspace.workspaceMonitor : nil
-        if monitor.setActiveWorkspace(workspace) {
-            if let prevMonitor {
-                let stubWorkspace = getStubWorkspace(for: prevMonitor)
-                check(
-                    prevMonitor.setActiveWorkspace(stubWorkspace),
-                    "getStubWorkspace generated incompatible stub workspace (\(stubWorkspace)) for the monitor (\(prevMonitor)",
-                )
+
+        if !workspace.isVisible {
+            // Then we just need to summon the workspace to the focused monitor.
+            if focusedMonitor.setActiveWorkspace(workspace) {
+                return .from(bool: workspace.focusWorkspace())
+            } else {
+                return .fail(io.err("Can't move workspace '\(workspace.name)' to monitor '\(focusedMonitor.name)'. workspace-to-monitor-force-assignment doesn't allow it"))
             }
-            return .from(bool: workspace.focusWorkspace())
         } else {
-            return .fail(io.err("Can't move workspace '\(workspace.name)' to monitor '\(monitor.name)'. workspace-to-monitor-force-assignment doesn't allow it"))
+            // The workspace is already visible on another monitor.
+            let otherMonitor = workspace.workspaceMonitor
+            let currentWorkspace = focusedMonitor.activeWorkspace
+
+            switch args.whenVisible {
+                case .swap:
+                    if otherMonitor.setActiveWorkspace(currentWorkspace) && focusedMonitor.setActiveWorkspace(workspace) {
+                        return .from(bool: workspace.focusWorkspace())
+                    } else {
+                        return .fail(io.err("Can't swap workspaces due to monitor force assignment restrictions"))
+                    }
+                case .focus:
+                    return .from(bool: workspace.focusWorkspace())
+            }
         }
     }
 }
