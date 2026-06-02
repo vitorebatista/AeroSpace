@@ -200,6 +200,8 @@ extension PlainInterVar {
             case .tab: .success(.string("\t"))
             case .rightPadding:
                 .failure("\(PlainInterVar.rightPadding.rawValue.singleQuoted) interpolation variable cannot be expanded")
+            case .all:
+                .failure("\(PlainInterVar.all.rawValue.singleQuoted) interpolation variable cannot be expanded")
         }
     }
 }
