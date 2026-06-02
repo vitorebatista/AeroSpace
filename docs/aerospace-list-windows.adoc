@@ -57,7 +57,7 @@ Deprecated (but still supported) flag name: `--app-id`
 
 --sort <sort-option>...::
 Sort the output by the specified criteria.
-`<sort-option>...` is a space-separated list of sort options.
+`<sort-option>...` is a comma-separated list of sort options.
 +
 Possible values: +
 +
@@ -65,7 +65,7 @@ Possible values: +
 . `app-name` - Sort by application name
 . `window-title` - Sort by window title
 +
-If not specified, the default sort order is: `app-name window-title`
+If not specified, the default sort order is: `app-name,window-title`
 
 --format <output-format>:: Specify output format. See "Output Format" section for more details.
 Incompatible with `--count`
