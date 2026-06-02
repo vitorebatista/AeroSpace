@@ -4,6 +4,16 @@
 
 AeroSpace is an i3-like tiling window manager for macOS
 
+> [!NOTE]
+> **This is a maintained fork of [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace).**
+> It backports bug fixes and small features that are already implemented upstream but not yet merged.
+> It is **not** an official release and is **not** affiliated with or endorsed by the upstream maintainer.
+> All credit for AeroSpace goes to [@nikitabobko](https://github.com/nikitabobko) and contributors;
+> this fork preserves the original MIT license and attribution.
+>
+> See [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md) for the full list of backported changes.
+> Please use the upstream project for docs and support; do not report fork-build issues upstream.
+
 Videos:
 - [YouTube 91 sec Demo](https://www.youtube.com/watch?v=UOl7ErqWbrk)
 - [YouTube Guide by Josean Martinez](https://www.youtube.com/watch?v=-FoWClVHG5g)
