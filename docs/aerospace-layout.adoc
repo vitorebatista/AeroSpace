@@ -10,7 +10,7 @@ include::util/man-attributes.adoc[]
 [verse]
 // tag::synopsis[]
 aerospace layout [-h|--help] [--window-id <window-id>]
-                 (h_tiles|v_tiles|h_accordion|v_accordion|tiles|accordion|horizontal|vertical|tiling|floating)...
+                 (h_tiles|v_tiles|h_accordion|v_accordion|tiles|accordion|horizontal|vertical|tiling|floating|sticky)...
 
 // end::synopsis[]
 
@@ -26,6 +26,7 @@ If several arguments are supplied then finds the first argument that doesn't des
 * Change tiling layout but preserve orientation: `tiles|accordion`
 * Change orientation but preserve layout: `horizontal|vertical`
 * Toggle floating/tiling mode: `tiling|floating`
+* Toggle "sticky" mode of a floating window: `sticky` (a sticky floating window is shown on all workspaces of its monitor)
 
 // =========================================================== Options
 include::./util/conditional-options-header.adoc[]
@@ -49,6 +50,9 @@ include::util/conditional-examples-header.adoc[]
 
 * Switch to `tiles` layout. Toggle the layout orientation if already in `tiles` layout: +
 `aerospace layout tiles horizontal vertical`
+
+* Toggle "sticky" mode of the focused floating window (show it on all workspaces of its monitor): +
+`aerospace layout sticky`
 
 // end::body[]
 
