@@ -50,6 +50,8 @@ window-detected:: Fired when a new window is detected. Includes `windowId`, `wor
 
 binding-triggered:: Fired when a keyboard binding is triggered. Includes `binding`, `mode`.
 
+workspace-layout-changed:: Fired when the layout of a workspace's root tiling container changes. Includes `workspace`, `layout`.
+
 // =========================================================== Output Format
 include::util/conditional-output-format-header.adoc[]
 

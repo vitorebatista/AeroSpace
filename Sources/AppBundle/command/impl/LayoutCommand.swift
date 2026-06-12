@@ -70,6 +70,12 @@ struct LayoutCommand: Command {
             let targetLayout = targetLayout ?? parent.layout
             parent.layout = targetLayout
             parent.changeOrientation(targetOrientation)
+            if parent.isRootContainer {
+                broadcastEvent(.workspaceLayoutChanged(
+                    workspace: window.nodeWorkspace?.name ?? "",
+                    layout: toLayoutString(tc: parent),
+                ))
+            }
             return .succ
         case .workspace, .macosMinimizedWindowsContainer, .macosFullscreenWindowsContainer,
              .macosPopupWindowsContainer, .macosHiddenAppsWindowsContainer:
@@ -90,6 +96,10 @@ struct LayoutCommand: Command {
     }
     root.layout = targetLayout ?? root.layout
     root.changeOrientation(targetOrientation ?? root.orientation)
+    broadcastEvent(.workspaceLayoutChanged(
+        workspace: root.nodeWorkspace?.name ?? "",
+        layout: toLayoutString(tc: root),
+    ))
     return .succ
 }
 

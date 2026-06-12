@@ -232,7 +232,7 @@ private func toOrientationString(_ orientation: Orientation) -> String {
     }
 }
 
-private func toLayoutString(tc: TilingContainer) -> String {
+func toLayoutString(tc: TilingContainer) -> String {
     switch (tc.layout, tc.orientation) {
         case (.tiles, .h): return LayoutCmdArgs.LayoutDescription.h_tiles.rawValue
         case (.tiles, .v): return LayoutCmdArgs.LayoutDescription.v_tiles.rawValue
