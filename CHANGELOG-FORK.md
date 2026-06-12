@@ -8,6 +8,19 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
+## v0.20.3-Beta-fork.2 (2026-06-12)
+
+Backported since fork.1 — 3 newly-merged upstream `main` bug-fix commits + 3 feature PRs:
+
+- Fix MRU bug after `swap` command — upstream commit [`19b5999d`](https://github.com/nikitabobko/AeroSpace/commit/19b5999d) (fork PR #25)
+- Fix deadlock in `dieT`/`die` functions — upstream commit [`8b236f1b`](https://github.com/nikitabobko/AeroSpace/commit/8b236f1b) (fork PR #26)
+- parseConfig: don't silently swallow `String.init` exceptions — upstream commit [`a0f17f88`](https://github.com/nikitabobko/AeroSpace/commit/a0f17f88) (fork PR #27)
+- `new-window-prevent-flicker` config option — upstream [nikitabobko/AeroSpace#2109](https://github.com/nikitabobko/AeroSpace/pull/2109) (fork PR #28)
+- `workspace-layout-changed` subscribe event — upstream [nikitabobko/AeroSpace#2116](https://github.com/nikitabobko/AeroSpace/pull/2116) (fork PR #29)
+- Native focused-window border — upstream [nikitabobko/AeroSpace#2107](https://github.com/nikitabobko/AeroSpace/pull/2107) (fork PR #30)
+
+## v0.20.3-Beta-fork.1 (initial — 22 backports)
+
 ## Crash & stability
 
 - Fix `ThreadGuardedValue` crash — upstream [nikitabobko/AeroSpace#2012](https://github.com/nikitabobko/AeroSpace/pull/2012) (fork PR #3)

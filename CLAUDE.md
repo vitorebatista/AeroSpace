@@ -105,10 +105,15 @@ docs must say "comma-separated", not "space-separated").
 
 ## Fork workflow
 
-- This fork's `main` tracks upstream `main`. Backport branches are named `port/<upstream-PR>-<slug>`
-  and branch off `origin/main`; each opens one PR against this fork's `main`.
+- The fork sits on a fixed upstream **base commit** (`63e0976b`) plus a curated set of backported
+  PRs — it does **not** blindly track upstream `main`. Backport branches are `port/<upstream-PR-or-slug>`,
+  branched off `origin/main`; each opens one PR against the fork's `main`.
+- **Updating the fork from upstream → read [`dev-docs/fork-maintenance.md`](./dev-docs/fork-maintenance.md) FIRST.**
+  It is the single source of truth for syncs: it lists what's already ported (so you skip re-triage),
+  the current upstream sync point, the exact env-specific commands, conflict/merge strategy, the lean
+  release build, and how to cut a `-fork.N` release. It's written to make a sync fast and low-token.
 - When porting an upstream PR, fetch its real diff via
   `gh api repos/nikitabobko/AeroSpace/pulls/<N> -H "Accept: application/vnd.github.v3.diff"`
-  (the `gh pr diff` output is reformatted in some environments and won't `git apply`).
+  (the `gh pr diff` output is reformatted in this environment and won't `git apply`); cherry-pick
+  upstream `main` commits directly via the `upstream` remote.
 - Preserve upstream attribution and the MIT license (`Copyright (c) 2023 Nikita Bobko`).
-- See `dev-docs/fork-maintenance.md` for versioning (`-fork.N` suffix) and merge-order notes.
