@@ -50,10 +50,8 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
         openConfigButton()
         reloadConfigButton()
         Button("Quit \(aeroSpaceAppName)") {
-            Task {
-                defer { terminateApp() }
-                try await terminationHandler.beforeTermination()
-            }
+            terminationHandler.beforeTermination()
+            terminateApp()
         }.keyboardShortcut("Q", modifiers: .command)
     } label: {
         if viewModel.isEnabled {
