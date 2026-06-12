@@ -30,6 +30,32 @@ final class ConfigTest: XCTestCase {
         assertEquals(config.newWindowPreventFlicker, true)
     }
 
+    func testParseFocusedWindowBorder() {
+        assertEquals(defaultConfig.focusedWindowBorder, false)
+        assertEquals(defaultConfig.focusedWindowBorderColor, "0xff12B981")
+        assertEquals(defaultConfig.focusedWindowBorderWidth, 4)
+        assertEquals(defaultConfig.focusedWindowBorderOpacity, 100)
+        assertEquals(defaultConfig.focusedWindowBorderRadius, 10)
+        assertEquals(defaultConfig.focusedWindowBorderInset, 0)
+        let (config, errors) = parseConfig(
+            """
+            focused-window-border = true
+            focused-window-border-color = '0xffabcdef'
+            focused-window-border-width = 6
+            focused-window-border-opacity = 80
+            focused-window-border-radius = 12
+            focused-window-border-inset = 2
+            """,
+        )
+        assertEquals(errors, [])
+        assertEquals(config.focusedWindowBorder, true)
+        assertEquals(config.focusedWindowBorderColor, "0xffabcdef")
+        assertEquals(config.focusedWindowBorderWidth, 6)
+        assertEquals(config.focusedWindowBorderOpacity, 80)
+        assertEquals(config.focusedWindowBorderRadius, 12)
+        assertEquals(config.focusedWindowBorderInset, 2)
+    }
+
     func testConfigVersionOutOfBounds() {
         let (_, errors) = parseConfig(
             """
