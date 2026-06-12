@@ -19,6 +19,17 @@ final class ConfigTest: XCTestCase {
         assertEquals(errors, [])
     }
 
+    func testParseNewWindowPreventFlicker() {
+        assertEquals(defaultConfig.newWindowPreventFlicker, false)
+        let (config, errors) = parseConfig(
+            """
+            new-window-prevent-flicker = true
+            """,
+        )
+        assertEquals(errors, [])
+        assertEquals(config.newWindowPreventFlicker, true)
+    }
+
     func testConfigVersionOutOfBounds() {
         let (_, errors) = parseConfig(
             """
