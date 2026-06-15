@@ -20,8 +20,12 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
 ## Sync state (update this section every sync)
 
 - **Upstream base commit:** `63e0976b` (the fork branched from upstream `main` here).
-- **Last upstream review point:** upstream `main` @ `a1465c23` (2026-06-10), 52 open upstream PRs,
-  reviewed 2026-06-12. New work after this point is what a future sync should look at.
+- **Last upstream review point:** upstream `main` @ `a60f9630` (2026-06-14), 45 open upstream PRs,
+  reviewed 2026-06-15. New work after this point is what a future sync should look at.
+  (Previous point: `a1465c23`, 2026-06-10, reviewed 2026-06-12.) The 2026-06-15 sync found
+  **nothing new in default scope** — the only standalone bug fix in the delta (Outlook reminders →
+  popups, `a60f9630`, which closes upstream #2103) is already ported (fork PR #1); everything else
+  new was a large refactor or a feature depending on one (see skip list below).
 - **Released:** `v0.20.3-Beta-fork.2` (28 backports total). See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
 
 ### Already backported — DO NOT re-port these
@@ -38,6 +42,23 @@ Upstream `main` commits cherry-picked: `19b5999d` (swap MRU), `8b236f1b` (die de
   `ConfigParseError` → `ConfigParseDiagnostic` rework, the Swift bump. These conflict with several
   curated backports. Pulling them in = a **full resync milestone**, not a quick PR — only do it if
   the user explicitly asks to "track upstream main."
+- Upstream-`main` refactor chain merged 2026-06-10..06-14 (reviewed 2026-06-15, all part of the
+  "track upstream main" milestone, not quick PRs):
+  - `4242863b`/`cf6244e7`/`61f0eac9`/`cd64d085` — `ParseConfigResult.errors` → `ConfigParseDiagnostic`
+    + readConfig return-type rework (the same family as the `ConfigParseDiagnostic` item above).
+  - `317b8d38`/`175b88f6` — ReloadConfigCommand drops `Task.startUnstructured` (absent in fork).
+  - `890ec336` — config "warnings mechanism".
+  - `a0e43e55`/`6a118fe3` — `test` operator-syntax change + new `test-not` subcommand (breaking
+    config-syntax change).
+  - `5e37ec0a`/`90347dbb`/`f1f50259` — tree-structure refactor (FloatingWindowsContainer,
+    TilingContainerParentCases) — 21-file refactor.
+- Upstream **`layout --root` / `--workspace` / empty-workspace** feature set (`11ba9150`, `91064acc`,
+  `bb1e5429`, completion fix `4ad2a573`) — features whose semantics sit on top of the `5e37ec0a` tree
+  refactor above; can't be cleanly backported without dragging in the refactor. Skipped 2026-06-15
+  (not requested). Revisit if/when a full resync happens.
+- Upstream CI / build-docs / test-infra commits (`e82b4644`/`78e6dd80`/`ebef281e` GH Actions,
+  `2f4d5039`, `c28d3469`, `d07cfee4`, `6ec50638`, `e47d5989`, `abd944d7`, `e063e2fe`) — upstream-only
+  tooling or docs for skipped features; nothing to port.
 
 ## Updating the fork from upstream — step by step
 
