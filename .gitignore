@@ -22,3 +22,6 @@
 # XCode User settings
 xcuserdata/
 xcshareddata/
+
+# Claude Code agent worktrees (transient). Skills under .claude/skills/ are tracked.
+/.claude/worktrees
