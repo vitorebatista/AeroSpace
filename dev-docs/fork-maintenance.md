@@ -20,19 +20,27 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
 ## Sync state (update this section every sync)
 
 - **Upstream base commit:** `63e0976b` (the fork branched from upstream `main` here).
-- **Last upstream review point:** upstream `main` @ `a60f9630` (2026-06-14), 45 open upstream PRs,
-  reviewed 2026-06-15. New work after this point is what a future sync should look at.
-  (Previous point: `a1465c23`, 2026-06-10, reviewed 2026-06-12.) The 2026-06-15 sync found
-  **nothing new in default scope** — the only standalone bug fix in the delta (Outlook reminders →
-  popups, `a60f9630`, which closes upstream #2103) is already ported (fork PR #1); everything else
-  new was a large refactor or a feature depending on one (see skip list below).
-- **Released:** `v0.20.3-Beta-fork.2` (28 backports total). See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
+- **Last upstream review point:** upstream `main` @ `fb8b1df6` (2026-06-27), 42 open upstream PRs,
+  reviewed 2026-06-29. New work after this point is what a future sync should look at.
+  (Previous point: `a60f9630`, 2026-06-14, reviewed 2026-06-15.) The 2026-06-29 sync ported the
+  whole standalone-fix delta: Codex window detection (fork PR #33), `workspace next/prev` --stdin
+  edge fix (#34), `onWorkspaceChanged` self-conflicting focus (#35), env-var docs (#36), and the
+  opt-in BSP-normalization feature (#37). Everything else new in the delta is the **"track upstream
+  main" refactor chain** (eval/echo command family, `RunCallbackCommand`, focusFollowsMouse,
+  `ConfigVersion`, `ConvenienceCopyable`, "Avoid TOML table syntax", `Parsed`→`ResOrStr` rename,
+  the "forbid empty if" breaking change, socket-protocol handshake) — deferred to a full resync.
+  The upstream emacs-child-frames commit (`97897690`, PR #2036) is **already covered** by the fork's
+  existing emacs `kAXFloatingWindowSubrole` check + `emacs_floating_child_frame.json5` fixture.
+- **Released:** `v0.20.3-Beta-fork.2` (28 backports). Fork PRs #33–#37 backported 2026-06-29 (unreleased).
+  See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
 
 ### Already backported — DO NOT re-port these
 Upstream PRs (by upstream number): 2103, 2081, 2012, 2024, 2098, 2052, 1944, 1926, 1953, 1529,
-2097, 2080, 1156, 2082, 1665, 1708, 1778, 1932, 2085, 1344, 2083, 1349, 2109, 2116, 2107.
-Upstream `main` commits cherry-picked: `19b5999d` (swap MRU), `8b236f1b` (die deadlock),
-`a0f17f88` (parseConfig exception).
+2097, 2080, 1156, 2082, 1665, 1708, 1778, 1932, 2085, 1344, 2083, 1349, 2109, 2116, 2107, 2135.
+Upstream `main` commits cherry-picked / ported: `19b5999d` (swap MRU), `8b236f1b` (die deadlock),
+`a0f17f88` (parseConfig exception), `82c4a405`+`cb347265` (Codex window detection, fork PR #33),
+`6a2a126d` (workspace next/prev --stdin edge, #34), `dd61a340` (onWorkspaceChanged self-conflicting
+focus, #35), `3e381925` (env-var docs, #36).
 
 ### Deliberately NOT ported (skip unless explicitly requested)
 - Upstream PR **#2114** "Add sticky window support" — duplicate of our `layout sticky` (PR #2083/#21).
@@ -56,6 +64,21 @@ Upstream `main` commits cherry-picked: `19b5999d` (swap MRU), `8b236f1b` (die de
   `bb1e5429`, completion fix `4ad2a573`) — features whose semantics sit on top of the `5e37ec0a` tree
   refactor above; can't be cleanly backported without dragging in the refactor. Skipped 2026-06-15
   (not requested). Revisit if/when a full resync happens.
+- Upstream-`main` refactor/feature chain merged 2026-06-15..06-26 (reviewed 2026-06-29, all part of
+  the "track upstream main" milestone, not quick PRs):
+  - **eval/echo command family** (`82ee061c`, `f0c5ab43`, `5c9fc889`, `dac4671a`, `93b65b2d`,
+    `0f0a1c80`, `588b1df1`, `6aad5704`, `c69087ec`, `b8e8dbba`, `63df9215`, `88e13b37`, `4b1c4c4c`)
+    and `RunCallbackCommand` (`59b181c9`) + its prefactors (`fdb27c59`, `aa1f7ced`, `30566206`).
+  - **focusFollowsMouse** (`b95537f2`, `987d1bd5`) and the non-cancellable-session rework
+    (`ecfc745c`, `5742362b`, `0ff53e56`).
+  - **`ConfigVersion`** strong typing (`5bb3701a`, `5c655bcf`), **`ConvenienceCopyable`** rename
+    (`45939229`), **`Parsed`→`ResOrStr`/`ConfigParseDiagnostic`** rename (`c233adb0`), warnings array
+    → `ConfigParserContext` (`5e9fdc92`), "Avoid TOML table syntax" (`30e461d7`), and the BREAKING
+    "forbid empty `if` in on-window-detected" (`8ceabe9b`) — config-syntax changes that conflict.
+  - **Socket-protocol versions handshake** (`8413641c`), `getNextPrevWorkspace` error-message chain
+    (`1aeb8090`/`73a9137c`/`6e472aa3`/`310bd8e1`), accessibility-permission flow (`fb8b1df6`),
+    `onWorkspaceChanged` self-conflicting-focus guard (`dd61a340` — already ported as #35).
+  - Website/docs-only (`d14b4314`, `3d7fee52`, `61c874bc`, `6e4a2d2c`) and CI (`7d2654d5`).
 - Upstream CI / build-docs / test-infra commits (`e82b4644`/`78e6dd80`/`ebef281e` GH Actions,
   `2f4d5039`, `c28d3469`, `d07cfee4`, `6ec50638`, `e47d5989`, `abd944d7`, `e063e2fe`) — upstream-only
   tooling or docs for skipped features; nothing to port.
