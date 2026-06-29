@@ -609,6 +609,9 @@ Besides the <<exec-env-vars,`exec.env-vars`>>, the process has access to the fol
 
 * `AEROSPACE_FOCUSED_WORKSPACE` - the workspace user switched to
 * `AEROSPACE_PREV_WORKSPACE` - the workspace user switched from
+* `AEROSPACE_WORKSPACE` and `AEROSPACE_WINDOW_ID` - describe the current focus. Exactly one is set:
+  `AEROSPACE_WINDOW_ID` if a window is focused, otherwise `AEROSPACE_WORKSPACE` for an empty workspace.
+  This lets the callback forward the focus to another `aerospace` command without a self-conflicting target.
 
 For a more elaborate example on how to integrate with Sketchybar see
 xref:./goodies.adoc#show-aerospace-workspaces-in-sketchybar[]

@@ -155,7 +155,7 @@ extension Workspace {
         onFocusChanged(focus)
     }
     if let _prevFocusedWorkspaceName, hasFocusedWorkspaceChanged {
-        onWorkspaceChanged(_prevFocusedWorkspaceName, frozenFocus.workspaceName)
+        onWorkspaceChanged(_prevFocusedWorkspaceName, frozenFocus.workspaceName, focus)
     }
     if hasFocusedMonitorChanged {
         onFocusedMonitorChanged(focus)
@@ -191,7 +191,7 @@ extension Workspace {
     }
 }
 
-@MainActor private func onWorkspaceChanged(_ oldWorkspace: String, _ newWorkspace: String) {
+@MainActor private func onWorkspaceChanged(_ oldWorkspace: String, _ newWorkspace: String, _ focus: LiveFocus) {
     broadcastEvent(.workspaceChanged(
         workspace: newWorkspace,
         prevWorkspace: oldWorkspace,
@@ -203,7 +203,16 @@ extension Workspace {
         var environment = config.execConfig.envVariables
         environment["AEROSPACE_FOCUSED_WORKSPACE"] = newWorkspace
         environment["AEROSPACE_PREV_WORKSPACE"] = oldWorkspace
-        environment[AEROSPACE_WORKSPACE] = newWorkspace
+        // AEROSPACE_WORKSPACE and AEROSPACE_WINDOW_ID describe the current focus. Set exactly one of
+        // them so the callback can't forward a self-conflicting (workspace + window) target.
+        switch focus.asLeaf {
+            case .emptyWorkspace(let w):
+                environment[AEROSPACE_WORKSPACE] = w.name
+                environment[AEROSPACE_WINDOW_ID] = nil
+            case .window(let w):
+                environment[AEROSPACE_WORKSPACE] = nil
+                environment[AEROSPACE_WINDOW_ID] = w.windowId.description
+        }
         process.environment = environment
         _ = Result { try process.run() }
     }
