@@ -26,6 +26,14 @@ struct MoveCommand: Command {
                             return .succ
                     }
                 } else {
+                    let outOfLevelTarget = currentWindow.closestParent(hasChildrenInDirection: direction, withLayout: nil)
+                    if config.enableNormalizationBinaryTree, outOfLevelTarget == nil {
+                        // Binary-tree normalization makes "move out" at the workspace edge futile: it
+                        // re-nests the window immediately, so it can never bubble up to the root edge
+                        // that crosses to an adjacent monitor. Treat an edge move as hitting the
+                        // workspace boundary directly (e.g. crossing monitors with all-monitors-outer-frame).
+                        return hitWorkspaceBoundaries(currentWindow, target.workspace, io, args, direction, env)
+                    }
                     return moveOut(window: currentWindow, direction: direction, io, args, env)
                 }
             case .workspace: // floating window
