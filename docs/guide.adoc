@@ -616,6 +616,35 @@ Besides the <<exec-env-vars,`exec.env-vars`>>, the process has access to the fol
 For a more elaborate example on how to integrate with Sketchybar see
 xref:./goodies.adoc#show-aerospace-workspaces-in-sketchybar[]
 
+[#environment-variables]
+== Environment variables
+
+When AeroSpace runs a callback's command (such as an <<on-window-detected-callback>> or an <<on-focus-changed-callbacks>>),
+it adds one of the following environment variables to the command's environment to identify the target the callback fired against:
+
+* `AEROSPACE_WINDOW_ID` - the numeric ID of a specific window
+* `AEROSPACE_WORKSPACE` - the name of a specific workspace
+
+If there is a target window, `AEROSPACE_WINDOW_ID` is set to its ID.
+Otherwise (the target is an empty workspace with no window to point at), `AEROSPACE_WORKSPACE` is set to that workspace's name instead.
+Exactly one of the two is set at a time.
+
+In practice:
+
+* For <<on-window-detected-callback>>, the target is the newly detected window, so `AEROSPACE_WINDOW_ID` is always set.
+* For <<on-focus-changed-callbacks>> (`on-focus-changed`, `on-focused-monitor-changed`), the target is the new focus, so `AEROSPACE_WINDOW_ID` is set when a window is focused, and `AEROSPACE_WORKSPACE` is set when focus lands on an empty workspace.
+
+Commands that need a target (xref:commands.adoc#layout[layout], xref:commands.adoc#move-node-to-workspace[move-node-to-workspace], xref:commands.adoc#move[move], etc.)
+honor the forwarded context before falling back to the currently focused window or workspace.
+That makes commands in callbacks operate on the originating window or workspace even when global focus has already moved.
+The full resolution order, from highest to lowest priority, is:
+
+. `--window-id` command-line option
+. `--workspace` command-line option
+. `AEROSPACE_WINDOW_ID` environment variable
+. `AEROSPACE_WORKSPACE` environment variable
+. The currently focused window or the currently focused empty workspace
+
 [#multiple-monitors]
 == Multiple monitors
 
