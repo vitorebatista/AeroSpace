@@ -31,7 +31,7 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
   the "forbid empty if" breaking change, socket-protocol handshake) — deferred to a full resync.
   The upstream emacs-child-frames commit (`97897690`, PR #2036) is **already covered** by the fork's
   existing emacs `kAXFloatingWindowSubrole` check + `emacs_floating_child_frame.json5` fixture.
-- **Released:** `v0.20.3-Beta-fork.2` (28 backports). Fork PRs #33–#37 backported 2026-06-29 (unreleased).
+- **Released:** `v0.20.3-Beta-fork.3` (33 backports total; fork PRs #33–#37 cut 2026-06-29).
   See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
 
 ### Already backported — DO NOT re-port these
