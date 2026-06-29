@@ -8,6 +8,16 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
+## Unreleased (backported 2026-06-29)
+
+New backports since fork.2 (delta past upstream review point `a60f9630`):
+
+- Fix Codex window classification (pet window → popup) — upstream commits [`82c4a405`](https://github.com/nikitabobko/AeroSpace/commit/82c4a405) + [`cb347265`](https://github.com/nikitabobko/AeroSpace/commit/cb347265) (fork PR #33)
+- Fix `workspace next/prev` when current workspace isn't in the `--stdin` list — upstream commit [`6a2a126d`](https://github.com/nikitabobko/AeroSpace/commit/6a2a126d) (fork PR #34)
+- Fix self-conflicting focus env vars in `exec-on-workspace-change` callback — upstream commit [`dd61a340`](https://github.com/nikitabobko/AeroSpace/commit/dd61a340) (fork PR #35)
+- Document `AEROSPACE_WINDOW_ID` / `AEROSPACE_WORKSPACE` env variables — upstream commit [`3e381925`](https://github.com/nikitabobko/AeroSpace/commit/3e381925) (fork PR #36)
+- Add binary-tree (BSP) normalization (`enable-normalization-binary-tree`) — upstream [nikitabobko/AeroSpace#2135](https://github.com/nikitabobko/AeroSpace/pull/2135) (fork PR #37)
+
 ## v0.20.3-Beta-fork.2 (2026-06-12)
 
 Backported since fork.1 — 3 newly-merged upstream `main` bug-fix commits + 3 feature PRs:
