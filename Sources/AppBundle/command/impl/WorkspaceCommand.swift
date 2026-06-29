@@ -48,10 +48,15 @@ struct WorkspaceCommand: Command {
             .toSet()
             .union([current])
             .sorted()
-    let index = workspaces.firstIndex(where: { $0 == target.workspace }) ?? 0
+    // When the current workspace isn't in the list, default to index 0 so that `next`/`prev`
+    // land on the first listed workspace rather than skipping past it (firstIndex ?? 0, then
+    // ±1, would land on index 1 for `next`).
+    let index = workspaces.firstIndex(where: { $0 == target.workspace })
+        .map { isNext ? $0 + 1 : $0 - 1 }
+        ?? 0
     let workspace: Workspace? = switch wrapAround {
-        case true: workspaces.get(wrappingIndex: isNext ? index + 1 : index - 1)
-        case false: workspaces.getOrNil(atIndex: isNext ? index + 1 : index - 1)
+        case true: workspaces.get(wrappingIndex: index)
+        case false: workspaces.getOrNil(atIndex: index)
     }
     return workspace
 }

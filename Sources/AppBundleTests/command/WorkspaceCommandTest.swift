@@ -31,4 +31,15 @@ final class WorkspaceCommandTest: XCTestCase {
         assertEquals(result.exitCode.rawValue, 2)
         assertEquals(result.stderr, ["Can't resolve next or prev workspace"])
     }
+
+    @MainActor
+    func testRelativeNextCurrentNotInStdinLandsOnFirst() async throws {
+        // When the focused workspace isn't in the --stdin list, `next` must land on the
+        // first listed workspace (index 0), not skip past it to index 1.
+        assertTrue(Workspace.get(byName: "z").focusWorkspace())
+        let args = WorkspaceCmdArgs(target: .relative(.next)).copy(\.explicitStdinFlag, true)
+        let result = try await WorkspaceCommand(args: args).run(.defaultEnv, .init("a\nb\nc\n"))
+        assertEquals(result.exitCode.rawValue, 0)
+        assertEquals(focus.workspace.name, "a")
+    }
 }
