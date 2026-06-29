@@ -53,6 +53,7 @@ struct Config: ConvenienceCopyable {
     var focusedWindowBorderInset: Int = 0
     var accordionPadding: Int = 30
     var enableNormalizationOppositeOrientationForNestedContainers: Bool = true
+    var enableNormalizationBinaryTree: Bool = false
     var persistentWorkspaces: OrderedSet<String> = []
     var execOnWorkspaceChange: [String] = [] // todo deprecate
     var keyMapping = KeyMapping()
