@@ -13,9 +13,13 @@ enum GlobalObserver {
             return
         }
         let notifName = notification.name.rawValue
+        let activatedAppPid = (notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication)?.processIdentifier
         Task { @MainActor in
             if !TrayMenuModel.shared.isEnabled { return }
             if notifName == NSWorkspace.didActivateApplicationNotification.rawValue {
+                if let activatedAppPid {
+                    noteNativeAppActivation(appPid: activatedAppPid)
+                }
                 scheduleCancellableCompleteRefreshSession(.globalObserver(notifName), optimisticallyPreLayoutWorkspaces: true)
             } else {
                 scheduleCancellableCompleteRefreshSession(.globalObserver(notifName))
@@ -92,6 +96,10 @@ enum GlobalObserver {
             //  resetManipulatedWithMouseIfPossible might call its own refreshSession
             //  The end of the callback calls refreshSession
             Task { @MainActor in
+                // A click can intentionally activate another app, including one
+                // on a different workspace. It supersedes keyboard/CLI workspace
+                // protection and should be reconciled normally.
+                cancelFocusProtectionAfterWorkspaceSwitch()
                 guard let token: RunSessionGuard = .isServerEnabled else { return }
                 try await resetManipulatedWithMouseIfPossible()
                 let mouseLocation = mouseLocation
