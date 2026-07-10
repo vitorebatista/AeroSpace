@@ -28,8 +28,8 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
   unhide-nudge fix (#42), the MacApp AX-destroy-race + wipPids-spin crash fixes (#43), and the
   cross-workspace focus-race fix (#44). Everything else new in the delta is the deferred **"track
   upstream main" refactor chain** — see the skip list below.
-- **Released:** `v0.20.3-Beta-fork.3` (33 backports total; fork PRs #33–#37 cut 2026-06-29).
-  Fork PRs #39–#44 backported 2026-07-10 (unreleased). See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
+- **Released:** `v0.20.3-Beta-fork.4` (39 backports total; fork PRs #39–#44 cut 2026-07-10).
+  See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
 
 ### Already backported — DO NOT re-port these
 Upstream PRs (by upstream number): 2103, 2081, 2012, 2024, 2098, 2052, 1944, 1926, 1953, 1529,

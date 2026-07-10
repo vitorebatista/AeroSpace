@@ -8,7 +8,7 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
-## Unreleased (backported 2026-07-10)
+## v0.20.3-Beta-fork.4 (2026-07-10)
 
 New backports since fork.3 (delta past upstream review point `fb8b1df6`):
 
