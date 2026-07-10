@@ -93,6 +93,11 @@ final class MacApp: AbstractApp {
                     let subscriptions = (try? unsafe AxSubscription.bulkSubscribe(nsApp, axApp, job, handlers)) ?? []
                     let isGood = !subscriptions.isEmpty
                     let app = isGood ? MacApp(nsApp, axApp, subscriptions, Thread.current) : nil
+
+                    let appAxSubscriptionsThreadGuarded = app?.appAxSubscriptions
+                    let windowsThreadGuarded = app?.windows
+                    let axAppThreadGuarded = app?.axApp
+
                     Task { @MainActor in
                         if let app {
                             allAppsMap[pid] = app
@@ -100,11 +105,21 @@ final class MacApp: AbstractApp {
                         } else {
                             recordFailedRegistration(pid)
                         }
-                        await wip.signalToAll()
+                        // Clear wipPids before signaling the latch: otherwise a woken awaiter can see the
+                        // still-present (now-signaled) latch, re-await it (returns instantly), loop, and spin
+                        // on @MainActor until this task gets scheduled to clear the entry.
                         wipPids[pid] = nil
+                        await wip.signalToAll()
                     }
                     if isGood {
                         CFRunLoopRun()
+
+                        // Destroy AX objects in reverse order of their creation, on the AX thread, after the
+                        // run loop has fully stopped. Destroying them in a separate close-time job raced with
+                        // the asynchronous CFRunLoopStop and could hit 'Value is already destroyed'.
+                        appAxSubscriptionsThreadGuarded?.destroy()
+                        windowsThreadGuarded?.destroy()
+                        axAppThreadGuarded?.destroy()
                     }
                 }
             }
@@ -382,12 +397,10 @@ final class MacApp: AbstractApp {
             job.cancel()
         }
         setFrameJobs = [:]
-        thread?.runInLoopAsync { [windows, appAxSubscriptions, axApp] job in
-            appAxSubscriptions.destroy() // Destroy AX objects in reverse order of their creation
-            windows.destroy()
-            axApp.destroy()
-            CFRunLoopStop(CFRunLoopGetCurrent())
-        }
+        // Only stop the run loop here. The AX objects are destroyed on the AX thread right after
+        // CFRunLoopRun() returns (see getOrRegister), so they can't be freed while the run loop is
+        // still dispatching (which caused the 'Value is already destroyed' crash).
+        thread?.runInLoopAsync { job in CFRunLoopStop(CFRunLoopGetCurrent()) }
         thread = nil // Disallow all future job submissions
     }
 
