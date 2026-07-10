@@ -31,7 +31,7 @@ final class SubscribeCmdArgsTest: XCTestCase {
             case .failure(let err):
                 let expectedMsg = """
                     ERROR: Can't parse 'unknown-event'.
-                           Possible values: (focus-changed|focused-monitor-changed|focused-workspace-changed|mode-changed|window-detected|binding-triggered|workspace-layout-changed)
+                           Possible values: (focus-changed|focused-monitor-changed|focused-workspace-changed|mode-changed|window-detected|binding-triggered|workspace-layout-changed|window-moved-to-workspace)
                     """
                 assertEquals(err, .init(expectedMsg, 2))
         }

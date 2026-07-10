@@ -52,6 +52,8 @@ binding-triggered:: Fired when a keyboard binding is triggered. Includes `bindin
 
 workspace-layout-changed:: Fired when the layout of a workspace's root tiling container changes. Includes `workspace`, `layout`.
 
+window-moved-to-workspace:: Fired when a window is moved to another workspace. Includes `windowId`, `workspace` (the destination), `prevWorkspace` (the source, may be null).
+
 // =========================================================== Output Format
 include::util/conditional-output-format-header.adoc[]
 

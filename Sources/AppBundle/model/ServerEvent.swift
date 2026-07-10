@@ -51,4 +51,8 @@ public struct ServerEvent: Codable, Sendable {
     public static func workspaceLayoutChanged(workspace: String, layout: String) -> ServerEvent {
         ServerEvent(_event: .workspaceLayoutChanged, workspace: workspace, layout: layout)
     }
+
+    public static func windowMovedToWorkspace(windowId: UInt32, workspace: String, prevWorkspace: String?) -> ServerEvent {
+        ServerEvent(_event: .windowMovedToWorkspace, windowId: windowId, workspace: workspace, prevWorkspace: prevWorkspace)
+    }
 }
