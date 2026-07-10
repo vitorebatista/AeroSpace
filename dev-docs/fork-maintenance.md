@@ -20,27 +20,27 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
 ## Sync state (update this section every sync)
 
 - **Upstream base commit:** `63e0976b` (the fork branched from upstream `main` here).
-- **Last upstream review point:** upstream `main` @ `fb8b1df6` (2026-06-27), 42 open upstream PRs,
-  reviewed 2026-06-29. New work after this point is what a future sync should look at.
-  (Previous point: `a60f9630`, 2026-06-14, reviewed 2026-06-15.) The 2026-06-29 sync ported the
-  whole standalone-fix delta: Codex window detection (fork PR #33), `workspace next/prev` --stdin
-  edge fix (#34), `onWorkspaceChanged` self-conflicting focus (#35), env-var docs (#36), and the
-  opt-in BSP-normalization feature (#37). Everything else new in the delta is the **"track upstream
-  main" refactor chain** (eval/echo command family, `RunCallbackCommand`, focusFollowsMouse,
-  `ConfigVersion`, `ConvenienceCopyable`, "Avoid TOML table syntax", `Parsed`→`ResOrStr` rename,
-  the "forbid empty if" breaking change, socket-protocol handshake) — deferred to a full resync.
-  The upstream emacs-child-frames commit (`97897690`, PR #2036) is **already covered** by the fork's
-  existing emacs `kAXFloatingWindowSubrole` check + `emacs_floating_child_frame.json5` fixture.
+- **Last upstream review point:** upstream `main` @ `649301b2` (2026-07-07), 40 open upstream PRs,
+  reviewed 2026-07-10. New work after this point is what a future sync should look at.
+  (Previous point: `fb8b1df6`, 2026-06-27, reviewed 2026-06-29.) The 2026-07-10 sync ported the
+  standalone-fix delta plus two opted-in items: menu-bar focus steal (fork PR #39),
+  `window-moved-to-workspace` subscribe event (#40), accordion floating-insert fix (#41), floating
+  unhide-nudge fix (#42), the MacApp AX-destroy-race + wipPids-spin crash fixes (#43), and the
+  cross-workspace focus-race fix (#44). Everything else new in the delta is the deferred **"track
+  upstream main" refactor chain** — see the skip list below.
 - **Released:** `v0.20.3-Beta-fork.3` (33 backports total; fork PRs #33–#37 cut 2026-06-29).
-  See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
+  Fork PRs #39–#44 backported 2026-07-10 (unreleased). See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
 
 ### Already backported — DO NOT re-port these
 Upstream PRs (by upstream number): 2103, 2081, 2012, 2024, 2098, 2052, 1944, 1926, 1953, 1529,
-2097, 2080, 1156, 2082, 1665, 1708, 1778, 1932, 2085, 1344, 2083, 1349, 2109, 2116, 2107, 2135.
+2097, 2080, 1156, 2082, 1665, 1708, 1778, 1932, 2085, 1344, 2083, 1349, 2109, 2116, 2107, 2135,
+2162, 2165.
 Upstream `main` commits cherry-picked / ported: `19b5999d` (swap MRU), `8b236f1b` (die deadlock),
 `a0f17f88` (parseConfig exception), `82c4a405`+`cb347265` (Codex window detection, fork PR #33),
 `6a2a126d` (workspace next/prev --stdin edge, #34), `dd61a340` (onWorkspaceChanged self-conflicting
-focus, #35), `3e381925` (env-var docs, #36).
+focus, #35), `3e381925` (env-var docs, #36), `cfd4eab2` (menu-bar focus steal, #39), `8c3efca2`
+(accordion floating-insert, #41), `649301b2` (floating unhide-nudge, #42), `dd6b927a`+`1e6ce27e`
+(MacApp AX-destroy-race + wipPids-spin, #43).
 
 ### Deliberately NOT ported (skip unless explicitly requested)
 - Upstream PR **#2114** "Add sticky window support" — duplicate of our `layout sticky` (PR #2083/#21).
@@ -79,6 +79,21 @@ focus, #35), `3e381925` (env-var docs, #36).
     (`1aeb8090`/`73a9137c`/`6e472aa3`/`310bd8e1`), accessibility-permission flow (`fb8b1df6`),
     `onWorkspaceChanged` self-conflicting-focus guard (`dd61a340` — already ported as #35).
   - Website/docs-only (`d14b4314`, `3d7fee52`, `61c874bc`, `6e4a2d2c`) and CI (`7d2654d5`).
+- Upstream-`main` chain reviewed 2026-07-10 (`fb8b1df6..649301b2`), deferred to a full resync:
+  - **focus-follows-mouse** feature (`747e1a97`, `f486beb2`, `9727340a`, `2dc0c786`) — deferred feature.
+  - **`ef54f6c5`** (shell: allow comments after backslash) and **`f1cef2eb`** (drop stale
+    `ShellParserGenerated`) — both target upstream's hand-written `shellLexer.swift`; the fork still
+    uses the ANTLR-generated `ShellLexer`, so these are upstream's move *off* ANTLR, not portable.
+  - **`4e240fed`** (isStartup: fix crash) — rewrites `isStartup` against the deleted `_isStartup`
+    TaskLocal (`0ff53e56`); the fork's `isStartup` uses `_isStartup ?? dieT(...)`, so the upstream
+    fix doesn't map. Revisit during a full resync.
+  - **`269dc71b`** (MacApp getOrRegister: loop → single attempt) — targets the same infinite
+    re-subscribe loop the fork already bounds via `shouldThrottleFailedRegistration` (fork PR #19);
+    adopting it would mean removing the throttle. Its companions `dd6b927a`/`1e6ce27e` WERE ported (#43).
+  - **`aa656637`** (make xcode project `git worktree`-friendly + move it) — project-layout
+    restructure, not a fix. **`9c922252`** (socket Python example docs) — the fork has no
+    socket-protocol guide section. **`e1310b5d`** (bugPrompt graceful/deadly logging), **`5be63812`**
+    (update axDumps) — minor upstream-only tooling/data.
 - Upstream CI / build-docs / test-infra commits (`e82b4644`/`78e6dd80`/`ebef281e` GH Actions,
   `2f4d5039`, `c28d3469`, `d07cfee4`, `6ec50638`, `e47d5989`, `abd944d7`, `e063e2fe`) — upstream-only
   tooling or docs for skipped features; nothing to port.
