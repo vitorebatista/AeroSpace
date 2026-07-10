@@ -8,6 +8,17 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
+## Unreleased (backported 2026-07-10)
+
+New backports since fork.3 (delta past upstream review point `fb8b1df6`):
+
+- Fix menu-bar clicks stealing focus when "Displays have separate spaces" is off — upstream commit [`cfd4eab2`](https://github.com/nikitabobko/AeroSpace/commit/cfd4eab2) (fork PR #39)
+- Add `window-moved-to-workspace` subscribe event — upstream [nikitabobko/AeroSpace#2162](https://github.com/nikitabobko/AeroSpace/pull/2162) (fork PR #40)
+- FocusCommand: don't insert floating windows between accordion children — upstream commit [`8c3efca2`](https://github.com/nikitabobko/AeroSpace/commit/8c3efca2) (fork PR #41)
+- Fix floating windows nudged off right/bottom edges on workspace unhide — upstream commit [`649301b2`](https://github.com/nikitabobko/AeroSpace/commit/649301b2) (fork PR #42)
+- MacApp: fix AX-object destroy race + wipPids spin in `getOrRegister` — upstream commits [`dd6b927a`](https://github.com/nikitabobko/AeroSpace/commit/dd6b927a) + [`1e6ce27e`](https://github.com/nikitabobko/AeroSpace/commit/1e6ce27e) (fork PR #43)
+- Fix cross-workspace focus races — upstream [nikitabobko/AeroSpace#2165](https://github.com/nikitabobko/AeroSpace/pull/2165) (fork PR #44)
+
 ## v0.20.3-Beta-fork.3 (2026-06-29)
 
 New backports since fork.2 (delta past upstream review point `a60f9630`):
