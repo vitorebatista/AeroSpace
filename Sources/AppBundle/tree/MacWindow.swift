@@ -162,6 +162,14 @@ final class MacWindow: Window {
             visibleRect: visibleRect,
         ) else { return false }
         prevUnhiddenProportionalPositionInsideWorkspaceRect = snapshot
+        // Refresh lastFloatingSize from the live AX rect (already fetched above). Otherwise
+        // unhideFromCorner clamps the restored position against a stale size written only at
+        // detection / 'layout floating', nudging user-resized floating windows off the
+        // right/bottom edges. Guarded by isFloating so a corner-parked tiled window can't pollute
+        // the size that 'layout floating' restores.
+        if isFloating {
+            lastFloatingSize = windowRect.size
+        }
         return true
     }
 
