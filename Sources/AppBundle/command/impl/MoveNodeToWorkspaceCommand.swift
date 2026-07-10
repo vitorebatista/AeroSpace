@@ -37,7 +37,9 @@ func moveWindowToWorkspace(_ window: Window, _ targetWorkspace: Workspace, _ io:
                 .succ(io.err("Window '\(window.windowId)' already belongs to workspace '\(targetWorkspace.name)'. Tip: use --fail-if-noop to exit with non-zero code"))
         }
     }
+    let prevWorkspace = window.nodeWorkspace?.name
     let targetContainer: NonLeafTreeNodeObject = window.isFloating ? targetWorkspace : targetWorkspace.rootTilingContainer
     window.bind(to: targetContainer, adaptiveWeight: WEIGHT_AUTO, index: index)
+    broadcastEvent(.windowMovedToWorkspace(windowId: window.windowId, workspace: targetWorkspace.name, prevWorkspace: prevWorkspace))
     return .from(bool: focusFollowsWindow ? window.focusWindow() : true)
 }

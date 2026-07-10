@@ -142,4 +142,4 @@ aerospace -h;
 <pid> ::= {{{ aerospace list-apps --format '%{app-pid}%{tab}%{app-name}' }}};
 <monitor_id> ::= all | mouse | focused | {{{ aerospace list-monitors --format '%{monitor-id}%{tab}%{monitor-name}' }}};
 
-<event> ::= focus-changed | focused-monitor-changed | focused-workspace-changed | mode-changed | window-detected | binding-triggered | workspace-layout-changed;
+<event> ::= focus-changed | focused-monitor-changed | focused-workspace-changed | mode-changed | window-detected | binding-triggered | workspace-layout-changed | window-moved-to-workspace;
