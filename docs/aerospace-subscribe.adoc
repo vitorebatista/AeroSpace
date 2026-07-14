@@ -54,6 +54,8 @@ workspace-layout-changed:: Fired when the layout of a workspace's root tiling co
 
 window-moved-to-workspace:: Fired when a window is moved to another workspace. Includes `windowId`, `workspace` (the destination), `prevWorkspace` (the source, may be null).
 
+window-closed:: Fired when a window is closed. Includes `windowId`, `workspace`.
+
 // =========================================================== Output Format
 include::util/conditional-output-format-header.adoc[]
 

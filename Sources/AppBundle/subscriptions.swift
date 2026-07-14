@@ -30,7 +30,7 @@ func handleSubscribeAndWaitTillError(_ connection: NWConnection, _ args: Subscri
                         workspace: f.workspace.name,
                         monitorId_oneBased: f.workspace.workspaceMonitor.monitorId_oneBased ?? 0,
                     )
-                case .windowDetected, .bindingTriggered, .workspaceLayoutChanged, .windowMovedToWorkspace: continue
+                case .windowDetected, .bindingTriggered, .workspaceLayoutChanged, .windowMovedToWorkspace, .windowClosed: continue
             }
             if await connection.writeAtomic(event, jsonEncoder).error != nil {
                 return
