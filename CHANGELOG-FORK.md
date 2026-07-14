@@ -8,6 +8,15 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
+## v0.20.3-Beta-fork.5 (2026-07-14)
+
+New backports since fork.4 (delta past upstream review point `649301b2`):
+
+- Fix wisprFlow popup detection — upstream commits [`4a3aab24`](https://github.com/nikitabobko/AeroSpace/commit/4a3aab24) + [`d56e1637`](https://github.com/nikitabobko/AeroSpace/commit/d56e1637) (fork PR #46)
+- Ignore windows with `kCGNullWindowID` window-id — upstream commit [`0f6b2e78`](https://github.com/nikitabobko/AeroSpace/commit/0f6b2e78) (fork PR #47)
+- Add `window-closed` subscribe event — upstream [nikitabobko/AeroSpace#2181](https://github.com/nikitabobko/AeroSpace/pull/2181) (fork PR #48)
+- Fix Device Hub (Xcode 27) compact-view flicker when tiled — upstream [nikitabobko/AeroSpace#2167](https://github.com/nikitabobko/AeroSpace/pull/2167) (fork PR #49)
+
 ## v0.20.3-Beta-fork.4 (2026-07-10)
 
 New backports since fork.3 (delta past upstream review point `fb8b1df6`):

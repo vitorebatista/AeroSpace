@@ -20,27 +20,26 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
 ## Sync state (update this section every sync)
 
 - **Upstream base commit:** `63e0976b` (the fork branched from upstream `main` here).
-- **Last upstream review point:** upstream `main` @ `649301b2` (2026-07-07), 40 open upstream PRs,
-  reviewed 2026-07-10. New work after this point is what a future sync should look at.
-  (Previous point: `fb8b1df6`, 2026-06-27, reviewed 2026-06-29.) The 2026-07-10 sync ported the
-  standalone-fix delta plus two opted-in items: menu-bar focus steal (fork PR #39),
-  `window-moved-to-workspace` subscribe event (#40), accordion floating-insert fix (#41), floating
-  unhide-nudge fix (#42), the MacApp AX-destroy-race + wipPids-spin crash fixes (#43), and the
-  cross-workspace focus-race fix (#44). Everything else new in the delta is the deferred **"track
-  upstream main" refactor chain** — see the skip list below.
-- **Released:** `v0.20.3-Beta-fork.4` (39 backports total; fork PRs #39–#44 cut 2026-07-10).
+- **Last upstream review point:** upstream `main` @ `d56e1637` (2026-07-12), 46 open upstream PRs,
+  reviewed 2026-07-14. New work after this point is what a future sync should look at.
+  (Previous point: `649301b2`, 2026-07-07, reviewed 2026-07-10.) The 2026-07-14 sync ported the
+  wisprFlow popup fix (fork PR #46), the `kCGNullWindowID` ignore (#47), the `window-closed`
+  subscribe event (#48), and the Device Hub compact-view flicker fix (#49). Skipped: `a52896b3`
+  (cosmetic default-config terminal-script shorten) and the deferred features/refactors below.
+- **Released:** `v0.20.3-Beta-fork.5` (43 backports total; fork PRs #46–#49 cut 2026-07-14).
   See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
 
 ### Already backported — DO NOT re-port these
 Upstream PRs (by upstream number): 2103, 2081, 2012, 2024, 2098, 2052, 1944, 1926, 1953, 1529,
 2097, 2080, 1156, 2082, 1665, 1708, 1778, 1932, 2085, 1344, 2083, 1349, 2109, 2116, 2107, 2135,
-2162, 2165.
+2162, 2165, 2181, 2167.
 Upstream `main` commits cherry-picked / ported: `19b5999d` (swap MRU), `8b236f1b` (die deadlock),
 `a0f17f88` (parseConfig exception), `82c4a405`+`cb347265` (Codex window detection, fork PR #33),
 `6a2a126d` (workspace next/prev --stdin edge, #34), `dd61a340` (onWorkspaceChanged self-conflicting
 focus, #35), `3e381925` (env-var docs, #36), `cfd4eab2` (menu-bar focus steal, #39), `8c3efca2`
 (accordion floating-insert, #41), `649301b2` (floating unhide-nudge, #42), `dd6b927a`+`1e6ce27e`
-(MacApp AX-destroy-race + wipPids-spin, #43).
+(MacApp AX-destroy-race + wipPids-spin, #43), `4a3aab24`+`d56e1637` (wisprFlow popup detection, #46),
+`0f6b2e78` (ignore kCGNullWindowID, #47).
 
 ### Deliberately NOT ported (skip unless explicitly requested)
 - Upstream PR **#2114** "Add sticky window support" — duplicate of our `layout sticky` (PR #2083/#21).
@@ -94,6 +93,15 @@ focus, #35), `3e381925` (env-var docs, #36), `cfd4eab2` (menu-bar focus steal, #
     restructure, not a fix. **`9c922252`** (socket Python example docs) — the fork has no
     socket-protocol guide section. **`e1310b5d`** (bugPrompt graceful/deadly logging), **`5be63812`**
     (update axDumps) — minor upstream-only tooling/data.
+- Reviewed 2026-07-14 (`649301b2..d56e1637` + open PRs), deferred (not requested / risky):
+  - `a52896b3` (default-config: shorten terminal-launch script) — cosmetic default-config change.
+  - Upstream PR **#2174** "Restore windows after native fullscreen" (422 lines) — large feature.
+  - Upstream PR **#2176** "add get_tree command" — new command/feature.
+  - Upstream PR **#2179** "focus cross-monitor window via private SkyLight API" — risky (private API,
+    touches `Package.swift`/`PrivateApi`).
+  - Upstream PR **#2180** "Isolate window management from unresponsive apps" — reworks MacApp/
+    AxSubscription; conflicts with the fork's AX re-subscribe throttle (`shouldThrottleFailedRegistration`,
+    fork PR #19 / #43).
 - Upstream CI / build-docs / test-infra commits (`e82b4644`/`78e6dd80`/`ebef281e` GH Actions,
   `2f4d5039`, `c28d3469`, `d07cfee4`, `6ec50638`, `e47d5989`, `abd944d7`, `e063e2fe`) — upstream-only
   tooling or docs for skipped features; nothing to port.
