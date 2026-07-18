@@ -18,6 +18,7 @@ let config_help_generated = """
     """
 let debug_windows_help_generated = """
     USAGE: debug-windows [-h|--help] [--window-id <window-id>]
+       OR: debug-windows [-h|--help] --app-bundle-id <app-bundle-id>
     """
 let enable_help_generated = """
     USAGE: enable [-h|--help] toggle
