@@ -20,6 +20,8 @@ extension CmdArgs {
                 command = DebugWindowsCommand(args: self as! DebugWindowsCmdArgs)
             case .enable:
                 command = EnableCommand(args: self as! EnableCmdArgs)
+            case .enableNormalization:
+                command = EnableNormalizationCommand(args: self as! EnableNormalizationCmdArgs)
             case .execAndForget:
                 die("exec-and-forget is parsed separately")
             case .flattenWorkspaceTree:

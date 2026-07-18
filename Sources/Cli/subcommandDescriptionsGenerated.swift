@@ -7,6 +7,7 @@ let subcommandDescriptions = [
     ["  close", "Close the focused window"],
     ["  config", "Query AeroSpace config options"],
     ["  debug-windows", "Interactive command to record Accessibility API debug information to create bug reports"],
+    ["  enable-normalization", "Set or clear a per-workspace override for a refresh-time normalization"],
     ["  enable", "Temporarily disable window management"],
     ["  false", "Return false value"],
     ["  flatten-workspace-tree", "Flatten the tree of the focused workspace"],

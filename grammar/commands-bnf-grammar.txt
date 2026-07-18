@@ -18,6 +18,9 @@ aerospace -h;
     | enable [--fail-if-noop] on [--fail-if-noop]
     | enable [--fail-if-noop] off [--fail-if-noop]
 
+    | enable-normalization [--workspace <workspace>|--fail-if-noop]... <normalization_kind> (on|off) [--workspace <workspace>|--fail-if-noop]...
+    | enable-normalization [--workspace <workspace>] <normalization_kind> (toggle|reset) [--workspace <workspace>]
+
     | false
 
     | flatten-workspace-tree [--workspace <workspace>]
@@ -116,6 +119,7 @@ aerospace -h;
 <workspace> ::= {{{ aerospace list-workspaces --monitor all --empty no }}};
 <number> ::= {{{ true }}};
 <monitor_pattern> ::= {{{ true }}};
+<normalization_kind> ::= flatten-containers|opposite-orientation-for-nested-containers;
 
 <list_workspaces1_flag> ::= --visible [no] | --empty [no] | --format <output_format> | --format <output_format> | --count | --json;
 
