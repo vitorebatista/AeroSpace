@@ -20,19 +20,20 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
 ## Sync state (update this section every sync)
 
 - **Upstream base commit:** `63e0976b` (the fork branched from upstream `main` here).
-- **Last upstream review point:** upstream `main` @ `d56e1637` (2026-07-12), 46 open upstream PRs,
-  reviewed 2026-07-14. New work after this point is what a future sync should look at.
-  (Previous point: `649301b2`, 2026-07-07, reviewed 2026-07-10.) The 2026-07-14 sync ported the
-  wisprFlow popup fix (fork PR #46), the `kCGNullWindowID` ignore (#47), the `window-closed`
-  subscribe event (#48), and the Device Hub compact-view flicker fix (#49). Skipped: `a52896b3`
-  (cosmetic default-config terminal-script shorten) and the deferred features/refactors below.
-- **Released:** `v0.20.3-Beta-fork.5` (43 backports total; fork PRs #46–#49 cut 2026-07-14).
+- **Last upstream review point:** upstream `main` @ `d56e1637` (unchanged — no new `main` commits),
+  53 open upstream PRs, reviewed 2026-07-18. New work after this point is what a future sync should
+  look at. (Previous point: `d56e1637`, reviewed 2026-07-14.) The 2026-07-18 sync found no new
+  upstream-`main` commits; of the three new open PRs it ported `debug-windows --app-bundle-id`
+  (fork PR #51), the `enable-normalization` per-workspace command (#52), and the AeroKit goodies-list
+  docs addition (#50).
+- **Released:** `v0.20.3-Beta-fork.6` (46 backports total; fork PRs #50–#52 cut 2026-07-18).
+  Previous: `v0.20.3-Beta-fork.5` (fork PRs #46–#49, 2026-07-14).
   See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
 
 ### Already backported — DO NOT re-port these
 Upstream PRs (by upstream number): 2103, 2081, 2012, 2024, 2098, 2052, 1944, 1926, 1953, 1529,
 2097, 2080, 1156, 2082, 1665, 1708, 1778, 1932, 2085, 1344, 2083, 1349, 2109, 2116, 2107, 2135,
-2162, 2165, 2181, 2167.
+2162, 2165, 2181, 2167, 2184, 2190, 2188.
 Upstream `main` commits cherry-picked / ported: `19b5999d` (swap MRU), `8b236f1b` (die deadlock),
 `a0f17f88` (parseConfig exception), `82c4a405`+`cb347265` (Codex window detection, fork PR #33),
 `6a2a126d` (workspace next/prev --stdin edge, #34), `dd61a340` (onWorkspaceChanged self-conflicting
@@ -102,6 +103,12 @@ focus, #35), `3e381925` (env-var docs, #36), `cfd4eab2` (menu-bar focus steal, #
   - Upstream PR **#2180** "Isolate window management from unresponsive apps" — reworks MacApp/
     AxSubscription; conflicts with the fork's AX re-subscribe throttle (`shouldThrottleFailedRegistration`,
     fork PR #19 / #43).
+- Reviewed 2026-07-18 (no new `main` commits; new open PRs since 2026-07-14), still deferred:
+  - Upstream PR **#2174** "Restore windows after native fullscreen", **#2176**/#2158 "get_tree/get-tree"
+    (still open, still large features), **#2179** (private SkyLight API), **#2180** (unresponsive-app
+    isolation) — all as noted above.
+  - Upstream PR **#2190**'s follow-up `bsp-shape` normalizer (mentioned in the PR, not yet posted) —
+    revisit when/if upstream opens it.
 - Upstream CI / build-docs / test-infra commits (`e82b4644`/`78e6dd80`/`ebef281e` GH Actions,
   `2f4d5039`, `c28d3469`, `d07cfee4`, `6ec50638`, `e47d5989`, `abd944d7`, `e063e2fe`) — upstream-only
   tooling or docs for skipped features; nothing to port.

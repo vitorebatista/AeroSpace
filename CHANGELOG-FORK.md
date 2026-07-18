@@ -8,6 +8,14 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
+## v0.20.3-Beta-fork.6 (2026-07-18)
+
+New backports since fork.5 (delta past upstream review point `d56e1637`; no new upstream-`main` commits, three new open PRs triaged):
+
+- Add `debug-windows --app-bundle-id <id>` to dump unregistered AX windows — upstream [nikitabobko/AeroSpace#2184](https://github.com/nikitabobko/AeroSpace/pull/2184) (fork PR #51)
+- Add `enable-normalization` command for per-workspace normalization overrides — upstream [nikitabobko/AeroSpace#2190](https://github.com/nikitabobko/AeroSpace/pull/2190) (fork PR #52)
+- Add AeroKit to the trackpad-gestures goodies list (docs) — upstream [nikitabobko/AeroSpace#2188](https://github.com/nikitabobko/AeroSpace/pull/2188) (fork PR #50)
+
 ## v0.20.3-Beta-fork.5 (2026-07-14)
 
 New backports since fork.4 (delta past upstream review point `649301b2`):
