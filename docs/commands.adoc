@@ -33,6 +33,13 @@ include::aerospace-enable.adoc[tags=synopsis]
 include::aerospace-enable.adoc[tags=purpose]
 include::aerospace-enable.adoc[tags=body]
 
+== enable-normalization
+----
+include::aerospace-enable-normalization.adoc[tags=synopsis]
+----
+include::aerospace-enable-normalization.adoc[tags=purpose]
+include::aerospace-enable-normalization.adoc[tags=body]
+
 == exec-and-forget
 ----
 include::aerospace-exec-and-forget.adoc[tags=synopsis]

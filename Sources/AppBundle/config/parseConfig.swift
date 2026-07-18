@@ -270,9 +270,9 @@ func tomlAnyToParsedConfigRecursive(any: Any, _ backtrace: ConfigBacktrace) -> P
                 The config contains:
                 1. usage of 'split' command
                 2. enable-normalization-flatten-containers = true
-                These two settings don't play nicely together. 'split' command has no effect when enable-normalization-flatten-containers is disabled.
+                These two settings don't play nicely together: 'split' has no effect on workspaces where the flatten-containers normalization is enabled.
 
-                My recommendation: keep the normalizations enabled, and prefer 'join-with' over 'split'.
+                My recommendation: keep the normalizations enabled, and prefer 'join-with' over 'split'. Alternatively, disable the normalization on a single workspace with 'aerospace enable-normalization flatten-containers off'.
                 """,
             )]
         }

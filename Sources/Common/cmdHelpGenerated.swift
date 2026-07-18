@@ -19,6 +19,12 @@ let config_help_generated = """
 let debug_windows_help_generated = """
     USAGE: debug-windows [-h|--help] [--window-id <window-id>]
     """
+let enable_normalization_help_generated = """
+    USAGE: enable-normalization [-h|--help] [--workspace <workspace>] <kind> on [--fail-if-noop]
+       OR: enable-normalization [-h|--help] [--workspace <workspace>] <kind> off [--fail-if-noop]
+       OR: enable-normalization [-h|--help] [--workspace <workspace>] <kind> toggle
+       OR: enable-normalization [-h|--help] [--workspace <workspace>] <kind> reset
+    """
 let enable_help_generated = """
     USAGE: enable [-h|--help] toggle
        OR: enable [-h|--help] on [--fail-if-noop]

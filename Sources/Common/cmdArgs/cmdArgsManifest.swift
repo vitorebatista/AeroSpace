@@ -9,6 +9,7 @@ public enum CmdKind: String, CaseIterable, Equatable, Sendable {
     case config
     case debugWindows = "debug-windows"
     case enable
+    case enableNormalization = "enable-normalization"
     case execAndForget = "exec-and-forget"
     case flattenWorkspaceTree = "flatten-workspace-tree"
     case focus
@@ -64,6 +65,8 @@ func initSubcommands() -> [String: any SubCommandParserProtocol] {
                 result[kind.rawValue] = SubCommandParser(DebugWindowsCmdArgs.init)
             case .enable:
                 result[kind.rawValue] = SubCommandParser(parseEnableCmdArgs)
+            case .enableNormalization:
+                result[kind.rawValue] = SubCommandParser(parseEnableNormalizationCmdArgs)
             case .execAndForget:
                 break // exec-and-forget is parsed separately
             case .flattenWorkspaceTree:
