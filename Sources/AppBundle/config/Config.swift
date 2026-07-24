@@ -44,6 +44,7 @@ struct Config: ConvenienceCopyable {
     var startAtLogin: Bool = false
     var autoReloadConfig: Bool = false
     var automaticallyUnhideMacosHiddenApps: Bool = false
+    var focusFollowsAppActivation: FocusFollowsAppActivation = .always
     var newWindowPreventFlicker: Bool = false
     var focusedWindowBorder: Bool = false
     var focusedWindowBorderColor: String = "0xff12B981"
@@ -72,4 +73,12 @@ struct Config: ConvenienceCopyable {
 
 enum DefaultContainerOrientation: String {
     case horizontal, vertical, auto
+}
+
+enum FocusFollowsAppActivation: String {
+    // Any app activation may switch the focused workspace (default, upstream behavior)
+    case always
+    // Cross-workspace activations switch the focused workspace only when they look
+    // user-initiated (a recent mouse click). Input-less self-activations are suppressed.
+    case smart
 }

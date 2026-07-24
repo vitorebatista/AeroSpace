@@ -19,6 +19,24 @@ final class ConfigTest: XCTestCase {
         assertEquals(errors, [])
     }
 
+    func testParseFocusFollowsAppActivation() {
+        assertEquals(defaultConfig.focusFollowsAppActivation, .always)
+        let (config, errors) = parseConfig(
+            """
+            focus-follows-app-activation = 'smart'
+            """,
+        )
+        assertEquals(errors, [])
+        assertEquals(config.focusFollowsAppActivation, .smart)
+
+        let (_, invalidErrors) = parseConfig(
+            """
+            focus-follows-app-activation = 'bogus'
+            """,
+        )
+        assertEquals(invalidErrors.isEmpty, false)
+    }
+
     func testParseNewWindowPreventFlicker() {
         assertEquals(defaultConfig.newWindowPreventFlicker, false)
         let (config, errors) = parseConfig(

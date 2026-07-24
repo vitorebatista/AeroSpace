@@ -120,6 +120,7 @@ private let configParser: [String: any ParserProtocol<Config>] = [
     "start-at-login": Parser(\.startAtLogin, parseBool),
     "auto-reload-config": Parser(\.autoReloadConfig, parseBool),
     "automatically-unhide-macos-hidden-apps": Parser(\.automaticallyUnhideMacosHiddenApps, parseBool),
+    "focus-follows-app-activation": Parser(\.focusFollowsAppActivation, parseFocusFollowsAppActivation),
     "new-window-prevent-flicker": Parser(\.newWindowPreventFlicker, parseBool),
     "focused-window-border": Parser(\.focusedWindowBorder, parseBool),
     "focused-window-border-color": Parser(\.focusedWindowBorderColor, parseString),
@@ -374,6 +375,13 @@ private func parseArrayOfStrings(_ raw: Json, _ backtrace: ConfigBacktrace) -> P
                 parseString(elem, backtrace + .index(index))
             }
         }
+}
+
+private func parseFocusFollowsAppActivation(_ raw: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<FocusFollowsAppActivation> {
+    parseString(raw, backtrace).flatMap {
+        FocusFollowsAppActivation(rawValue: $0)
+            .orFailure(.semantic(backtrace, "Can't parse focus-follows-app-activation '\($0)'. Possible values: always|smart"))
+    }
 }
 
 private func parseDefaultContainerOrientation(_ raw: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<DefaultContainerOrientation> {

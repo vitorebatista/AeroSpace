@@ -100,6 +100,8 @@ enum GlobalObserver {
                 // on a different workspace. It supersedes keyboard/CLI workspace
                 // protection and should be reconciled normally.
                 cancelFocusProtectionAfterWorkspaceSwitch()
+                noteUserClick() // marks the upcoming app activation as user-initiated
+
                 guard let token: RunSessionGuard = .isServerEnabled else { return }
                 try await resetManipulatedWithMouseIfPossible()
                 let mouseLocation = mouseLocation

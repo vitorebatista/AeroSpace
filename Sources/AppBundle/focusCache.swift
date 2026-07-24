@@ -13,6 +13,11 @@ struct NativeFocusRaceProtection {
     // activations well after a new window is visible.  An explicit workspace
     // command is newer user intent and must win over that startup fallout.
     static let workspaceSwitchProtectionDuration: Duration = .seconds(3)
+    // focus-follows-app-activation = 'smart': a mouse click this recent
+    // (Dock, notification banner, window on another monitor) marks a
+    // cross-workspace activation as user-initiated. Without it, the
+    // activation is treated as focus stealing and suppressed.
+    static let userClickIntentDuration: Duration = .seconds(1)
 
     private struct ProtectedClose {
         let workspaceName: String
@@ -32,6 +37,7 @@ struct NativeFocusRaceProtection {
     private var protectedClose: ProtectedClose?
     private var appActivation: AppActivation?
     private var protectedWorkspaceSwitch: ProtectedWorkspaceSwitch?
+    private var lastUserClick: ContinuousClock.Instant?
 
     mutating func recordWindowClose(
         workspaceName: String,
@@ -71,6 +77,20 @@ struct NativeFocusRaceProtection {
 
     mutating func clearWorkspaceSwitch() {
         protectedWorkspaceSwitch = nil
+    }
+
+    mutating func recordUserClick(now: ContinuousClock.Instant = clock.now) {
+        lastUserClick = now
+    }
+
+    func shouldSuppressAppSelfActivation(
+        currentWorkspaceName: String,
+        nativeWorkspaceName: String,
+        now: ContinuousClock.Instant = clock.now,
+    ) -> Bool {
+        if nativeWorkspaceName == currentWorkspaceName { return false }
+        guard let lastUserClick else { return true }
+        return now >= lastUserClick.advanced(by: Self.userClickIntentDuration)
     }
 
     func shouldSuppressAfterWorkspaceSwitch(
@@ -132,6 +152,11 @@ func protectFocusAfterWorkspaceSwitch(workspaceName: String) {
 @MainActor
 func cancelFocusProtectionAfterWorkspaceSwitch() {
     raceProtection.clearWorkspaceSwitch()
+}
+
+@MainActor
+func noteUserClick() {
+    raceProtection.recordUserClick()
 }
 
 @MainActor
@@ -215,6 +240,19 @@ private func updateLastNativeFocusedWindow(_ window: Window?) {
     ) {
         scheduleDeferredNativeFocus(after: delay)
         updateLastNativeFocusedWindow(nativeFocused)
+        return
+    } else if config.focusFollowsAppActivation == .smart,
+              raceProtection.shouldSuppressAppSelfActivation(
+                  currentWorkspaceName: currentWorkspaceName,
+                  nativeWorkspaceName: nativeWorkspaceName,
+              )
+    {
+        deferredNativeFocusTask?.cancel()
+        if let intendedFocus = focus.windowOrNil {
+            intendedFocus.nativeFocus()
+            lastKnownNativeFocusedWindowId = intendedFocus.windowId
+            updateLastNativeFocusedWindow(intendedFocus)
+        }
         return
     }
 
