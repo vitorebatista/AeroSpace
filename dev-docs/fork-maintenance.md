@@ -26,9 +26,14 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
   upstream-`main` commits; of the three new open PRs it ported `debug-windows --app-bundle-id`
   (fork PR #51), the `enable-normalization` per-workspace command (#52), and the AeroKit goodies-list
   docs addition (#50).
-- **Released:** `v0.20.3-Beta-fork.6` (46 backports total; fork PRs #50–#52 cut 2026-07-18).
-  Previous: `v0.20.3-Beta-fork.5` (fork PRs #46–#49, 2026-07-14).
+- **Released:** `v0.20.3-Beta-fork.7` (fork PR #53, cut 2026-07-24) — first release with a
+  fork-original feature: `focus-follows-app-activation = 'always'|'smart'` (suppresses
+  cross-workspace focus stealing by self-activating apps; no upstream equivalent).
+  Previous: `v0.20.3-Beta-fork.6` (46 backports total; fork PRs #50–#52, 2026-07-18).
   See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
+- **2026-07-23 sync check:** no new upstream-`main` commits (still `d56e1637`); 48 open PRs.
+  Only new PR since 2026-07-18: **#2192** "Goodies: add Cyclist" (draft, docs-only one-liner) —
+  deferred until it leaves draft.
 
 ### Already backported — DO NOT re-port these
 Upstream PRs (by upstream number): 2103, 2081, 2012, 2024, 2098, 2052, 1944, 1926, 1953, 1529,

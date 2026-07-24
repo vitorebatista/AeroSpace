@@ -8,7 +8,7 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
-## Unreleased
+## v0.20.3-Beta-fork.7 (2026-07-24)
 
 - New fork feature: `focus-follows-app-activation = 'always'|'smart'` config option — `smart`
   suppresses cross-workspace workspace switches caused by apps activating themselves (focus
