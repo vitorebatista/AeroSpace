@@ -48,6 +48,17 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 # Also see: https://nikitabobko.github.io/AeroSpace/goodies#disable-hide-app
 automatically-unhide-macos-hidden-apps = false
 
+# What to do when an app activates itself while its window lives on another workspace.
+# Possible values: always|smart
+#   'always' - follow the activation and switch to that workspace (upstream behavior)
+#   'smart'  - switch only when the activation looks user-initiated (preceded by a mouse
+#              click: Dock icon, notification banner, window on another monitor).
+#              Input-less self-activations ("focus stealing") no longer switch your
+#              workspace. Note: cmd-tab is keyboard-driven, so under 'smart' it won't
+#              auto-switch either - use the workspace keybinding instead.
+# Fallback value (if you omit the key): focus-follows-app-activation = 'always'
+focus-follows-app-activation = 'always'
+
 # When a new window opens, move it offscreen the instant it's detected so macOS never
 # paints it at its native spawn position (usually screen center) before AeroSpace tiles it.
 # Reduces the flash/jump you see when a window appears and the tiles rearrange.

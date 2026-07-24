@@ -131,4 +131,46 @@ final class FocusCacheTest: XCTestCase {
             now: now,
         ))
     }
+
+    func testAppSelfActivationIsSuppressedWithoutRecentUserClick() {
+        let protection = NativeFocusRaceProtection()
+
+        XCTAssertTrue(protection.shouldSuppressAppSelfActivation(
+            currentWorkspaceName: "1",
+            nativeWorkspaceName: "W",
+            now: now,
+        ))
+    }
+
+    func testAppSelfActivationIsAllowedAfterRecentUserClick() {
+        var protection = NativeFocusRaceProtection()
+        protection.recordUserClick(now: now)
+
+        XCTAssertFalse(protection.shouldSuppressAppSelfActivation(
+            currentWorkspaceName: "1",
+            nativeWorkspaceName: "W",
+            now: now.advanced(by: .milliseconds(500)),
+        ))
+    }
+
+    func testAppSelfActivationClickIntentExpires() {
+        var protection = NativeFocusRaceProtection()
+        protection.recordUserClick(now: now)
+
+        XCTAssertTrue(protection.shouldSuppressAppSelfActivation(
+            currentWorkspaceName: "1",
+            nativeWorkspaceName: "W",
+            now: now.advanced(by: NativeFocusRaceProtection.userClickIntentDuration),
+        ))
+    }
+
+    func testAppSelfActivationOnSameWorkspaceIsNeverSuppressed() {
+        let protection = NativeFocusRaceProtection()
+
+        XCTAssertFalse(protection.shouldSuppressAppSelfActivation(
+            currentWorkspaceName: "1",
+            nativeWorkspaceName: "1",
+            now: now,
+        ))
+    }
 }

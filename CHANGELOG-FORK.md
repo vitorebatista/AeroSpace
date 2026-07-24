@@ -8,6 +8,13 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
+## Unreleased
+
+- New fork feature: `focus-follows-app-activation = 'always'|'smart'` config option — `smart`
+  suppresses cross-workspace workspace switches caused by apps activating themselves (focus
+  stealing) unless the activation was preceded by a mouse click. No upstream equivalent;
+  i3 precedent: `focus_on_window_activation`. (fork PR #53)
+
 ## v0.20.3-Beta-fork.6 (2026-07-18)
 
 New backports since fork.5 (delta past upstream review point `d56e1637`; no new upstream-`main` commits, three new open PRs triaged):
