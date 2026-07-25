@@ -14,6 +14,13 @@ by the upstream maintainer.
   suppresses cross-workspace workspace switches caused by apps activating themselves (focus
   stealing) unless the activation was preceded by a mouse click. No upstream equivalent;
   i3 precedent: `focus_on_window_activation`. (fork PR #53)
+- **KNOWN ISSUE with `smart` (field report 2026-07-24, unfixed):** windows moved to another
+  workspace can reappear on the current workspace. Suspected: the suppression heuristic can't
+  tell a keyboard-driven `move-node-to-workspace` (window left natively focused cross-workspace,
+  no click) from a focus steal, and after suppressing it never re-layouts the offender's
+  workspace, so a self-raised/re-positioned window gets re-filed into the visible workspace.
+  Keep the default `'always'` until fixed. Fix direction: exempt AeroSpace-initiated commands
+  from suppression + force-layout the offender's workspace after suppressing.
 
 ## v0.20.3-Beta-fork.6 (2026-07-18)
 

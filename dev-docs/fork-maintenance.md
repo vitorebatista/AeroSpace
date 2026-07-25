@@ -29,6 +29,13 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
 - **Released:** `v0.20.3-Beta-fork.7` (fork PR #53, cut 2026-07-24) — first release with a
   fork-original feature: `focus-follows-app-activation = 'always'|'smart'` (suppresses
   cross-workspace focus stealing by self-activating apps; no upstream equivalent).
+  **`smart` has a known regression** (moved windows reappear on the current workspace) —
+  see CHANGELOG-FORK.md fork.7 "KNOWN ISSUE" for details/fix direction before touching it.
+- **Ad-hoc signing gotcha (hit on fork.7 install):** every fork release re-signs ad-hoc, so
+  macOS invalidates the Accessibility grant on upgrade; the app then resets its own TCC entry
+  and exits at startup (`checkAccessibilityPermissions`). After replacing the app the user must
+  re-grant: System Settings → Privacy & Security → Accessibility (add via + if missing), then
+  relaunch. Expect this on every `-fork.N` upgrade.
   Previous: `v0.20.3-Beta-fork.6` (46 backports total; fork PRs #50–#52, 2026-07-18).
   See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
 - **2026-07-23 sync check:** no new upstream-`main` commits (still `d56e1637`); 48 open PRs.
