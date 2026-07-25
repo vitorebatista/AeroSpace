@@ -8,6 +8,18 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
+## v0.20.3-Beta-fork.8 (2026-07-24)
+
+- Socket protocol versions handshake — the server now answers the 4-byte protocol-version
+  handshake modern upstream clients perform on connect, instead of deadlocking on it. Fixes
+  third-party socket clients (AeroKit, aerospace-swipe, the upstream Homebrew-cask CLI)
+  hanging or degrading to CLI shelling against the fork server. Also ports the guide's new
+  "Socket protocol" documentation section.
+  (Backports upstream commit [`8413641c`](https://github.com/nikitabobko/AeroSpace/commit/8413641c),
+  upstream issue [#1513](https://github.com/nikitabobko/AeroSpace/issues/1513); fork PR #54)
+  - Fork adaptations: upstream's `getIgnoringErrorsOrNil()` → the fork's `Result.getOrNil()`;
+    upstream's `EvalCommandTest` tweak dropped (eval command family not ported).
+
 ## v0.20.3-Beta-fork.7 (2026-07-24)
 
 - New fork feature: `focus-follows-app-activation = 'always'|'smart'` config option — `smart`

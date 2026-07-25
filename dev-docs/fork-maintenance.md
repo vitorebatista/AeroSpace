@@ -26,7 +26,13 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
   upstream-`main` commits; of the three new open PRs it ported `debug-windows --app-bundle-id`
   (fork PR #51), the `enable-normalization` per-workspace command (#52), and the AeroKit goodies-list
   docs addition (#50).
-- **Released:** `v0.20.3-Beta-fork.7` (fork PR #53, cut 2026-07-24) — first release with a
+- **Released:** `v0.20.3-Beta-fork.8` (fork PR #54, cut 2026-07-24) — backports the upstream
+  **socket protocol versions handshake** (`8413641c`, previously on the deferred list; explicitly
+  requested to fix third-party socket clients — AeroKit, aerospace-swipe, upstream-cask CLI —
+  hanging against the fork server). Adaptations: `getIgnoringErrorsOrNil()` → `getOrNil()`,
+  EvalCommandTest tweak dropped, guide's Socket-protocol section appended at the end (fork guide
+  has no Deprecations section).
+  Previous: `v0.20.3-Beta-fork.7` (fork PR #53, cut 2026-07-24) — first release with a
   fork-original feature: `focus-follows-app-activation = 'always'|'smart'` (suppresses
   cross-workspace focus stealing by self-activating apps; no upstream equivalent).
   **`smart` has a known regression** (moved windows reappear on the current workspace) —
@@ -52,7 +58,7 @@ Upstream `main` commits cherry-picked / ported: `19b5999d` (swap MRU), `8b236f1b
 focus, #35), `3e381925` (env-var docs, #36), `cfd4eab2` (menu-bar focus steal, #39), `8c3efca2`
 (accordion floating-insert, #41), `649301b2` (floating unhide-nudge, #42), `dd6b927a`+`1e6ce27e`
 (MacApp AX-destroy-race + wipPids-spin, #43), `4a3aab24`+`d56e1637` (wisprFlow popup detection, #46),
-`0f6b2e78` (ignore kCGNullWindowID, #47).
+`0f6b2e78` (ignore kCGNullWindowID, #47), `8413641c` (socket protocol versions handshake, #54).
 
 ### Deliberately NOT ported (skip unless explicitly requested)
 - Upstream PR **#2114** "Add sticky window support" — duplicate of our `layout sticky` (PR #2083/#21).
@@ -87,7 +93,8 @@ focus, #35), `3e381925` (env-var docs, #36), `cfd4eab2` (menu-bar focus steal, #
     (`45939229`), **`Parsed`→`ResOrStr`/`ConfigParseDiagnostic`** rename (`c233adb0`), warnings array
     → `ConfigParserContext` (`5e9fdc92`), "Avoid TOML table syntax" (`30e461d7`), and the BREAKING
     "forbid empty `if` in on-window-detected" (`8ceabe9b`) — config-syntax changes that conflict.
-  - **Socket-protocol versions handshake** (`8413641c`), `getNextPrevWorkspace` error-message chain
+  - ~~Socket-protocol versions handshake (`8413641c`)~~ — **ported 2026-07-24 as fork PR #54**
+    (explicitly requested), `getNextPrevWorkspace` error-message chain
     (`1aeb8090`/`73a9137c`/`6e472aa3`/`310bd8e1`), accessibility-permission flow (`fb8b1df6`),
     `onWorkspaceChanged` self-conflicting-focus guard (`dd61a340` — already ported as #35).
   - Website/docs-only (`d14b4314`, `3d7fee52`, `61c874bc`, `6e4a2d2c`) and CI (`7d2654d5`).
