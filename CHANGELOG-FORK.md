@@ -8,6 +8,53 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
+## v0.20.3-Beta-fork.9 (2026-08-27)
+
+New backports since fork.8 (delta past upstream review point `d56e1637`; 2 new upstream-`main`
+commits — both skipped, see below — and 17 new open upstream PRs triaged). Bug fixes only, plus one
+tree-model fix; no new features.
+
+- Fix iTerm2 Settings window detection — the Settings window has no fullscreen button, so the
+  iTerm2 heuristic classified it as not-a-window; windows whose `AXIdentifier` is
+  `mainPreferencesWindow` are now exempt from that check. Covered by a new `axDumps` fixture.
+  (Upstream [nikitabobko/AeroSpace#2244](https://github.com/nikitabobko/AeroSpace/pull/2244); fork PR #55)
+- Fix crash: cache `isUnitTest` instead of calling `NSClassFromString` on a hot path — the ObjC
+  class lookup ran on every `mainMonitor` / `monitors` access and could crash with `EXC_BAD_ACCESS`
+  inside dyld during display reconfiguration.
+  (Upstream [nikitabobko/AeroSpace#2232](https://github.com/nikitabobko/AeroSpace/pull/2232); fork PR #56)
+  - Fork adaptation: comment references the fork's `mainMonitor` / `monitors` (upstream has since
+    renamed them to `mainMonitorInfo` / `monitorInfos`).
+- `balance-sizes`: preserve the container's total weight instead of resetting every child to the
+  constant `1`. A `resize` later in the same binding's command list no longer works against a total
+  that doesn't match the monitor, so windows stop jumping.
+  (Upstream [nikitabobko/AeroSpace#2211](https://github.com/nikitabobko/AeroSpace/pull/2211),
+  upstream issue [#1837](https://github.com/nikitabobko/AeroSpace/issues/1837); fork PR #57)
+  - Fork adaptation: tests rewritten against the fork's test API (direct command construction
+    instead of upstream's `parseCommand` helper).
+- `FocusCommand`: fix the `is already unbound` crash when two `focus` commands race —
+  `makeFloatingWindowsSeenAsTiling` awaits `getCenter()` twice, and a concurrent `focus` could
+  unbind the window in between. Both suspension points now re-validate the window.
+  (Upstream [nikitabobko/AeroSpace#2228](https://github.com/nikitabobko/AeroSpace/pull/2228),
+  upstream issue [#1311](https://github.com/nikitabobko/AeroSpace/issues/1311); fork PR #58)
+  - Fork adaptations: floating windows are direct children of `Workspace` here (upstream's
+    `floatingWindowsContainer` refactor isn't ported), so the guard is `window.parent === workspace`;
+    tests use `Task { @MainActor in }` instead of upstream's `Task.startUnstructured`.
+- Insert replaced native-tab windows into their old tree slot — apps that fold native tabs into one
+  titlebar (Finder, Ghostty, Fork) keep the old tab's AX object alive but drop it from `AXWindows`,
+  so switching tabs left a phantom tile and re-placed the visible tab via `on-window-detected`/MRU.
+  The stale window is now retired and the replacement spliced into the exact slot (parent, index,
+  weight, floating size, fullscreen state, cached geometry).
+  (Upstream [nikitabobko/AeroSpace#2225](https://github.com/nikitabobko/AeroSpace/pull/2225); fork PR #59)
+  - Fork adaptations: the fork's `getFocusedWindow()` / `runInLoop` take no `CancellationMode` and
+    guard on `threadGuardedOrNil` (AX-destroy-race hardening, fork PR #43), so the new logic sits
+    inside those guards and uses the unwrapped `axApp`.
+
+Notable skips this cycle: upstream PRs #2238 / #2245 patch `mouse/focusFollowsMouse.swift`, which
+this fork never ported; #2220 is a duplicate of #2024, already in the fork; #2213 removes
+`lastNativeFocusedWindowId`, which the #2225 backport above depends on. Six feature PRs
+(#2207, #2217, #2229, #2240, #2241, #2242) were deferred — this fork's bar is bug fixes plus small
+safe features, and none were requested.
+
 ## v0.20.3-Beta-fork.8 (2026-07-24)
 
 - Socket protocol versions handshake — the server now answers the 4-byte protocol-version

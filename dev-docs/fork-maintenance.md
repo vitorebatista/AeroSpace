@@ -20,13 +20,18 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
 ## Sync state (update this section every sync)
 
 - **Upstream base commit:** `63e0976b` (the fork branched from upstream `main` here).
-- **Last upstream review point:** upstream `main` @ `d56e1637` (unchanged — no new `main` commits),
-  53 open upstream PRs, reviewed 2026-07-18. New work after this point is what a future sync should
-  look at. (Previous point: `d56e1637`, reviewed 2026-07-14.) The 2026-07-18 sync found no new
-  upstream-`main` commits; of the three new open PRs it ported `debug-windows --app-bundle-id`
-  (fork PR #51), the `enable-normalization` per-workspace command (#52), and the AeroKit goodies-list
-  docs addition (#50).
-- **Released:** `v0.20.3-Beta-fork.8` (fork PR #54, cut 2026-07-24) — backports the upstream
+- **Last upstream review point:** upstream `main` @ `c548c7f8`, 59 open upstream PRs, reviewed
+  2026-08-27. New work after this point is what a future sync should look at. (Previous point:
+  `d56e1637`, reviewed 2026-07-18/07-23.) The 2026-08-27 sync found 2 new `main` commits — both
+  skipped: `c548c7f8` (`Monitor` → `MonitorInfo` rename, part of the "track upstream main" milestone)
+  and `ae2aa7aa` (upstream-only PR-labelling CI) — and 17 new open PRs, of which it ported #2244,
+  #2232, #2211, #2228 and #2225 as fork PRs #55–#59.
+- **Released:** `v0.20.3-Beta-fork.9` (fork PRs #55–#59, cut 2026-08-27) — bug-fix-only cycle:
+  iTerm2 Settings window detection (#55), `isUnitTest` hot-path crash (#56), `balance-sizes` total
+  weight (#57), `FocusCommand` "is already unbound" race crash (#58), native-tab window replacement
+  into the old tree slot (#59). See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md) for the per-PR fork
+  adaptations.
+  Previous: `v0.20.3-Beta-fork.8` (fork PR #54, cut 2026-07-24) — backports the upstream
   **socket protocol versions handshake** (`8413641c`, previously on the deferred list; explicitly
   requested to fix third-party socket clients — AeroKit, aerospace-swipe, upstream-cask CLI —
   hanging against the fork server). Adaptations: `getIgnoringErrorsOrNil()` → `getOrNil()`,
@@ -51,7 +56,7 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
 ### Already backported — DO NOT re-port these
 Upstream PRs (by upstream number): 2103, 2081, 2012, 2024, 2098, 2052, 1944, 1926, 1953, 1529,
 2097, 2080, 1156, 2082, 1665, 1708, 1778, 1932, 2085, 1344, 2083, 1349, 2109, 2116, 2107, 2135,
-2162, 2165, 2181, 2167, 2184, 2190, 2188.
+2162, 2165, 2181, 2167, 2184, 2190, 2188, 2244, 2232, 2211, 2228, 2225.
 Upstream `main` commits cherry-picked / ported: `19b5999d` (swap MRU), `8b236f1b` (die deadlock),
 `a0f17f88` (parseConfig exception), `82c4a405`+`cb347265` (Codex window detection, fork PR #33),
 `6a2a126d` (workspace next/prev --stdin edge, #34), `dd61a340` (onWorkspaceChanged self-conflicting
@@ -128,6 +133,31 @@ focus, #35), `3e381925` (env-var docs, #36), `cfd4eab2` (menu-bar focus steal, #
     isolation) — all as noted above.
   - Upstream PR **#2190**'s follow-up `bsp-shape` normalizer (mentioned in the PR, not yet posted) —
     revisit when/if upstream opens it.
+- Reviewed 2026-08-27 (`d56e1637..c548c7f8` + 17 new open PRs), deferred:
+  - Upstream `main` `c548c7f8` (`Monitor` → `MonitorInfo` rename) — refactor, belongs to the "track
+    upstream main" milestone. `ae2aa7aa` (auto-label incoming PRs) — upstream-only CI.
+  - Upstream PRs **#2238** and **#2245** (focus-follows-mouse over Control Center / transient
+    overlays) — **not portable**: both patch `Sources/AppBundle/mouse/focusFollowsMouse.swift`, and
+    the fork never ported the focus-follows-mouse feature (deferred 2026-07-10). Revisit only if
+    that feature is ever backported.
+  - Upstream PR **#2220** ("on-window-detected 'layout floating' leaves the window at its tile
+    origin") — **duplicate**: the fork already fixed this via upstream #2024 (fork commit
+    `bad62837`, `isAwaitingOnWindowDetected`). The only delta #2220 adds on top is excluding
+    awaiting windows from `layoutAccordion`'s index/padding math; marginal, and #2220 is unmerged.
+  - Upstream PR **#2213** ("focus can land on a different window of the same app") — **conflicts
+    with fork PR #59**: it deletes `MacApp.lastNativeFocusedWindowId`, which the #2225 native-tab
+    backport depends on. Also `mergeable=dirty` upstream, needs `Task.startUnstructured` (absent in
+    the fork), and overlaps the fork's own `focus-follows-app-activation` feature. Revisit if
+    upstream merges it.
+  - Upstream PR **#2206** ("Fix native tab window replacement") — competing implementation of the
+    same bug as #2225; **#2225 was chosen** (fork PR #59). Don't port #2206 on top.
+  - Feature PRs, deferred as not requested (fork bar is bug fixes + small safe features):
+    **#2207** (`list-windows --sort-by`), **#2217** (`list-windows --layout` filter), **#2229**
+    (`list-tree` command — same family as the already-deferred #2176/#2158 `get_tree`), **#2240**
+    (`default-workspace-monitor` config), **#2241** (`menu-bar-item` config), **#2242**
+    (`non-empty-workspaces-root-containers-layout-on-startup` → `tiles|accordion|smart` selector).
+  - Still-draft: **#2192** (Goodies: add Cyclist), **#2201** (Restore focus after transient dialogs
+    close) — revisit when they leave draft.
 - Upstream CI / build-docs / test-infra commits (`e82b4644`/`78e6dd80`/`ebef281e` GH Actions,
   `2f4d5039`, `c28d3469`, `d07cfee4`, `6ec50638`, `e47d5989`, `abd944d7`, `e063e2fe`) — upstream-only
   tooling or docs for skipped features; nothing to port.
