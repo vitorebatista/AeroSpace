@@ -163,19 +163,22 @@ func togglePerMonitorGaps(
 @MainActor
 struct GapsSection: View {
     @Binding var draft: ConfigTomlWriter.ConfigDraft
+    /// Forwarded to each `GapRow` so it can tell a Revert (or the reload after a
+    /// successful Save) apart from its own edits — see `GapRow.lastKnownRules`.
+    let loadGeneration: Int
     let onEdit: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup("Inner gaps", footer: "Space between tiled windows.") {
-                GapRow(label: "Horizontal", draft: $draft, path: \.inner.horizontal, onEdit: onEdit)
-                GapRow(label: "Vertical", draft: $draft, path: \.inner.vertical, onEdit: onEdit)
+                GapRow(label: "Horizontal", draft: $draft, path: \.inner.horizontal, loadGeneration: loadGeneration, onEdit: onEdit)
+                GapRow(label: "Vertical", draft: $draft, path: \.inner.vertical, loadGeneration: loadGeneration, onEdit: onEdit)
             }
             SettingsGroup("Outer gaps", footer: "Space between the tiling area and the screen edges.") {
-                GapRow(label: "Left", draft: $draft, path: \.outer.left, onEdit: onEdit)
-                GapRow(label: "Right", draft: $draft, path: \.outer.right, onEdit: onEdit)
-                GapRow(label: "Top", draft: $draft, path: \.outer.top, onEdit: onEdit)
-                GapRow(label: "Bottom", draft: $draft, path: \.outer.bottom, onEdit: onEdit)
+                GapRow(label: "Left", draft: $draft, path: \.outer.left, loadGeneration: loadGeneration, onEdit: onEdit)
+                GapRow(label: "Right", draft: $draft, path: \.outer.right, loadGeneration: loadGeneration, onEdit: onEdit)
+                GapRow(label: "Top", draft: $draft, path: \.outer.top, loadGeneration: loadGeneration, onEdit: onEdit)
+                GapRow(label: "Bottom", draft: $draft, path: \.outer.bottom, loadGeneration: loadGeneration, onEdit: onEdit)
             }
         }
     }
@@ -192,12 +195,24 @@ private struct GapRow: View {
     let label: String
     @Binding var draft: ConfigTomlWriter.ConfigDraft
     let path: WritableKeyPath<Gaps, DynamicConfigValue<Int>>
+    let loadGeneration: Int
     let onEdit: () -> Void
 
     /// Remembered across a "Per monitor" toggle off→on round trip — see
     /// `togglePerMonitorGaps`. Lives here, not in the per-monitor row editor below,
     /// because that editor is unmounted (and its own state destroyed) the moment the
     /// toggle goes off.
+    ///
+    /// This is exactly the kind of state `SyncedKeyValueRows` guards against going stale
+    /// via its own `.onChange(of: read())` — but there, "did we write this ourselves"
+    /// can be answered by comparing the source's value to what our own commit would
+    /// produce. Here it can't: turning per-monitor off always writes the *same*
+    /// `.constant(fallback)` a Revert could also reload, so no value comparison can
+    /// tell "I just wrote this" apart from "the document came back looking the same by
+    /// coincidence" (see `SettingsModel.loadGeneration`'s doc comment for the concrete
+    /// scenario this defends against). `loadGeneration` sidesteps the ambiguity by
+    /// making the reload itself the signal, independent of whether the reloaded value
+    /// happens to match.
     @State private var lastKnownRules: [PerMonitorValue<Int>] = []
 
     var body: some View {
@@ -255,6 +270,13 @@ private struct GapRow: View {
                 )
                 .padding(.leading, 98)
             }
+        }
+        .onChange(of: loadGeneration) { _ in
+            // The document was reloaded (Revert, or the reload after a successful Save) —
+            // whatever this field's memory referred to may no longer exist, even if the
+            // reloaded value happens to read the same. Drop it rather than risk
+            // resurrecting rules the user just discarded.
+            lastKnownRules = []
         }
     }
 }

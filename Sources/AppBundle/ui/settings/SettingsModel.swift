@@ -28,6 +28,13 @@ public final class SettingsModel: ObservableObject {
     @Published var isDirty = false
     @Published var status: SettingsStatus?
     @Published var wholeFileText = ""
+    /// Bumped every time `load()` reseeds `draft` from disk (Revert, or the reload at the
+    /// end of a successful `save()`). Sections that keep their own local "what was here
+    /// before" memory across a value round trip — see `GapRow.lastKnownRules` — watch this
+    /// to know when that memory refers to a document that no longer exists, since the
+    /// value it was shadowing can come back looking identical (e.g. `.constant(5)` both
+    /// before and after a revert) with no other signal that it changed out from under them.
+    @Published private(set) var loadGeneration = 0
 
     /// The file we read and will write. `nil` until `load()`.
     private(set) var targetUrl: URL?
@@ -49,6 +56,7 @@ public final class SettingsModel: ObservableObject {
     func load() {
         status = nil
         isDirty = false
+        loadGeneration += 1
 
         switch findCustomConfigUrl() {
             case .ambiguousConfigError(let candidates):

@@ -101,7 +101,7 @@ struct SettingsView: View {
             case .layout: LayoutSection(draft: $model.draft, onEdit: markDirty)
             case .focus: FocusSection(draft: $model.draft, onEdit: markDirty)
             case .windowBorder: WindowBorderSection(draft: $model.draft, onEdit: markDirty)
-            case .gaps: GapsSection(draft: $model.draft, onEdit: markDirty)
+            case .gaps: GapsSection(draft: $model.draft, loadGeneration: model.loadGeneration, onEdit: markDirty)
             case .workspaces: WorkspacesSection(draft: $model.draft, onEdit: markDirty)
             case .keyMapping: KeyMappingSection(draft: $model.draft, onEdit: markDirty)
             case .exec: ExecSection(draft: $model.draft, onEdit: markDirty)
