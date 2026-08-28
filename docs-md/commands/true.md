@@ -1,5 +1,5 @@
 ---
-title: true
+title: "true"
 description: Return true value
 section: 1
 ---
