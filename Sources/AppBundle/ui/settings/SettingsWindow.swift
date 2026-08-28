@@ -105,8 +105,31 @@ struct SettingsView: View {
             case .workspaces: WorkspacesSection(draft: $model.draft, onEdit: markDirty)
             case .keyMapping: KeyMappingSection(draft: $model.draft, onEdit: markDirty)
             case .exec: ExecSection(draft: $model.draft, onEdit: markDirty)
-            // Added in Task 8
-            default: Text("Not implemented yet").foregroundStyle(.secondary)
+            case .keybindings:
+                SettingsRawSection(
+                    title: "Keybindings",
+                    help: "Binding modes and their key bindings, as TOML. Each binding maps a key combination to one or more AeroSpace commands.",
+                    docsHint: "Tables: [mode.<name>.binding]. Example: alt-h = 'focus left'",
+                    text: $model.draft.rawKeybindings,
+                    preamble: keybindingsPreamble(preset: model.draft.keyMappingPreset, notationOverrides: model.draft.keyNotationToKeyCode),
+                    onEdit: markDirty,
+                )
+            case .windowRules:
+                SettingsRawSection(
+                    title: "Window rules",
+                    help: "Rules run when a window is first detected. Matchers: app-id, app-id-regex-substring, app-name-regex-substring, window-title-regex-substring, workspace, during-aerospace-startup.",
+                    docsHint: "Tables: [[on-window-detected]] with an 'if' matcher and a mandatory 'run'.",
+                    text: $model.draft.rawWindowRules,
+                    onEdit: markDirty,
+                )
+            case .callbacks:
+                SettingsRawSection(
+                    title: "Callbacks",
+                    help: "Commands AeroSpace runs on lifecycle events.",
+                    docsHint: "Keys: " + ConfigTomlWriter.callbackKeys.joined(separator: ", "),
+                    text: $model.draft.rawCallbacks,
+                    onEdit: markDirty,
+                )
         }
     }
 
