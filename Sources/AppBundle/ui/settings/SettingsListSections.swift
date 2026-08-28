@@ -133,6 +133,31 @@ func monitorDescriptionText(_ description: MonitorDescription) -> String {
     }
 }
 
+/// Decides the next value for the "Per monitor" checkbox, and what to remember about the
+/// per-monitor rules afterward.
+///
+/// Turning per-monitor off never discards `current`'s rules — the file only ever stores a
+/// `.constant` once it's off, but the rules are handed back as `rememberedRules` for the
+/// caller to hold (in `@State`, since the row editor itself gets torn down while hidden).
+/// Turning it back on restores those verbatim, rather than rebuilding a single synthetic
+/// `main` rule from the fallback — the fix for a real defect where a toggle off→on round
+/// trip silently dropped every rule but one.
+func togglePerMonitorGaps(
+    isPerMonitor: Bool,
+    current: DynamicConfigValue<Int>,
+    rememberedRules: [PerMonitorValue<Int>],
+) -> (value: DynamicConfigValue<Int>, rememberedRules: [PerMonitorValue<Int>]) {
+    switch (isPerMonitor, current) {
+        case (true, .constant(let int)):
+            let rules = rememberedRules.isEmpty ? [PerMonitorValue(description: .main, value: int)] : rememberedRules
+            return (.perMonitor(rules, default: int), rememberedRules)
+        case (false, .perMonitor(let rules, let fallback)):
+            return (.constant(fallback), rules)
+        default:
+            return (current, rememberedRules)
+    }
+}
+
 // MARK: - Gaps
 
 @MainActor
@@ -143,23 +168,39 @@ struct GapsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup("Inner gaps", footer: "Space between tiled windows.") {
-                gapRow("Horizontal", \.inner.horizontal)
-                gapRow("Vertical", \.inner.vertical)
+                GapRow(label: "Horizontal", draft: $draft, path: \.inner.horizontal, onEdit: onEdit)
+                GapRow(label: "Vertical", draft: $draft, path: \.inner.vertical, onEdit: onEdit)
             }
             SettingsGroup("Outer gaps", footer: "Space between the tiling area and the screen edges.") {
-                gapRow("Left", \.outer.left)
-                gapRow("Right", \.outer.right)
-                gapRow("Top", \.outer.top)
-                gapRow("Bottom", \.outer.bottom)
+                GapRow(label: "Left", draft: $draft, path: \.outer.left, onEdit: onEdit)
+                GapRow(label: "Right", draft: $draft, path: \.outer.right, onEdit: onEdit)
+                GapRow(label: "Top", draft: $draft, path: \.outer.top, onEdit: onEdit)
+                GapRow(label: "Bottom", draft: $draft, path: \.outer.bottom, onEdit: onEdit)
             }
         }
     }
+}
 
-    /// One gap value: a number, plus optional per-monitor overrides. A per-monitor gap is
-    /// a list of monitor patterns with a fallback, so the row grows into a small list when
-    /// "Per monitor" is enabled.
-    @ViewBuilder
-    private func gapRow(_ label: String, _ path: WritableKeyPath<Gaps, DynamicConfigValue<Int>>) -> some View {
+/// One gap value: a number, plus optional per-monitor overrides. A per-monitor gap is a
+/// list of monitor patterns with a fallback, so the row grows into a small list when "Per
+/// monitor" is enabled.
+///
+/// A real `View` (not a `@ViewBuilder` function) so each of the six gap fields gets its
+/// own `@State`, independent of the other five — needed for `lastKnownRules` below.
+@MainActor
+private struct GapRow: View {
+    let label: String
+    @Binding var draft: ConfigTomlWriter.ConfigDraft
+    let path: WritableKeyPath<Gaps, DynamicConfigValue<Int>>
+    let onEdit: () -> Void
+
+    /// Remembered across a "Per monitor" toggle off→on round trip — see
+    /// `togglePerMonitorGaps`. Lives here, not in the per-monitor row editor below,
+    /// because that editor is unmounted (and its own state destroyed) the moment the
+    /// toggle goes off.
+    @State private var lastKnownRules: [PerMonitorValue<Int>] = []
+
+    var body: some View {
         let value = draft.gaps[keyPath: path]
         VStack(alignment: .leading, spacing: 4) {
             HStack {
@@ -183,13 +224,13 @@ struct GapsSection: View {
                 Toggle("Per monitor", isOn: Binding(
                     get: { if case .perMonitor = value { true } else { false } },
                     set: { isPerMonitor in
-                        switch (isPerMonitor, draft.gaps[keyPath: path]) {
-                            case (true, .constant(let int)):
-                                draft.gaps[keyPath: path] = .perMonitor([PerMonitorValue(description: .main, value: int)], default: int)
-                            case (false, .perMonitor(_, let fallback)):
-                                draft.gaps[keyPath: path] = .constant(fallback)
-                            default: break
-                        }
+                        let result = togglePerMonitorGaps(
+                            isPerMonitor: isPerMonitor,
+                            current: draft.gaps[keyPath: path],
+                            rememberedRules: lastKnownRules,
+                        )
+                        draft.gaps[keyPath: path] = result.value
+                        lastKnownRules = result.rememberedRules
                         onEdit()
                     },
                 ))

@@ -89,4 +89,57 @@ final class KeyValueRowsLogicTest: XCTestCase {
             PerMonitorValue(description: .main, value: 20),
         ])
     }
+
+    // MARK: - togglePerMonitorGaps
+
+    /// Covers a real defect found in review: toggling "Per monitor" off then back on used
+    /// to silently discard every rule but one (off collapsed straight to `.constant`, on
+    /// rebuilt only a single synthetic `main` rule from the fallback). These pin the fix —
+    /// off hands the rules back as `rememberedRules` instead of dropping them, and on
+    /// restores them verbatim when there's something to restore.
+
+    func testTurningOffRemembersRulesAndWritesAConstant() {
+        let current = DynamicConfigValue.perMonitor(
+            [PerMonitorValue(description: .main, value: 20), PerMonitorValue(description: .secondary, value: 10)],
+            default: 5,
+        )
+        let result = togglePerMonitorGaps(isPerMonitor: false, current: current, rememberedRules: [])
+        assertEquals(result.value, .constant(5))
+        assertEquals(result.rememberedRules, [
+            PerMonitorValue(description: .main, value: 20),
+            PerMonitorValue(description: .secondary, value: 10),
+        ])
+    }
+
+    func testTurningBackOnRestoresRememberedRulesInsteadOfASyntheticOne() {
+        let remembered = [PerMonitorValue(description: .main, value: 20), PerMonitorValue(description: .secondary, value: 10)]
+        let result = togglePerMonitorGaps(isPerMonitor: true, current: .constant(5), rememberedRules: remembered)
+        assertEquals(result.value, .perMonitor(remembered, default: 5))
+        // The full round trip from the review's example: main=20, secondary=10, default=5
+        // survives off→on intact, not collapsed to main=5, default=5.
+        assertEquals(result.value, .perMonitor(
+            [PerMonitorValue(description: .main, value: 20), PerMonitorValue(description: .secondary, value: 10)],
+            default: 5,
+        ))
+    }
+
+    func testTurningOnWithNothingRememberedBuildsASingleSyntheticMainRule() {
+        // First-ever enable, or after the state that used to lose everything: falls back
+        // to one rule seeded from the current constant, same as the original behavior.
+        let result = togglePerMonitorGaps(isPerMonitor: true, current: .constant(7), rememberedRules: [])
+        assertEquals(result.value, .perMonitor([PerMonitorValue(description: .main, value: 7)], default: 7))
+    }
+
+    func testMismatchedToggleStateIsANoOp() {
+        // Turning "on" a field that's already per-monitor, or "off" one that's already
+        // constant, can't happen from the checkbox itself but must not corrupt state.
+        let perMonitor = DynamicConfigValue.perMonitor([PerMonitorValue(description: .main, value: 1)], default: 1)
+        let onAlreadyOn = togglePerMonitorGaps(isPerMonitor: true, current: perMonitor, rememberedRules: [])
+        assertEquals(onAlreadyOn.value, perMonitor)
+        assertEquals(onAlreadyOn.rememberedRules, [])
+
+        let offAlreadyOff = togglePerMonitorGaps(isPerMonitor: false, current: .constant(3), rememberedRules: [])
+        assertEquals(offAlreadyOff.value, .constant(3))
+        assertEquals(offAlreadyOff.rememberedRules, [])
+    }
 }
