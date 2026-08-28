@@ -88,29 +88,40 @@ struct SettingsView: View {
             Label("This config doesn't parse, so only raw editing is available.", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.yellow)
             Text(parseError).font(.caption.monospaced()).textSelection(.enabled)
-            TextEditor(text: Binding(get: { model.wholeFileText }, set: { model.wholeFileText = $0; markDirty() }))
+            TextEditor(text: Binding(get: { model.wholeFileText }, set: { guard !model.isSaving else { return }; model.wholeFileText = $0; markDirty() }))
                 .font(.system(size: 12).monospaced())
         }
         .padding()
     }
 
+    /// The draft binding every section edits through.
+    ///
+    /// Writes are dropped while a save is in flight: `save()` suspends across the config
+    /// reload with this window still live, and finishes with a `load()` that reseeds the
+    /// draft from disk — so an edit landing in that gap would be silently thrown away.
+    /// Freezing the form (and both footer buttons) for the duration makes that impossible
+    /// rather than invisible.
+    private var draft: Binding<ConfigTomlWriter.ConfigDraft> {
+        Binding(get: { model.draft }, set: { if !model.isSaving { model.draft = $0 } })
+    }
+
     @ViewBuilder
     private func section(for category: SettingsCategory) -> some View {
         switch category {
-            case .general: GeneralSection(draft: $model.draft, onEdit: markDirty)
-            case .layout: LayoutSection(draft: $model.draft, onEdit: markDirty)
-            case .focus: FocusSection(draft: $model.draft, onEdit: markDirty)
-            case .windowBorder: WindowBorderSection(draft: $model.draft, onEdit: markDirty)
-            case .gaps: GapsSection(draft: $model.draft, loadGeneration: model.loadGeneration, onEdit: markDirty)
-            case .workspaces: WorkspacesSection(draft: $model.draft, onEdit: markDirty)
-            case .keyMapping: KeyMappingSection(draft: $model.draft, onEdit: markDirty)
-            case .exec: ExecSection(draft: $model.draft, onEdit: markDirty)
+            case .general: GeneralSection(draft: draft, onEdit: markDirty)
+            case .layout: LayoutSection(draft: draft, onEdit: markDirty)
+            case .focus: FocusSection(draft: draft, onEdit: markDirty)
+            case .windowBorder: WindowBorderSection(draft: draft, onEdit: markDirty)
+            case .gaps: GapsSection(draft: draft, loadGeneration: model.loadGeneration, onEdit: markDirty)
+            case .workspaces: WorkspacesSection(draft: draft, onEdit: markDirty)
+            case .keyMapping: KeyMappingSection(draft: draft, onEdit: markDirty)
+            case .exec: ExecSection(draft: draft, onEdit: markDirty)
             case .keybindings:
                 SettingsRawSection(
                     title: "Keybindings",
                     help: "Binding modes and their key bindings, as TOML. Each binding maps a key combination to one or more AeroSpace commands.",
                     docsHint: "Tables: [mode.<name>.binding]. Example: alt-h = 'focus left'",
-                    text: $model.draft.rawKeybindings,
+                    text: draft.rawKeybindings,
                     preamble: keybindingsPreamble(preset: model.draft.keyMappingPreset, notationOverrides: model.draft.keyNotationToKeyCode),
                     onEdit: markDirty,
                 )
@@ -119,7 +130,7 @@ struct SettingsView: View {
                     title: "Window rules",
                     help: "Rules run when a window is first detected. Matchers: app-id, app-id-regex-substring, app-name-regex-substring, window-title-regex-substring, workspace, during-aerospace-startup.",
                     docsHint: "Tables: [[on-window-detected]] with an 'if' matcher and a mandatory 'run'.",
-                    text: $model.draft.rawWindowRules,
+                    text: draft.rawWindowRules,
                     onEdit: markDirty,
                 )
             case .callbacks:
@@ -127,13 +138,17 @@ struct SettingsView: View {
                     title: "Callbacks",
                     help: "Commands AeroSpace runs on lifecycle events.",
                     docsHint: "Keys: " + ConfigTomlWriter.callbackKeys.joined(separator: ", "),
-                    text: $model.draft.rawCallbacks,
+                    text: draft.rawCallbacks,
                     onEdit: markDirty,
                 )
         }
     }
 
-    private func markDirty() { model.isDirty = true; model.status = nil }
+    private func markDirty() {
+        guard !model.isSaving else { return }
+        model.isDirty = true
+        model.status = nil
+    }
 
     @ViewBuilder
     private var footer: some View {
@@ -153,12 +168,12 @@ struct SettingsView: View {
                     Label("Saved and reloaded", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
                 }
                 Spacer()
-                Button("Revert") { model.revert() }.disabled(!model.isDirty)
+                Button("Revert") { model.revert() }.disabled(!model.isDirty || model.isSaving)
                 Button("Save") {
                     if model.externallyModified { showOverwriteAlert = true } else { Task { await model.save() } }
                 }
                 .keyboardShortcut(.defaultAction)
-                .disabled(!model.isDirty)
+                .disabled(!model.isDirty || model.isSaving)
             }
         }
         .padding()

@@ -27,6 +27,10 @@ public final class SettingsModel: ObservableObject {
     @Published var draft: ConfigTomlWriter.ConfigDraft = ConfigTomlWriter.ConfigDraft.defaults
     @Published var mode: SettingsMode = .form
     @Published var isDirty = false
+    /// `true` while `save()` is in flight. The save suspends across the config reload with
+    /// the window still interactive, so the UI freezes its bindings and both footer buttons
+    /// for the duration — see `save()`.
+    @Published private(set) var isSaving = false
     @Published var status: SettingsStatus?
     @Published var wholeFileText = ""
     /// Bumped every time `load()` reseeds `draft` from disk (Revert, or the reload at the
@@ -118,8 +122,15 @@ public final class SettingsModel: ObservableObject {
     /// Renders the draft, validates it with the real parser against a temp file, and only
     /// then writes the user's config and reloads. A bad edit can never leave the user with
     /// a config AeroSpace refuses to load.
+    ///
+    /// `isSaving` is set for the whole of this, because it suspends (the reload awaits
+    /// `activateMode`) with the MainActor free and the window live: without it a keystroke
+    /// landing in that gap would be silently overwritten by the closing `load()`, and a
+    /// second click on Save would start an overlapping save.
     func save() async {
-        guard let targetUrl, let writeUrl else { return }
+        guard let targetUrl, let writeUrl, !isSaving else { return }
+        isSaving = true
+        defer { isSaving = false }
         status = nil
 
         let candidate: String
@@ -167,7 +178,15 @@ public final class SettingsModel: ObservableObject {
         }
 
         do {
-            _ = try await reloadConfig()
+            // Mirror `reloadConfigButton`: a reload swaps the config in, and the windows
+            // only pick up the new gaps/normalization once a refresh session relays them
+            // out. A bare `reloadConfig()` would leave the footer claiming "Saved and
+            // reloaded" while nothing on screen moved until the next natural refresh.
+            if let token: RunSessionGuard = .isServerEnabled {
+                try await runLightSession(.menuBarButton, token) { _ = try await reloadConfig() }
+            } else {
+                _ = try await reloadConfig()
+            }
         } catch {
             status = .error("Saved, but reloading the config failed: \(error.localizedDescription)")
             return
