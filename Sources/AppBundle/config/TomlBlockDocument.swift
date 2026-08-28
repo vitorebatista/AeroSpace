@@ -229,18 +229,24 @@ extension TomlBlockDocument {
         matchingTableSpan(predicate).sorted().map { blocks[$0].text }.joined()
     }
 
-    /// Replaces the named table wholesale, at the position it already occupies. Passing
-    /// `nil` deletes it. Any top-level dotted key under `name.` is dropped too, because
+    /// Replaces the named table *family* wholesale, at the position the first family
+    /// member already occupies. Passing `nil` deletes it. A family is `name` itself plus
+    /// any sub-table (`name.sub`, e.g. `[exec.env-vars]` under `exec`) — each `[header]`
+    /// line becomes its own block (see parsing above), so a caller that only matched the
+    /// exact name would leave a stale sub-table behind when the caller's own replacement
+    /// body already re-emits that sub-table under a new header, producing a duplicate
+    /// table TOML rejects. Any top-level dotted key under `name.` is dropped too, because
     /// `gaps.inner.vertical = 5` and `[gaps]` + `inner.vertical = 5` are the same
     /// setting and leaving both would be a duplicate definition.
     mutating func replaceTable(named name: String, with body: String?) {
         blocks.removeAll { $0.isKeyValue && $0.name?.hasPrefix(name + ".") == true }
-        let existing = blocks.firstIndex { $0.isTable && $0.name == name }
-        switch (existing, body) {
+        let family = blocks.indices.filter { blocks[$0].isTable && Self.isTableOrSubTable(blocks[$0].name, of: name) }
+        switch (family.first, body) {
             case (let index?, let body?):
-                blocks[index] = .table(name: name, text: Self.newlineTerminated(body))
+                for i in family.sorted(by: >) { blocks.remove(at: i) }
+                blocks.insert(.table(name: name, text: Self.newlineTerminated(body)), at: index)
             case (let index?, nil):
-                blocks.remove(at: index)
+                for i in family.sorted(by: >) { blocks.remove(at: i) }
                 // Drop a blank-only trivia block left dangling where the table used to be.
                 if index < blocks.count, blocks[index].isTrivia,
                    blocks[index].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -254,16 +260,26 @@ extension TomlBlockDocument {
         }
     }
 
+    private static func isTableOrSubTable(_ blockName: String?, of name: String) -> Bool {
+        blockName == name || blockName?.hasPrefix(name + ".") == true
+    }
+
     /// Replaces the span of all matching tables with `text`, positioned at the first
     /// match. Used by the raw-TOML panes, which own a whole family of tables at once.
-    mutating func replaceTables(matching predicate: (String) -> Bool, with text: String) {
+    /// The inserted block is tagged `name` (when `text` is non-empty) so a later call
+    /// with the same `predicate` finds and replaces it again instead of always falling
+    /// through to "no match" and appending a duplicate. Empty `text` removes the span
+    /// (or does nothing, if nothing matched) without inserting a placeholder.
+    mutating func replaceTables(matching predicate: (String) -> Bool, with text: String, name: String = "") {
         let span = matchingTableSpan(predicate)
         guard let first = span.min() else {
-            appendTable(name: "", body: text)
+            if !text.isEmpty { appendTable(name: name, body: text) }
             return
         }
         for index in span.sorted(by: >) { blocks.remove(at: index) }
-        blocks.insert(.table(name: "", text: Self.newlineTerminated(text)), at: first)
+        if !text.isEmpty {
+            blocks.insert(.table(name: name, text: Self.newlineTerminated(text)), at: first)
+        }
     }
 
     /// The indices of tables matching `predicate`, plus any trivia block that sits
@@ -281,7 +297,10 @@ extension TomlBlockDocument {
 
     private mutating func appendTable(name: String, body: String) {
         if let last = blocks.indices.last {
-            blocks[last] = blocks[last].withText { $0.hasSuffix("\n") ? $0 : $0 + "\n" }
+            // Never force a newline onto an empty block: an empty string has no "line" to
+            // terminate, and turning it into a bare "\n" would render as a spurious blank
+            // line (this bit whenever two panes were spliced back to back).
+            blocks[last] = blocks[last].withText { $0.isEmpty || $0.hasSuffix("\n") ? $0 : $0 + "\n" }
         }
         blocks.append(.table(name: name, text: Self.newlineTerminated(body)))
     }

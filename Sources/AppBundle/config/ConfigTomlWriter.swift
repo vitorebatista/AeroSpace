@@ -92,7 +92,11 @@ enum ConfigTomlWriter {
             envVars: rawExec.overriddenVars,
             rawKeybindings: document.text(forTablesMatching: isKeybindingTable),
             rawWindowRules: document.text(forTablesMatching: isWindowRuleTable),
-            rawCallbacks: callbackKeys.compactMap { document.text(forKeyValue: $0) }.joined(),
+            // Newline-terminate each piece defensively: a `text(forKeyValue:)` block
+            // normally already ends in "\n", but a file whose last line lacks a trailing
+            // newline would otherwise glue two callback keys onto one line when joined.
+            rawCallbacks: callbackKeys.compactMap { document.text(forKeyValue: $0) }
+                .map { $0.hasSuffix("\n") ? $0 : $0 + "\n" }.joined(),
         )
     }
 
@@ -126,32 +130,42 @@ enum ConfigTomlWriter {
         setOrOmit("focused-window-border-radius", TomlValue.of(draft.focusedWindowBorderRadius), isDefault: draft.focusedWindowBorderRadius == defaults.focusedWindowBorderRadius)
         setOrOmit("focused-window-border-inset", TomlValue.of(draft.focusedWindowBorderInset), isDefault: draft.focusedWindowBorderInset == defaults.focusedWindowBorderInset)
         setOrOmit("config-version", TomlValue.of(draft.configVersion), isDefault: draft.configVersion == defaults.configVersion)
-        setOrOmit(
-            "persistent-workspaces",
-            TomlValue.array(draft.persistentWorkspaces.map { TomlValue.of($0) }),
-            isDefault: draft.persistentWorkspaces.isEmpty,
-        )
-
-        // Nested tables: regenerated wholesale (see the spec). `nil` body deletes the table.
-        document.replaceTable(named: "gaps", with: gapsTable(draft.gaps, defaults: defaults.gaps))
-        document.replaceTable(named: "key-mapping", with: keyMappingTable(draft, defaults: defaults))
-        document.replaceTable(named: "exec", with: execTable(draft, defaults: defaults))
-        document.replaceTable(
-            named: "workspace-to-monitor-force-assignment",
-            with: workspaceAssignmentTable(draft.workspaceToMonitorForceAssignment),
-        )
-
-        // Raw panes. Skip a pane entirely when it would be a true no-op (nothing in the
-        // file already, nothing to write): `replaceTables` always appends a placeholder
-        // table block when nothing matches, even for empty text, and two such calls back
-        // to back (as here) would otherwise force a spurious blank line onto the first
-        // placeholder while appending the second.
-        if !draft.rawKeybindings.isEmpty || !document.text(forTablesMatching: isKeybindingTable).isEmpty {
-            document.replaceTables(matching: isKeybindingTable, with: draft.rawKeybindings)
+        // `persistent-workspaces` is a config-version-2-only key: the parser treats it as
+        // a semantic error in a config-version <= 1 file (and derives `persistentWorkspaces`
+        // itself from the file's bindings there instead). Only ever write it when the
+        // draft is actually on version 2, or the key is already — and therefore validly —
+        // present; there is no legitimate v1 file containing this key.
+        if draft.configVersion >= 2 || document.text(forKeyValue: "persistent-workspaces") != nil {
+            setOrOmit(
+                "persistent-workspaces",
+                TomlValue.array(draft.persistentWorkspaces.map { TomlValue.of($0) }),
+                isDefault: draft.persistentWorkspaces.isEmpty,
+            )
         }
-        if !draft.rawWindowRules.isEmpty || !document.text(forTablesMatching: isWindowRuleTable).isEmpty {
-            document.replaceTables(matching: isWindowRuleTable, with: draft.rawWindowRules)
+
+        // Nested tables: regenerated wholesale (see the spec), driven from
+        // `regeneratedTables` so that list stays the single source of truth for which
+        // tables the form owns outright. `nil` body deletes the table.
+        let tableBodies: [String: String?] = [
+            "gaps": gapsTable(draft.gaps, defaults: defaults.gaps),
+            "key-mapping": keyMappingTable(draft, defaults: defaults),
+            "exec": execTable(draft, defaults: defaults),
+            "workspace-to-monitor-force-assignment": workspaceAssignmentTable(draft.workspaceToMonitorForceAssignment),
+        ]
+        for name in regeneratedTables {
+            document.replaceTable(named: name, with: tableBodies[name] ?? nil)
         }
+
+        // Raw panes. Each spliced block is tagged with a name its own predicate matches
+        // ("mode" / "on-window-detected"), so calling `apply` again on the same document
+        // finds and replaces it instead of appending a duplicate.
+        document.replaceTables(matching: isKeybindingTable, with: draft.rawKeybindings, name: "mode")
+        document.replaceTables(matching: isWindowRuleTable, with: draft.rawWindowRules, name: "on-window-detected")
+        // The callbacks pane, by contrast, splices in as untagged trivia (see
+        // `setRawTopLevel`) and `remove(key:)` cannot find it to remove before
+        // re-inserting — so unlike the two panes above, this one relies on `apply` being
+        // called at most once per `TomlBlockDocument` instance. That holds today: Task 5's
+        // save flow always applies to a fresh copy of the on-disk document.
         for key in callbackKeys { document.remove(key: key) }
         document.setRawTopLevel(text: draft.rawCallbacks)
     }

@@ -30,6 +30,7 @@ final class ConfigTomlWriterTest: XCTestCase {
             draft.accordionPadding = 45
             draft.focusFollowsAppActivation = .smart
             draft.newWindowPreventFlicker = true
+            draft.configVersion = 2
         }
         assertEquals(parsed.startAtLogin, true)
         assertEquals(parsed.autoReloadConfig, true)
@@ -42,6 +43,7 @@ final class ConfigTomlWriterTest: XCTestCase {
         assertEquals(parsed.accordionPadding, 45)
         assertEquals(parsed.focusFollowsAppActivation, .smart)
         assertEquals(parsed.newWindowPreventFlicker, true)
+        assertEquals(parsed.configVersion, 2)
     }
 
     func testWindowBorderRoundTrips() {
@@ -75,16 +77,21 @@ final class ConfigTomlWriterTest: XCTestCase {
     }
 
     func testPerMonitorGapsRoundTrip() {
+        let pattern = MonitorDescription.pattern("Dell.*")!
         let parsed = roundTrip { draft in
             draft.gaps = Gaps(
                 inner: .init(vertical: .constant(5), horizontal: .constant(6)),
                 outer: .init(
                     left: .perMonitor([PerMonitorValue(description: .main, value: 20)], default: 8),
-                    bottom: .constant(2), top: .constant(3), right: .constant(4),
+                    bottom: .constant(2), top: .constant(3),
+                    right: .perMonitor([PerMonitorValue(description: pattern, value: 12)], default: 4),
                 ),
             )
         }
         assertEquals(parsed.gaps.outer.left, .perMonitor([PerMonitorValue(description: .main, value: 20)], default: 8))
+        // A monitor *pattern* on the left of a per-monitor entry needs quoting, unlike
+        // `main` / `secondary` / a sequence number.
+        assertEquals(parsed.gaps.outer.right, .perMonitor([PerMonitorValue(description: pattern, value: 12)], default: 4))
     }
 
     func testKeyMappingRoundTrips() {
@@ -109,11 +116,17 @@ final class ConfigTomlWriterTest: XCTestCase {
     }
 
     func testWorkspaceToMonitorAssignmentRoundTrips() {
+        let pattern = MonitorDescription.pattern("Dell.*")!
         let parsed = roundTrip { draft in
-            draft.workspaceToMonitorForceAssignment = ["1": [.main], "2": [.secondary, .sequenceNumber(3)]]
+            draft.workspaceToMonitorForceAssignment = [
+                "1": [.main],
+                "2": [.secondary, .sequenceNumber(3)],
+                "3": [pattern],
+            ]
         }
         assertEquals(parsed.workspaceToMonitorForceAssignment["1"], [.main])
         assertEquals(parsed.workspaceToMonitorForceAssignment["2"], [.secondary, .sequenceNumber(3)])
+        assertEquals(parsed.workspaceToMonitorForceAssignment["3"], [pattern])
     }
 
     func testRawPanesAreSpliced() {
@@ -130,18 +143,60 @@ final class ConfigTomlWriterTest: XCTestCase {
     func testDefaultsAreNotWrittenWhenAbsentFromTheFile() {
         // A user's file that sets nothing must stay minimal after an unrelated edit.
         //
-        // Deviation from the brief: built from `Config()`, not `defaultConfig`. The shipped
-        // default-config.toml explicitly overrides `config-version` (2) and
-        // `persistent-workspaces` (a full list) beyond `Config()`'s bare defaults, which is
-        // inconsistent with the near-empty `document` below. In real usage the draft's source
-        // `Config` always comes from parsing the SAME document being edited, so this mismatch
-        // cannot occur there; using `defaultConfig` here would only be consistent if the
-        // document were `default-config.toml`'s own text.
+        // Deviation from the brief, reconfirmed after the round-1 review (see the fix
+        // report): built from `Config()`, not `defaultConfig`. `defaultConfig` (the parsed
+        // docs/config-examples/default-config.toml) explicitly sets BOTH `config-version =
+        // 2` AND a full `persistent-workspaces` list, beyond `Config()`'s bare defaults.
+        // Critical 2's fix (gating `persistent-workspaces` on config-version >= 2) only
+        // silences the second of those — `config-version` itself still differs from
+        // `ConfigDraft.defaults` (built from `Config()`) regardless, so `setOrOmit` still
+        // writes `config-version = 2` unconditionally even with Critical 2 fixed. This is
+        // independent of Critical 2: `configVersion`'s `isDefault` check never involves the
+        // version gate at all. Verified empirically: reverting to `defaultConfig` here,
+        // with Critical 2's fix in place, still fails with exactly `config-version = 2`
+        // appended (persistent-workspaces no longer appears). See the fix report for the
+        // full trace. `Config()` is the only source consistent with this test's own intent
+        // ("stays minimal") and with how the type is used for real (Task 5 always builds
+        // the draft from the Config parsed from the SAME document).
         var document = TomlBlockDocument("start-at-login = false\n")
         var draft = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: document)
         draft.startAtLogin = true
         ConfigTomlWriter.apply(draft, to: &document)
         assertEquals(document.render(), "start-at-login = true\n")
+    }
+
+    func testRevertingAnOptionToItsDefaultStillPersistsWhenAlreadyPresent() {
+        // The `isDefault && already present` branch of `setOrOmit`: turning a toggle back
+        // to its default value must still overwrite the existing line, not leave the old
+        // value or silently drop the key.
+        //
+        // Built from `Config()`, not `defaultConfig` — same reasoning as
+        // `testDefaultsAreNotWrittenWhenAbsentFromTheFile` above: `defaultConfig` sets
+        // `config-version` / `persistent-workspaces` beyond `Config()`'s bare defaults,
+        // which would leak into this near-empty document's exact-equality assertion too.
+        var document = TomlBlockDocument("start-at-login = true\n")
+        var draft = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: document)
+        draft.startAtLogin = false
+        ConfigTomlWriter.apply(draft, to: &document)
+        assertEquals(document.render(), "start-at-login = false\n")
+    }
+
+    func testRegeneratingATableRemovesItsExistingSubTables() {
+        // `[exec]` and `[exec.env-vars]` are separate top-level blocks (each `[header]`
+        // line splits into its own block). Regenerating `[exec]` must remove the stale
+        // `[exec.env-vars]` too, or the freshly-generated `[exec]` body (which re-emits
+        // its own `[exec.env-vars]`) duplicates the table and the result fails to parse.
+        var document = TomlBlockDocument("[exec]\ninherit-env-vars = false\n\n[exec.env-vars]\nFOO = 'bar'\n")
+        var draft = ConfigTomlWriter.draft(from: defaultConfig, rawExec: RawExecConfig(), document: document)
+        draft.inheritEnvVars = false
+        draft.envVars = ["FOO": "bar", "BAZ": "qux"]
+        ConfigTomlWriter.apply(draft, to: &document)
+        let text = document.render()
+        assertEquals(text.components(separatedBy: "[exec.env-vars]").count - 1, 1, additionalMsg: text)
+        let (parsed, errors) = parseConfig(text)
+        assertEquals(errors, [], additionalMsg: text)
+        assertEquals(parsed.execConfig.envVariables["FOO"], "bar")
+        assertEquals(parsed.execConfig.envVariables["BAZ"], "qux")
     }
 
     func testCommentsOutsideRegeneratedTablesSurvive() {
