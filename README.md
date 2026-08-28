@@ -34,8 +34,10 @@ The recipe hasn't changed since day one:
 - Everything that got pulled in is listed, with its upstream origin, in
   [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md).
 
-Ten releases so far. Current: **v0.20.3-Beta-fork.10**, which is also the first one that installs
-as its own app rather than replacing upstream — see below.
+Ten releases so far. Current: **v1.10** — also the first that installs as its own app rather than
+replacing upstream (see below). Versions are `1.MINOR[.PATCH]`: minor for a release carrying upstream
+backports, patch for fork-only fixes. The upstream commit this is based on is recorded in the changelog,
+not in the version string.
 
 ## Why you might want it
 
@@ -62,7 +64,7 @@ Download the latest zip from [**Releases**](https://github.com/vitorebatista/Aer
 then:
 
 ```bash
-unzip AeroSpace-v0.20.3-Beta-fork.9.zip
+unzip AeroSpace-v1.9.zip
 mv AeroSpace-v*/AeroSpace.app /Applications/
 cp  AeroSpace-v*/bin/aerospace /usr/local/bin/   # or anywhere on your PATH
 open -a /Applications/AeroSpace.app

@@ -4,7 +4,7 @@ description: >-
   Sync the vitorebatista/AeroSpace-edge fork with upstream nikitabobko/AeroSpace. Finds new upstream
   commits and open PRs since the recorded sync point, triages them (bug fixes + safe small
   features), backports the delta as individual build+test-verified PRs, can merge them via a
-  conflict-aware merge train, cut a `-fork.N` release, and update the changelog/sync-state docs.
+  conflict-aware merge train, cut a `1.N` release, and update the changelog/sync-state docs.
   Use this WHENEVER the user asks to update/sync the fork, check the upstream/main repo for new
   changes/PRs/fixes to bring in, backport upstream bug fixes, refresh the fork from upstream, or
   "update my fork with the main repo" — even if they don't say the word "skill". It is built to be
@@ -81,7 +81,8 @@ no-conflict-markers check before `git push origin main`. See the runbook for the
 
 ### Phase 5 — Release (only if the user asks)
 Use the runbook's **lean release build** (the official `build-release.sh` fails in this environment on
-docs/shell-completion tooling). Bump `-fork.N`, build the universal app + CLI, then
+docs/shell-completion tooling). Bump the version (`1.MINOR[.PATCH]` — minor when the release carries backports), build the
+universal app + CLI, then
 `gh release create v<ver> --repo vitorebatista/AeroSpace-edge --target main --prerelease <zip>`.
 
 ### Phase 6 — Update the markdown (always, after any change)

@@ -8,7 +8,24 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
-## v0.20.3-Beta-fork.10 (2026-08-27)
+## Versioning
+
+AeroSpace-edge versions itself independently of upstream, as `1.MINOR[.PATCH]`:
+
+- **minor** — a release that brings upstream backports (the usual case).
+- **patch** — a fork-only fix, docs, or packaging change with no new backports.
+- **major** — reserved for a breaking change to config syntax or the CLI.
+
+The upstream commit this fork is based on (`63e0976b`) is recorded here and in
+[`dev-docs/fork-maintenance.md`](./dev-docs/fork-maintenance.md) rather than in the version string.
+
+> **Renumbered 2026-08-27.** Releases 1 through 10 were originally published as
+> `v0.20.3-Beta-fork.1` … `v0.20.3-Beta-fork.10` and have been retagged to `v1.1` … `v1.10`.
+> The old tags are gone, so links to them no longer resolve. The build attached to each release
+> older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
+> only 1.10 was rebuilt under the new scheme.
+
+## v1.10 (2026-08-27)
 
 No upstream backports in this one. The fork becomes **its own app**, so it can be installed and tried
 side by side with an upstream AeroSpace install instead of replacing it.
@@ -28,14 +45,14 @@ side by side with an upstream AeroSpace install instead of replacing it.
   upstream AeroSpace's `bobko.aerospace.plist`.
 - New logo and app icon; repo renamed to `vitorebatista/AeroSpace-edge`; README rewritten.
 - Release zips are now `AeroSpace-edge-v<ver>.zip` and ship `legal/` (LICENSE + third-party licenses),
-  which the fork.9 zip was missing.
+  which the 1.9 zip was missing.
 
-Upgrading from fork.9 or earlier: the old `AeroSpace.app` and `aerospace` CLI are a *different app* to
+Upgrading from 1.9 or earlier: the old `AeroSpace.app` and `aerospace` CLI are a *different app* to
 macOS now. Delete them if you don't want both, and grant Accessibility to `AeroSpace-edge.app`.
 
-## v0.20.3-Beta-fork.9 (2026-08-27)
+## v1.9 (2026-08-27)
 
-New backports since fork.8 (delta past upstream review point `d56e1637`; 2 new upstream-`main`
+New backports since 1.8 (delta past upstream review point `d56e1637`; 2 new upstream-`main`
 commits — both skipped, see below — and 17 new open upstream PRs triaged). Bug fixes only, plus one
 tree-model fix; no new features.
 
@@ -80,7 +97,7 @@ this fork never ported; #2220 is a duplicate of #2024, already in the fork; #221
 (#2207, #2217, #2229, #2240, #2241, #2242) were deferred — this fork's bar is bug fixes plus small
 safe features, and none were requested.
 
-## v0.20.3-Beta-fork.8 (2026-07-24)
+## v1.8 (2026-07-24)
 
 - Socket protocol versions handshake — the server now answers the 4-byte protocol-version
   handshake modern upstream clients perform on connect, instead of deadlocking on it. Fixes
@@ -92,7 +109,7 @@ safe features, and none were requested.
   - Fork adaptations: upstream's `getIgnoringErrorsOrNil()` → the fork's `Result.getOrNil()`;
     upstream's `EvalCommandTest` tweak dropped (eval command family not ported).
 
-## v0.20.3-Beta-fork.7 (2026-07-24)
+## v1.7 (2026-07-24)
 
 - New fork feature: `focus-follows-app-activation = 'always'|'smart'` config option — `smart`
   suppresses cross-workspace workspace switches caused by apps activating themselves (focus
@@ -106,26 +123,26 @@ safe features, and none were requested.
   Keep the default `'always'` until fixed. Fix direction: exempt AeroSpace-initiated commands
   from suppression + force-layout the offender's workspace after suppressing.
 
-## v0.20.3-Beta-fork.6 (2026-07-18)
+## v1.6 (2026-07-18)
 
-New backports since fork.5 (delta past upstream review point `d56e1637`; no new upstream-`main` commits, three new open PRs triaged):
+New backports since 1.5 (delta past upstream review point `d56e1637`; no new upstream-`main` commits, three new open PRs triaged):
 
 - Add `debug-windows --app-bundle-id <id>` to dump unregistered AX windows — upstream [nikitabobko/AeroSpace#2184](https://github.com/nikitabobko/AeroSpace/pull/2184) (fork PR #51)
 - Add `enable-normalization` command for per-workspace normalization overrides — upstream [nikitabobko/AeroSpace#2190](https://github.com/nikitabobko/AeroSpace/pull/2190) (fork PR #52)
 - Add AeroKit to the trackpad-gestures goodies list (docs) — upstream [nikitabobko/AeroSpace#2188](https://github.com/nikitabobko/AeroSpace/pull/2188) (fork PR #50)
 
-## v0.20.3-Beta-fork.5 (2026-07-14)
+## v1.5 (2026-07-14)
 
-New backports since fork.4 (delta past upstream review point `649301b2`):
+New backports since 1.4 (delta past upstream review point `649301b2`):
 
 - Fix wisprFlow popup detection — upstream commits [`4a3aab24`](https://github.com/nikitabobko/AeroSpace/commit/4a3aab24) + [`d56e1637`](https://github.com/nikitabobko/AeroSpace/commit/d56e1637) (fork PR #46)
 - Ignore windows with `kCGNullWindowID` window-id — upstream commit [`0f6b2e78`](https://github.com/nikitabobko/AeroSpace/commit/0f6b2e78) (fork PR #47)
 - Add `window-closed` subscribe event — upstream [nikitabobko/AeroSpace#2181](https://github.com/nikitabobko/AeroSpace/pull/2181) (fork PR #48)
 - Fix Device Hub (Xcode 27) compact-view flicker when tiled — upstream [nikitabobko/AeroSpace#2167](https://github.com/nikitabobko/AeroSpace/pull/2167) (fork PR #49)
 
-## v0.20.3-Beta-fork.4 (2026-07-10)
+## v1.4 (2026-07-10)
 
-New backports since fork.3 (delta past upstream review point `fb8b1df6`):
+New backports since 1.3 (delta past upstream review point `fb8b1df6`):
 
 - Fix menu-bar clicks stealing focus when "Displays have separate spaces" is off — upstream commit [`cfd4eab2`](https://github.com/nikitabobko/AeroSpace/commit/cfd4eab2) (fork PR #39)
 - Add `window-moved-to-workspace` subscribe event — upstream [nikitabobko/AeroSpace#2162](https://github.com/nikitabobko/AeroSpace/pull/2162) (fork PR #40)
@@ -134,9 +151,9 @@ New backports since fork.3 (delta past upstream review point `fb8b1df6`):
 - MacApp: fix AX-object destroy race + wipPids spin in `getOrRegister` — upstream commits [`dd6b927a`](https://github.com/nikitabobko/AeroSpace/commit/dd6b927a) + [`1e6ce27e`](https://github.com/nikitabobko/AeroSpace/commit/1e6ce27e) (fork PR #43)
 - Fix cross-workspace focus races — upstream [nikitabobko/AeroSpace#2165](https://github.com/nikitabobko/AeroSpace/pull/2165) (fork PR #44)
 
-## v0.20.3-Beta-fork.3 (2026-06-29)
+## v1.3 (2026-06-29)
 
-New backports since fork.2 (delta past upstream review point `a60f9630`):
+New backports since 1.2 (delta past upstream review point `a60f9630`):
 
 - Fix Codex window classification (pet window → popup) — upstream commits [`82c4a405`](https://github.com/nikitabobko/AeroSpace/commit/82c4a405) + [`cb347265`](https://github.com/nikitabobko/AeroSpace/commit/cb347265) (fork PR #33)
 - Fix `workspace next/prev` when current workspace isn't in the `--stdin` list — upstream commit [`6a2a126d`](https://github.com/nikitabobko/AeroSpace/commit/6a2a126d) (fork PR #34)
@@ -144,9 +161,9 @@ New backports since fork.2 (delta past upstream review point `a60f9630`):
 - Document `AEROSPACE_WINDOW_ID` / `AEROSPACE_WORKSPACE` env variables — upstream commit [`3e381925`](https://github.com/nikitabobko/AeroSpace/commit/3e381925) (fork PR #36)
 - Add binary-tree (BSP) normalization (`enable-normalization-binary-tree`) — upstream [nikitabobko/AeroSpace#2135](https://github.com/nikitabobko/AeroSpace/pull/2135) (fork PR #37)
 
-## v0.20.3-Beta-fork.2 (2026-06-12)
+## v1.2 (2026-06-12)
 
-Backported since fork.1 — 3 newly-merged upstream `main` bug-fix commits + 3 feature PRs:
+Backported since 1.1 — 3 newly-merged upstream `main` bug-fix commits + 3 feature PRs:
 
 - Fix MRU bug after `swap` command — upstream commit [`19b5999d`](https://github.com/nikitabobko/AeroSpace/commit/19b5999d) (fork PR #25)
 - Fix deadlock in `dieT`/`die` functions — upstream commit [`8b236f1b`](https://github.com/nikitabobko/AeroSpace/commit/8b236f1b) (fork PR #26)
@@ -155,7 +172,7 @@ Backported since fork.1 — 3 newly-merged upstream `main` bug-fix commits + 3 f
 - `workspace-layout-changed` subscribe event — upstream [nikitabobko/AeroSpace#2116](https://github.com/nikitabobko/AeroSpace/pull/2116) (fork PR #29)
 - Native focused-window border — upstream [nikitabobko/AeroSpace#2107](https://github.com/nikitabobko/AeroSpace/pull/2107) (fork PR #30)
 
-## v0.20.3-Beta-fork.1 (initial — 22 backports)
+## v1.1 (initial — 22 backports)
 
 ## Crash & stability
 

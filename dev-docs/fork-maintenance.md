@@ -29,31 +29,31 @@ Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for A
   skipped: `c548c7f8` (`Monitor` → `MonitorInfo` rename, part of the "track upstream main" milestone)
   and `ae2aa7aa` (upstream-only PR-labelling CI) — and 17 new open PRs, of which it ported #2244,
   #2232, #2211, #2228 and #2225 as fork PRs #55–#59.
-- **Released:** `v0.20.3-Beta-fork.10` (cut 2026-08-27) — no backports; the fork becomes its own app
+- **Released:** `v1.10` (cut 2026-08-27) — no backports; the fork becomes its own app
   (see "App identity" above), new logo/icon, repo rename, README rewrite, and release zips renamed to
-  `AeroSpace-edge-v<ver>.zip` with `legal/` included (fork.9's zip shipped an empty `legal/`).
-  Previous: `v0.20.3-Beta-fork.9` (fork PRs #55–#59, cut 2026-08-27) — bug-fix-only cycle:
+  `AeroSpace-edge-v<ver>.zip` with `legal/` included (1.9's zip shipped an empty `legal/`).
+  Previous: `v1.9` (fork PRs #55–#59, cut 2026-08-27) — bug-fix-only cycle:
   iTerm2 Settings window detection (#55), `isUnitTest` hot-path crash (#56), `balance-sizes` total
   weight (#57), `FocusCommand` "is already unbound" race crash (#58), native-tab window replacement
   into the old tree slot (#59). See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md) for the per-PR fork
   adaptations.
-  Previous: `v0.20.3-Beta-fork.8` (fork PR #54, cut 2026-07-24) — backports the upstream
+  Previous: `v1.8` (fork PR #54, cut 2026-07-24) — backports the upstream
   **socket protocol versions handshake** (`8413641c`, previously on the deferred list; explicitly
   requested to fix third-party socket clients — AeroKit, aerospace-swipe, upstream-cask CLI —
   hanging against the fork server). Adaptations: `getIgnoringErrorsOrNil()` → `getOrNil()`,
   EvalCommandTest tweak dropped, guide's Socket-protocol section appended at the end (fork guide
   has no Deprecations section).
-  Previous: `v0.20.3-Beta-fork.7` (fork PR #53, cut 2026-07-24) — first release with a
+  Previous: `v1.7` (fork PR #53, cut 2026-07-24) — first release with a
   fork-original feature: `focus-follows-app-activation = 'always'|'smart'` (suppresses
   cross-workspace focus stealing by self-activating apps; no upstream equivalent).
   **`smart` has a known regression** (moved windows reappear on the current workspace) —
-  see CHANGELOG-FORK.md fork.7 "KNOWN ISSUE" for details/fix direction before touching it.
-- **Ad-hoc signing gotcha (hit on fork.7 install):** every fork release re-signs ad-hoc, so
+  see CHANGELOG-FORK.md 1.7 "KNOWN ISSUE" for details/fix direction before touching it.
+- **Ad-hoc signing gotcha (hit on 1.7 install):** every fork release re-signs ad-hoc, so
   macOS invalidates the Accessibility grant on upgrade; the app then resets its own TCC entry
   and exits at startup (`checkAccessibilityPermissions`). After replacing the app the user must
   re-grant: System Settings → Privacy & Security → Accessibility (add via + if missing), then
   relaunch. Expect this on every `-fork.N` upgrade.
-  Previous: `v0.20.3-Beta-fork.6` (46 backports total; fork PRs #50–#52, 2026-07-18).
+  Previous: `v1.6` (46 backports total; fork PRs #50–#52, 2026-07-18).
   See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
 - **2026-07-23 sync check:** no new upstream-`main` commits (still `d56e1637`); 48 open PRs.
   Only new PR since 2026-07-18: **#2192** "Goodies: add Cyclist" (draft, docs-only one-liner) —
@@ -253,7 +253,7 @@ and add a `mise` shim so the docs step's rubygems plugin finds it:
 ```bash
 printf "exec '/opt/homebrew/bin/mise' \"\$@\"\n" > .deps/bin/mise && chmod +x .deps/bin/mise
 NUKE_PATH=1 PATH="$PWD/.deps/bin:/opt/homebrew/bin:/bin:/usr/bin" \
-  ./build-release.sh --build-version "0.20.3-Beta-fork.N" --codesign-identity -
+  ./build-release.sh --build-version "1.N" --codesign-identity -
 ```
 
 **B. Lean build (recommended — app + CLI, no man pages/completions).** Put the steps in a script and
@@ -261,12 +261,12 @@ run it with `zsh script.sh`, because the interactive shell hook rewrites `rm`/`l
 `rm -rf` into GNU-flagged `rm` that fails on macOS); running inside a script file bypasses the rewrite.
 The script (see git history of `/tmp/lean-release2.sh` pattern) does, with
 `NUKE_PATH=1 PATH="$PWD/.deps/bin:/opt/homebrew/bin:/bin:/usr/bin"`:
-1. `./generate.sh --ignore-shell-parser --ignore-cmd-help --build-version "0.20.3-Beta-fork.N" --codesign-identity - --generate-git-hash`
+1. `./generate.sh --ignore-shell-parser --ignore-cmd-help --build-version "1.N" --codesign-identity - --generate-git-hash`
 2. `swift build -c release --arch arm64 --arch x86_64 --product aerospace -Xswiftc -warnings-as-errors`
 3. `xcrun xcodebuild clean build -scheme AeroSpace -destination "generic/platform=macOS" -configuration Release -derivedDataPath .xcode-build`
 4. `git checkout .` (restores generated files + `project.pbxproj` that xcodegen/version-stamping dirtied)
    > ⚠️ **`git checkout .` discards ALL uncommitted tracked changes, not just the generated ones.**
-   > Commit your work *before* running a release build. (Bit us on fork.10: the source half of the
+   > Commit your work *before* running a release build. (Bit us on 1.10: the source half of the
    > rename was wiped and only the docs got committed.)
 5. assemble `.release/AeroSpace-v<ver>/` = `AeroSpace.app` (from `.xcode-build/Build/Products/Release/`)
    + `bin/aerospace` (`codesign -s - --force`) + `legal/`, then `zip -qr`.
@@ -277,12 +277,16 @@ The script (see git history of `/tmp/lean-release2.sh` pattern) does, with
 
 ## Creating the GitHub release
 ```bash
-gh release create "v0.20.3-Beta-fork.N" ".release/AeroSpace-v0.20.3-Beta-fork.N.zip" \
+gh release create "v1.N" ".release/AeroSpace-edge-v1.N.zip" \
   --repo vitorebatista/AeroSpace-edge --target main --prerelease \
-  --title "AeroSpace v0.20.3-Beta-fork.N" --notes-file <notes.md>
+  --title "AeroSpace-edge v1.N" --notes-file <notes.md>
 ```
-- Version scheme: upstream beta base + `-fork.N`; bump `N` each release. The version shows in the
-  menu bar and `aerospace --version`.
+- **Version scheme (since 2026-08-27): `1.MINOR[.PATCH]`, independent of upstream.** Minor bump for a
+  release carrying upstream backports; patch for a fork-only fix/docs/packaging release; major only for
+  a breaking config/CLI change. The upstream base commit is tracked in Sync state, not in the version.
+  The version shows in the menu bar and `aerospace-edge --version`.
+  Releases 1–10 were retagged from `v0.20.3-Beta-fork.N` to `v1.N` on 2026-08-27; only 1.10 was rebuilt
+  under the new scheme, so older attached builds still report their original version string.
 - Do **not** use `script/publish-release.sh` (it pushes tags to the upstream repo).
 - After releasing, **update the "Sync state" section above** and append to `CHANGELOG-FORK.md`.
 
