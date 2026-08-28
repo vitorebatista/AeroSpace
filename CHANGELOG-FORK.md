@@ -12,8 +12,8 @@ by the upstream maintainer.
 
 AeroSpace-edge versions itself independently of upstream, as `1.MINOR[.PATCH]`:
 
-- **minor** — a release that brings upstream backports (the usual case).
-- **patch** — a fork-only fix, docs, or packaging change with no new backports.
+- **minor** — new behavior: upstream backports (the usual case) or a fork-original feature.
+- **patch** — a fix, docs, or packaging change that adds no new behavior.
 - **major** — reserved for a breaking change to config syntax or the CLI.
 
 The upstream commit this fork is based on (`63e0976b`) is recorded here and in
@@ -25,7 +25,7 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
-## Unreleased
+## v1.11 (2026-08-27)
 
 - **Refuses to start while another AeroSpace is running.** Two tiling window managers on the same
   keybindings fight over the same windows, so on startup AeroSpace-edge looks for a running upstream

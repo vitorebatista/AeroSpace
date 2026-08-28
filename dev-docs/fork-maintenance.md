@@ -29,7 +29,9 @@ Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for A
   skipped: `c548c7f8` (`Monitor` → `MonitorInfo` rename, part of the "track upstream main" milestone)
   and `ae2aa7aa` (upstream-only PR-labelling CI) — and 17 new open PRs, of which it ported #2244,
   #2232, #2211, #2228 and #2225 as fork PRs #55–#59.
-- **Released:** `v1.10` (cut 2026-08-27) — no backports; the fork becomes its own app
+- **Released:** `v1.11` (cut 2026-08-27) — fork-original feature: refuses to start while an upstream
+  AeroSpace is running (blocking alert, offers to quit the other app, re-checks). No backports.
+  Previous: `v1.10` (cut 2026-08-27) — no backports; the fork becomes its own app
   (see "App identity" above), new logo/icon, repo rename, README rewrite, and release zips renamed to
   `AeroSpace-edge-v<ver>.zip` with `legal/` included (1.9's zip shipped an empty `legal/`).
   Previous: `v1.9` (fork PRs #55–#59, cut 2026-08-27) — bug-fix-only cycle:
@@ -281,9 +283,9 @@ gh release create "v1.N" ".release/AeroSpace-edge-v1.N.zip" \
   --repo vitorebatista/AeroSpace-edge --target main --prerelease \
   --title "AeroSpace-edge v1.N" --notes-file <notes.md>
 ```
-- **Version scheme (since 2026-08-27): `1.MINOR[.PATCH]`, independent of upstream.** Minor bump for a
-  release carrying upstream backports; patch for a fork-only fix/docs/packaging release; major only for
-  a breaking config/CLI change. The upstream base commit is tracked in Sync state, not in the version.
+- **Version scheme (since 2026-08-27): `1.MINOR[.PATCH]`, independent of upstream.** Minor bump for new
+  behavior (upstream backports or a fork-original feature); patch for a fix/docs/packaging release that
+  adds no behavior; major only for a breaking config/CLI change. The upstream base commit is tracked in Sync state, not in the version.
   The version shows in the menu bar and `aerospace-edge --version`.
   Releases 1–10 were retagged from `v0.20.3-Beta-fork.N` to `v1.N` on 2026-08-27; only 1.10 was rebuilt
   under the new scheme, so older attached builds still report their original version string.
