@@ -767,17 +767,12 @@ There is an observation that macOS works better and more stable if you disable `
 
 When `Displays have separate Spaces` is enabled, moving windows between monitors causes windows to move between different Spaces which is not correctly handled by the public APIs AeroSpace uses, apparently, these APIs are not aware about Spaces existence. Spaces are just cursed in macOS. The less Spaces you have, the better macOS behaves.
 
-+------------------------------------------------------------+-----------------------------------------------------------------------+---------------------------------------------------------------------------------+
-|                                                            | “Displays have separate Spaces” is enabled                            | “Displays have separate Spaces” is disabled                                     |
-+============================================================+=======================================================================+=================================================================================+
-| Is it possible for window to span across several monitors? | ❌ No. macOS limitation                                               | 👍 Yes                                                                          |
-+------------------------------------------------------------+-----------------------------------------------------------------------+---------------------------------------------------------------------------------+
-| Overall stability and performance                          | ❌ Weird focus and performance issues may happen (see the list above) | 👍 Public Apple API are more stable (which in turn affects AeroSpace stability) |
-+------------------------------------------------------------+-----------------------------------------------------------------------+---------------------------------------------------------------------------------+
-| When the first monitor is in fullscreen                    | 👍 Second monitor operates independently                              | ❌ Second monitor is unusable black screen                                      |
-+------------------------------------------------------------+-----------------------------------------------------------------------+---------------------------------------------------------------------------------+
-| macOS status bar ...                                         | ... is displayed on both monitors                                       | ... is displayed only on main monitor                                             |
-+------------------------------------------------------------+-----------------------------------------------------------------------+---------------------------------------------------------------------------------+
+|  | “Displays have separate Spaces” is enabled | “Displays have separate Spaces” is disabled |
+| --- | --- | --- |
+| Is it possible for window to span across several monitors? | ❌ No. macOS limitation | 👍 Yes |
+| Overall stability and performance | ❌ Weird focus and performance issues may happen (see the list above) | 👍 Public Apple API are more stable (which in turn affects AeroSpace stability) |
+| When the first monitor is in fullscreen | 👍 Second monitor operates independently | ❌ Second monitor is unusable black screen |
+| macOS status bar ... | ... is displayed on both monitors | ... is displayed only on main monitor |
 
 If you don’t care about macOS native fullscreen in multi-monitor setup (which is itself clunky anyway, since it creates a separate Space instance), I recommend disabling `Displays have separate Spaces`.
 
@@ -815,25 +810,14 @@ Several callbacks can be declared in the config. The callbacks are processed in 
 
 Available window conditions are:
 
-+-----------------------------------+--------------------------------------------------------------------------+
-| Condition TOML key                | Condition description                                                    |
-+===================================+==========================================================================+
-| `if.app-id`                       | Application ID exact match of the detected window                        |
-+-----------------------------------+--------------------------------------------------------------------------+
-| `if.app-id-regex-substring`       | Application ID case insensitive regex substring of the detected window   |
-+-----------------------------------+--------------------------------------------------------------------------+
-| `if.app-name-regex-substring`     | Application name case insensitive regex substring of the detected window |
-+-----------------------------------+--------------------------------------------------------------------------+
-| `if.window-title-regex-substring` | Window title case insensitive regex substring of the detected window     |
-+-----------------------------------+--------------------------------------------------------------------------+
-| `if.during-aerospace-startup`     | - If `true` then run the callback only during AeroSpace startup.         |
-|                                   |                                                                          |
-|                                   | - If `false` then run callback only **NOT** during AeroSpace startup.    |
-|                                   |                                                                          |
-|                                   | - If not specified then the condition isn’t checked                      |
-+-----------------------------------+--------------------------------------------------------------------------+
-| `if.workspace`                    | Window’s workspace name exact match                                      |
-+-----------------------------------+--------------------------------------------------------------------------+
+| Condition TOML key | Condition description |
+| --- | --- |
+| `if.app-id` | Application ID exact match of the detected window |
+| `if.app-id-regex-substring` | Application ID case insensitive regex substring of the detected window |
+| `if.app-name-regex-substring` | Application name case insensitive regex substring of the detected window |
+| `if.window-title-regex-substring` | Window title case insensitive regex substring of the detected window |
+| `if.during-aerospace-startup` | - If `true` then run the callback only during AeroSpace startup.<br>- If `false` then run callback only **NOT** during AeroSpace startup.<br>- If not specified then the condition isn’t checked |
+| `if.workspace` | Window’s workspace name exact match |
 
 - `if.during-aerospace-startup = true` is useful if you want to do the initial app arrangement only on startup.
 
@@ -1116,17 +1100,12 @@ The request payload is a JSON object with the following fields:
 }
 ```
 
-+-------------+-----------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Field       | Type                              | Description                                                                                                                                                                                                                                                                                                                                                               |
-+=============+===================================+===========================================================================================================================================================================================================================================================================================================================================================================+
-| `args`      | array of strings                  | The CLI arguments as you would pass them to `aerospace`, **excluding** the program name itself. For example, `["workspace", "1"]` is the wire form of `aerospace workspace 1`. To send the `subscribe` command, pass `["subscribe", ...]` here.                                                                                                                             |
-+-------------+-----------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| `stdin`     | string                            | Contents to feed to the command as standard input. Use `""` if the command doesn’t read stdin. Some commands (e.g. [`workspace --stdin`](commands/workspace.md)) consume this field.                                                                                                                                                                                       |
-+-------------+-----------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| `windowId`  | unsigned 32-bit integer or `null` | The value of the `AEROSPACE_WINDOW_ID` environment variable as the client saw it, or `null` if there is no such variable in scope. AeroSpace sets this variable when invoking [exec callbacks](guide.md#exec-env-vars) so that the called process knows the window it was triggered from. If you are calling AeroSpace from your own context (no surrounding window), send `null`. |
-+-------------+-----------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| `workspace` | string or `null`                  | The value of the `AEROSPACE_WORKSPACE` environment variable as the client saw it, or `null` if unset. Same rationale as `windowId`.                                                                                                                                                                                                                                       |
-+-------------+-----------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field | Type | Description |
+| --- | --- | --- |
+| `args` | array of strings | The CLI arguments as you would pass them to `aerospace`, **excluding** the program name itself. For example, `["workspace", "1"]` is the wire form of `aerospace workspace 1`. To send the `subscribe` command, pass `["subscribe", ...]` here. |
+| `stdin` | string | Contents to feed to the command as standard input. Use `""` if the command doesn’t read stdin. Some commands (e.g. [`workspace --stdin`](commands/workspace.md)) consume this field. |
+| `windowId` | unsigned 32-bit integer or `null` | The value of the `AEROSPACE_WINDOW_ID` environment variable as the client saw it, or `null` if there is no such variable in scope. AeroSpace sets this variable when invoking [exec callbacks](guide.md#exec-env-vars) so that the called process knows the window it was triggered from. If you are calling AeroSpace from your own context (no surrounding window), send `null`. |
+| `workspace` | string or `null` | The value of the `AEROSPACE_WORKSPACE` environment variable as the client saw it, or `null` if unset. Same rationale as `windowId`. |
 
 ### ServerAnswer
 
@@ -1141,17 +1120,12 @@ The reply to a one-shot command is a JSON object:
 }
 ```
 
-+------------------------+-----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Field                  | Type                  | Description                                                                                                                                                                                   |
-+========================+=======================+===============================================================================================================================================================================================+
-| `exitCode`             | signed 32-bit integer | `0` on success, non-zero on failure. Mirrors what the `aerospace` CLI would have exited with.                                                                                                 |
-+------------------------+-----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| `stdout`               | string                | What the CLI would have printed to standard output. May contain newlines.                                                                                                                     |
-+------------------------+-----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| `stderr`               | string                | What the CLI would have printed to standard error.                                                                                                                                            |
-+------------------------+-----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| `serverVersionAndHash` | string                | Free-form `"<version> <git-hash>"` identifying the running server. Useful for compatibility checks; compare against the equivalent string from your own client and warn the user on mismatch. |
-+------------------------+-----------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Field | Type | Description |
+| --- | --- | --- |
+| `exitCode` | signed 32-bit integer | `0` on success, non-zero on failure. Mirrors what the `aerospace` CLI would have exited with. |
+| `stdout` | string | What the CLI would have printed to standard output. May contain newlines. |
+| `stderr` | string | What the CLI would have printed to standard error. |
+| `serverVersionAndHash` | string | Free-form `"<version> <git-hash>"` identifying the running server. Useful for compatibility checks; compare against the equivalent string from your own client and warn the user on mismatch. |
 
 ### Subscribe mode
 

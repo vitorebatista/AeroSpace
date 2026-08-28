@@ -4,7 +4,7 @@ title: Goodies
 
 # Goodies
 
-Do you have a cool automatization, AeroSpace integration, or workflow? Feel free to open an issue or pull request to add it to this list! The source code of the page can be found in the `./docs` directory.
+Do you have a cool automatization, AeroSpace integration, or workflow? Feel free to open an issue or pull request to add it to this list! The source code of the page can be found in the [`docs-md`](https://github.com/vitorebatista/AeroSpace-edge/tree/main/docs-md) directory.
 
 ## Move windows by dragging any part of the window
 
@@ -83,10 +83,7 @@ Use the software of your choice to assign trackpad gestures to the respective co
 
 You can integrate AeroSpace workspace indicators with [Sketchybar](https://github.com/FelixKratz/SketchyBar). Use these snippets as a starting point.
 
-:::: formalpara
-::: title
-~/.aerospace.toml
-:::
+**~/.aerospace.toml**
 
 ``` toml
 ## Run Sketchybar together with AeroSpace
@@ -103,12 +100,8 @@ exec-on-workspace-change = ['/bin/bash', '-c',
     'sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$AEROSPACE_FOCUSED_WORKSPACE'
 ]
 ```
-::::
 
-:::: formalpara
-::: title
-~/.config/sketchybar/sketchybarrc
-:::
+**~/.config/sketchybar/sketchybarrc**
 
 ``` bash
 sketchybar --add event aerospace_workspace_change
@@ -126,12 +119,8 @@ for sid in $(aerospace list-workspaces --all); do
         script="$CONFIG_DIR/plugins/aerospace.sh $sid"
 done
 ```
-::::
 
-:::: formalpara
-::: title
-~/.config/sketchybar/plugins/aerospace.sh
-:::
+**~/.config/sketchybar/plugins/aerospace.sh**
 
 ``` bash
 #!/usr/bin/env bash
@@ -146,7 +135,6 @@ else
     sketchybar --set $NAME background.drawing=off
 fi
 ```
-::::
 
 ## Show AeroSpace workspaces in simple-bar
 
@@ -154,10 +142,7 @@ fi
 
 In order to sync simple-bar with AeroSpace, add these lines to your AeroSpace config file:
 
-:::: formalpara
-::: title
-~/.aerospace.toml
-:::
+**~/.aerospace.toml**
 
 ``` toml
 ## Notify simple-bar about window focus change
@@ -174,7 +159,6 @@ exec-on-workspace-change = [
   '/usr/bin/osascript -e "tell application id \"tracesOf.Uebersicht\" to refresh widget id \"simple-bar-index-jsx\""',
 ]
 ```
-::::
 
 ## Open a new window with AppleScript
 
@@ -218,31 +202,23 @@ Opening **a new window** of a program that can support multiple windows (such as
 
 If `automatically-unhide-macos-hidden-apps` isn’t enough, you can disable `cmd-h` altogether (which will make this hotkey unavailable for apps that might use it for other purposes)
 
-:::: formalpara
-::: title
-~/.aerospace.toml
-:::
+**~/.aerospace.toml**
 
 ``` toml
 [mode.main.binding]
     cmd-h = [] # Disable "hide application"
     cmd-alt-h = [] # Disable "hide others"
 ```
-::::
 
 ## Take screenshots to clipboard using keyboard shortcut
 
 You can configure a custom shortcut to take a screenshot. `screencapture` is a built-in macOS command.
 
-:::: formalpara
-::: title
-~/.aerospace.toml
-:::
+**~/.aerospace.toml**
 
 ``` toml
 alt-shift-s = 'exec-and-forget screencapture -i -c'
 ```
-::::
 
 ## i3 like config
 
@@ -356,102 +332,53 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 
 The list is useful to compose custom [on-window-detected callback](guide.md#on-window-detected-callback).
 
-+-------------------+-----------------------------------------------------+
-| Application name  | Application ID                                      |
-+===================+=====================================================+
-| Activity Monitor  | `com.apple.ActivityMonitor`                         |
-+-------------------+-----------------------------------------------------+
-| AirPort Utility   | `com.apple.airport.airportutility`                  |
-+-------------------+-----------------------------------------------------+
-| App Store         | `com.apple.AppStore`                                |
-+-------------------+-----------------------------------------------------+
-| Audio MIDI Setup  | `com.apple.audio.AudioMIDISetup`                    |
-+-------------------+-----------------------------------------------------+
-| Automator         | `com.apple.Automator`                               |
-+-------------------+-----------------------------------------------------+
-| Books             | `com.apple.iBooksX`                                 |
-+-------------------+-----------------------------------------------------+
-| Calculator        | `com.apple.calculator`                              |
-+-------------------+-----------------------------------------------------+
-| Calendar          | `com.apple.iCal`                                    |
-+-------------------+-----------------------------------------------------+
-| Chess             | `com.apple.Chess`                                   |
-+-------------------+-----------------------------------------------------+
-| Clock             | `com.apple.clock`                                   |
-+-------------------+-----------------------------------------------------+
-| ColorSync Utility | `com.apple.ColorSyncUtility`                        |
-+-------------------+-----------------------------------------------------+
-| Console           | `com.apple.Console`                                 |
-+-------------------+-----------------------------------------------------+
-| Contacts          | `com.apple.AddressBook`                             |
-+-------------------+-----------------------------------------------------+
-| Dictionary        | `com.apple.Dictionary`                              |
-+-------------------+-----------------------------------------------------+
-| Disk Utility      | `com.apple.DiskUtility`                             |
-+-------------------+-----------------------------------------------------+
-| FaceTime          | `com.apple.FaceTime`                                |
-+-------------------+-----------------------------------------------------+
-| Find My           | `com.apple.findmy`                                  |
-+-------------------+-----------------------------------------------------+
-| Finder            | `com.apple.finder`                                  |
-+-------------------+-----------------------------------------------------+
-| Freeform          | `com.apple.freeform`                                |
-+-------------------+-----------------------------------------------------+
-| Grapher           | `com.apple.grapher`                                 |
-+-------------------+-----------------------------------------------------+
-| Home              | `com.apple.Home`                                    |
-+-------------------+-----------------------------------------------------+
-| iMovie            | `com.apple.iMovieApp`                               |
-+-------------------+-----------------------------------------------------+
-| Keychain Access   | `com.apple.keychainaccess`                          |
-+-------------------+-----------------------------------------------------+
-| Keynote           | `com.apple.iWork.Keynote`                           |
-+-------------------+-----------------------------------------------------+
-| Mail              | `com.apple.mail`                                    |
-+-------------------+-----------------------------------------------------+
-| Maps              | `com.apple.Maps`                                    |
-+-------------------+-----------------------------------------------------+
-| Messages          | `com.apple.MobileSMS`                               |
-+-------------------+-----------------------------------------------------+
-| Music             | `com.apple.Music`                                   |
-+-------------------+-----------------------------------------------------+
-| Notes             | `com.apple.Notes`                                   |
-+-------------------+-----------------------------------------------------+
-| Pages             | `com.apple.iWork.Pages`                             |
-+-------------------+-----------------------------------------------------+
-| Photo Booth       | `com.apple.PhotoBooth`                              |
-+-------------------+-----------------------------------------------------+
-| Photos            | `com.apple.Photos`                                  |
-+-------------------+-----------------------------------------------------+
-| Podcasts          | `com.apple.podcasts`                                |
-+-------------------+-----------------------------------------------------+
-| Preview           | `com.apple.Preview`                                 |
-+-------------------+-----------------------------------------------------+
-| QuickTime Player  | `com.apple.QuickTimePlayerX`                        |
-+-------------------+-----------------------------------------------------+
-| Reminders         | `com.apple.reminders`                               |
-+-------------------+-----------------------------------------------------+
-| Safari            | `com.apple.Safari`                                  |
-+-------------------+-----------------------------------------------------+
-| Shortcuts         | `com.apple.shortcuts`                               |
-+-------------------+-----------------------------------------------------+
-| Stocks            | `com.apple.stocks`                                  |
-+-------------------+-----------------------------------------------------+
-| System Settings   | `com.apple.systempreferences`                       |
-+-------------------+-----------------------------------------------------+
-| Terminal          | `com.apple.Terminal`                                |
-+-------------------+-----------------------------------------------------+
-| TextEdit          | `com.apple.TextEdit`                                |
-+-------------------+-----------------------------------------------------+
-| Time Machine      | `com.apple.backup.launcher`                         |
-+-------------------+-----------------------------------------------------+
-| TV                | `com.apple.TV`                                      |
-+-------------------+-----------------------------------------------------+
-| VoiceMemos        | `com.apple.VoiceMemos`                              |
-+-------------------+-----------------------------------------------------+
-| VoiceOver Utility | `com.apple.VoiceOverUtility`                        |
-+-------------------+-----------------------------------------------------+
-| Weather           | `com.apple.weather`                                 |
-+-------------------+-----------------------------------------------------+
-| Xcode             | `com.apple.dt.Xcode`                                |
-+-------------------+-----------------------------------------------------+
+| Application name | Application ID |
+| --- | --- |
+| Activity Monitor | `com.apple.ActivityMonitor` |
+| AirPort Utility | `com.apple.airport.airportutility` |
+| App Store | `com.apple.AppStore` |
+| Audio MIDI Setup | `com.apple.audio.AudioMIDISetup` |
+| Automator | `com.apple.Automator` |
+| Books | `com.apple.iBooksX` |
+| Calculator | `com.apple.calculator` |
+| Calendar | `com.apple.iCal` |
+| Chess | `com.apple.Chess` |
+| Clock | `com.apple.clock` |
+| ColorSync Utility | `com.apple.ColorSyncUtility` |
+| Console | `com.apple.Console` |
+| Contacts | `com.apple.AddressBook` |
+| Dictionary | `com.apple.Dictionary` |
+| Disk Utility | `com.apple.DiskUtility` |
+| FaceTime | `com.apple.FaceTime` |
+| Find My | `com.apple.findmy` |
+| Finder | `com.apple.finder` |
+| Freeform | `com.apple.freeform` |
+| Grapher | `com.apple.grapher` |
+| Home | `com.apple.Home` |
+| iMovie | `com.apple.iMovieApp` |
+| Keychain Access | `com.apple.keychainaccess` |
+| Keynote | `com.apple.iWork.Keynote` |
+| Mail | `com.apple.mail` |
+| Maps | `com.apple.Maps` |
+| Messages | `com.apple.MobileSMS` |
+| Music | `com.apple.Music` |
+| Notes | `com.apple.Notes` |
+| Pages | `com.apple.iWork.Pages` |
+| Photo Booth | `com.apple.PhotoBooth` |
+| Photos | `com.apple.Photos` |
+| Podcasts | `com.apple.podcasts` |
+| Preview | `com.apple.Preview` |
+| QuickTime Player | `com.apple.QuickTimePlayerX` |
+| Reminders | `com.apple.reminders` |
+| Safari | `com.apple.Safari` |
+| Shortcuts | `com.apple.shortcuts` |
+| Stocks | `com.apple.stocks` |
+| System Settings | `com.apple.systempreferences` |
+| Terminal | `com.apple.Terminal` |
+| TextEdit | `com.apple.TextEdit` |
+| Time Machine | `com.apple.backup.launcher` |
+| TV | `com.apple.TV` |
+| VoiceMemos | `com.apple.VoiceMemos` |
+| VoiceOver Utility | `com.apple.VoiceOverUtility` |
+| Weather | `com.apple.weather` |
+| Xcode | `com.apple.dt.Xcode` |
