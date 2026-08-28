@@ -68,6 +68,41 @@ final class ConfigTomlWriterTest: XCTestCase {
         assertEquals(Array(parsed.persistentWorkspaces), ["1", "web", "it's"])
     }
 
+    func testPersistentWorkspacesIsGatedOnConfigVersion() {
+        // Negative branch: a genuine config-version <= 1 file — the realistic case, where
+        // the key is simply absent and config-version defaults to 1 — with a workspace
+        // binding, so the parser itself derives a non-empty `persistentWorkspaces`
+        // (parseConfig.swift's config-version <= 1 branch) exactly the way `SettingsModel`
+        // will see it at runtime. Without the gate, `apply` would write
+        // `persistent-workspaces = [...]` into this v1 file, and the parser rejects that
+        // key outright ("This config option is only available since 'config-version = 2'").
+        let text = "[mode.main.binding]\nalt-1 = 'workspace 1'\n"
+        var document = TomlBlockDocument(text)
+        let (config, errors) = parseConfig(text)
+        assertEquals(errors, [])
+        assertEquals(config.configVersion, 1)
+        assertEquals(Array(config.persistentWorkspaces), ["1"])
+
+        var draft = ConfigTomlWriter.draft(from: config, rawExec: RawExecConfig(), document: document)
+        draft.startAtLogin = true // an unrelated edit, the way a real save would make one
+        ConfigTomlWriter.apply(draft, to: &document)
+
+        let rendered = document.render()
+        assertEquals(rendered.contains("persistent-workspaces"), false, additionalMsg: rendered)
+        let (_, reErrors) = parseConfig(rendered)
+        assertEquals(reErrors, [], additionalMsg: rendered)
+
+        // The gate's other half: a v1 file that already spells out `persistent-workspaces`
+        // (already invalid on its own, since the parser rejects that combination) stays
+        // writable rather than being silently dropped by the settings window.
+        var alreadyPresentDocument = TomlBlockDocument("persistent-workspaces = ['1']\n")
+        var alreadyPresentDraft = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: alreadyPresentDocument)
+        alreadyPresentDraft.configVersion = 1
+        alreadyPresentDraft.persistentWorkspaces = ["1", "2"]
+        ConfigTomlWriter.apply(alreadyPresentDraft, to: &alreadyPresentDocument)
+        assertEquals(alreadyPresentDocument.render(), "persistent-workspaces = ['1', '2']\n")
+    }
+
     func testConstantGapsRoundTrip() {
         let parsed = roundTrip { draft in
             draft.gaps = Gaps(inner: .init(vertical: 5, horizontal: 6), outer: .init(left: 1, bottom: 2, top: 3, right: 4))
