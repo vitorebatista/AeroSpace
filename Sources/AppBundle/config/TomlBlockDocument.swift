@@ -143,6 +143,120 @@ struct TomlBlockDocument {
     }
 }
 
+// MARK: - Surgical edits
+
+extension TomlBlockDocument {
+    /// Replaces the value of an existing top-level `key`, keeping its position, its
+    /// indentation, and any trailing comment on the same line. If the key is absent it
+    /// is appended at the end of the top-level key region — before the first table
+    /// header, so the document stays valid TOML.
+    mutating func set(key: String, tomlValue: String) {
+        if let index = blocks.firstIndex(where: { $0.name == key && $0.isKeyValue }) {
+            blocks[index] = .keyValue(key: key, text: Self.rewriteValue(of: blocks[index].text, key: key, to: tomlValue))
+            return
+        }
+        let line = "\(key) = \(tomlValue)\n"
+        let insertAt = blocks.firstIndex(where: { $0.isTable }) ?? blocks.count
+        // Skip back over trivia that introduces the first table — a comment about `[gaps]`
+        // should stay attached to `[gaps]`, not end up below the new key.
+        var target = insertAt
+        while target > 0, blocks[target - 1].isTrivia { target -= 1 }
+        // The block we are inserting after must end with a newline, or the new key would
+        // be glued onto it.
+        if target > 0 {
+            blocks[target - 1] = blocks[target - 1].withText { $0.hasSuffix("\n") ? $0 : $0 + "\n" }
+        }
+        blocks.insert(.keyValue(key: key, text: line), at: target)
+    }
+
+    mutating func remove(key: String) {
+        blocks.removeAll { $0.name == key && $0.isKeyValue }
+    }
+
+    /// Rewrites `key = <old>` to `key = <new>`, keeping leading indentation and any
+    /// trailing `#` comment from the FIRST line, and dropping any continuation lines of
+    /// a multi-line old value.
+    private static func rewriteValue(of text: String, key: String, to tomlValue: String) -> String {
+        let lines = text.linesWithTerminators()
+        guard let first = lines.first else { return "\(key) = \(tomlValue)\n" }
+        let indent = String(first.prefix(while: { $0 == " " || $0 == "\t" }))
+        // Only treat a `#` as a comment if it is outside the value's quotes. Reuse the
+        // scanner by asking it where the comment starts.
+        let comment = trailingComment(of: first)
+        let terminator = lines.last?.hasSuffix("\n") == true ? "\n" : ""
+        return "\(indent)\(key) = \(tomlValue)\(comment)\(terminator)"
+    }
+
+    /// Returns `" # ..."` (with its original spacing) if the line ends in a comment that
+    /// is not inside a string, else `""`.
+    private static func trailingComment(of line: String) -> String {
+        if let index = tomlCommentStart(of: line) {
+            let raw = line[index...]
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? "" : " " + trimmed
+        }
+        return ""
+    }
+}
+
+private extension TomlBlock {
+    var isKeyValue: Bool { if case .keyValue = self { true } else { false } }
+    var isTable: Bool { if case .table = self { true } else { false } }
+    var isTrivia: Bool { if case .trivia = self { true } else { false } }
+
+    func withText(_ transform: (String) -> String) -> TomlBlock {
+        switch self {
+            case .trivia(let text): .trivia(text: transform(text))
+            case .keyValue(let key, let text): .keyValue(key: key, text: transform(text))
+            case .table(let name, let text): .table(name: name, text: transform(text))
+        }
+    }
+}
+
+/// Finds where a real comment starts on a single line, skipping `#` inside strings.
+private func tomlCommentStart(of line: String) -> String.Index? {
+    var i = line.startIndex
+    func advance(_ n: Int = 1) { i = line.index(i, offsetBy: n, limitedBy: line.endIndex) ?? line.endIndex }
+    while i < line.endIndex {
+        let char = line[i]
+        switch char {
+            case "#": return i
+            case "\"", "'":
+                advance()
+                while i < line.endIndex {
+                    if char == "\"", line[i] == "\\" { advance(2); continue }
+                    if line[i] == char { advance(); break }
+                    advance()
+                }
+            default: advance()
+        }
+    }
+    return nil
+}
+
+// MARK: - Value serialisation
+
+/// Serialises Swift values to TOML value syntax. Deliberately tiny: the settings window
+/// only ever writes bools, ints, strings, and arrays of those.
+enum TomlValue {
+    static func of(_ value: Bool) -> String { value ? "true" : "false" }
+    static func of(_ value: Int) -> String { String(value) }
+
+    /// Prefers a literal (single-quoted) string, since AeroSpace configs and commands are
+    /// full of backslashes and regexes that a basic string would force us to escape.
+    /// Falls back to a basic string when the value itself contains a single quote.
+    static func of(_ value: String) -> String {
+        if !value.contains("'") { return "'\(value)'" }
+        let escaped = value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
+        return "\"\(escaped)\""
+    }
+
+    /// `items` must already be serialised.
+    static func array(_ items: [String]) -> String { "[\(items.joined(separator: ", "))]" }
+}
+
 extension StringProtocol {
     /// Splits into lines, each keeping its trailing `\n` (or `\r\n`) if it had one.
     func linesWithTerminators() -> [String] {

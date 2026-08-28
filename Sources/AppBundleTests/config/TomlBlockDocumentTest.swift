@@ -81,4 +81,120 @@ final class TomlBlockDocumentTest: XCTestCase {
         assertEquals(TomlBlockDocument("").render(), "")
         assertEquals(TomlBlockDocument("").blocks.count, 0)
     }
+
+    func testSetExistingKeyPreservesEverythingElse() {
+        var doc = TomlBlockDocument(
+            """
+            # top comment
+            start-at-login = false
+            accordion-padding = 30 # why 30
+
+            [gaps]
+            inner.vertical = 2
+            """,
+        )
+        doc.set(key: "start-at-login", tomlValue: "true")
+        assertEquals(
+            doc.render(),
+            """
+            # top comment
+            start-at-login = true
+            accordion-padding = 30 # why 30
+
+            [gaps]
+            inner.vertical = 2
+            """,
+        )
+    }
+
+    func testSetPreservesTrailingCommentOnTheSameLine() {
+        var doc = TomlBlockDocument("accordion-padding = 30 # why 30\n")
+        doc.set(key: "accordion-padding", tomlValue: "45")
+        assertEquals(doc.render(), "accordion-padding = 45 # why 30\n")
+    }
+
+    func testSetAbsentKeyIsInsertedBeforeTheFirstTableHeader() {
+        var doc = TomlBlockDocument(
+            """
+            start-at-login = true
+
+            [gaps]
+            inner.vertical = 2
+            """,
+        )
+        doc.set(key: "accordion-padding", tomlValue: "45")
+        assertEquals(
+            doc.render(),
+            """
+            start-at-login = true
+            accordion-padding = 45
+
+            [gaps]
+            inner.vertical = 2
+            """,
+        )
+    }
+
+    func testSetAbsentKeyInAFileWithNoTables() {
+        var doc = TomlBlockDocument("start-at-login = true\n")
+        doc.set(key: "accordion-padding", tomlValue: "45")
+        assertEquals(doc.render(), "start-at-login = true\naccordion-padding = 45\n")
+    }
+
+    func testSetAbsentKeyInAnEmptyDocument() {
+        var doc = TomlBlockDocument("")
+        doc.set(key: "start-at-login", tomlValue: "true")
+        assertEquals(doc.render(), "start-at-login = true\n")
+    }
+
+    func testSetMultiLineValueIsReplacedWholesale() {
+        var doc = TomlBlockDocument(
+            """
+            persistent-workspaces = [
+                '1',
+                '2',
+            ]
+            start-at-login = true
+            """,
+        )
+        doc.set(key: "persistent-workspaces", tomlValue: "['1', '2', '3']")
+        assertEquals(
+            doc.render(),
+            """
+            persistent-workspaces = ['1', '2', '3']
+            start-at-login = true
+            """,
+        )
+    }
+
+    func testRemoveKey() {
+        var doc = TomlBlockDocument("a = 1\nb = 2\n")
+        doc.remove(key: "a")
+        assertEquals(doc.render(), "b = 2\n")
+        doc.remove(key: "nonexistent") // no-op
+        assertEquals(doc.render(), "b = 2\n")
+    }
+
+    func testUnknownKeysAndTablesSurviveASet() {
+        let text = """
+            some-future-option = 'hello'
+            start-at-login = false
+
+            [some.future.table]
+            x = 1
+            """
+        var doc = TomlBlockDocument(text)
+        doc.set(key: "start-at-login", tomlValue: "true")
+        assertEquals(doc.render(), text.replacingOccurrences(of: "start-at-login = false", with: "start-at-login = true"))
+    }
+
+    func testValueSerialisers() {
+        assertEquals(TomlValue.of(true), "true")
+        assertEquals(TomlValue.of(42), "42")
+        assertEquals(TomlValue.of("plain"), "'plain'")
+        assertEquals(TomlValue.of("it's"), "\"it's\"")
+        assertEquals(TomlValue.of("say \"hi\""), "'say \"hi\"'")
+        assertEquals(TomlValue.array([TomlValue.of("1"), TomlValue.of("2")]), "['1', '2']")
+        assertEquals(TomlValue.array([]), "[]")
+    }
 }
