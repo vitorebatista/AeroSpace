@@ -256,6 +256,15 @@ final class TomlBlockDocumentTest: XCTestCase {
         assertEquals(doc.render(), "a = 1\n\n[exec]\nx = 1\n")
     }
 
+    func testReplaceTableWithNilKeepsARealCommentThatFollowsIt() {
+        // The dangling-trivia cleanup after a delete must only ever remove a *blank*
+        // trivia block. A trivia block carrying a real comment (not blank-only) is left
+        // in place untouched, so the comment isn't silently swallowed.
+        var doc = TomlBlockDocument("a = 1\n\n[gaps]\ninner.vertical = 2\n# still relevant\n[exec]\nx = 1\n")
+        doc.replaceTable(named: "gaps", with: nil)
+        assertEquals(doc.render(), "a = 1\n\n# still relevant\n[exec]\nx = 1\n")
+    }
+
     func testReplaceTableAlsoDropsTopLevelDottedKeys() {
         // `gaps.inner.vertical = 5` at top level is the same setting spelled differently;
         // regenerating `[gaps]` must not leave a duplicate definition behind.
@@ -295,5 +304,14 @@ final class TomlBlockDocumentTest: XCTestCase {
         var doc = TomlBlockDocument("a = 1\n")
         doc.replaceTables(matching: { $0.hasPrefix("mode.") }, with: "[mode.main.binding]\nalt-j = 'focus down'\n")
         assertEquals(doc.render(), "a = 1\n[mode.main.binding]\nalt-j = 'focus down'\n")
+    }
+
+    func testReplaceTablesMatchingLeavesAnUnmatchedTableInBetweenUntouched() {
+        // Two matching tables separated by a *non-matching* table (not just trivia):
+        // the span to splice must stop at each match, not swallow the unmatched table
+        // (and its comment) sitting between them.
+        var doc = TomlBlockDocument("[mode.a]\nx = 1\n\n[other]\n# keep me\ny = 2\n\n[mode.b]\nz = 3\n")
+        doc.replaceTables(matching: { $0.hasPrefix("mode.") }, with: "[mode.c]\nw = 9\n")
+        assertEquals(doc.render(), "[mode.c]\nw = 9\n\n[other]\n# keep me\ny = 2\n\n")
     }
 }
