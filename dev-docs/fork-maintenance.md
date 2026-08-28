@@ -1,6 +1,6 @@
 # Fork maintenance
 
-Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSpace belongs to
+Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for AeroSpace belongs to
 [@nikitabobko](https://github.com/nikitabobko) and contributors. MIT license + attribution preserved.
 
 > **For AI agents / future sessions:** this file is the single source of truth for "update my fork
@@ -14,7 +14,10 @@ Maintainer runbook for the `vitorebatista/AeroSpace` fork. All credit for AeroSp
   plus a curated set of **backported bug fixes / small features**, each merged as its own PR.
 - We intentionally **skip** large refactors and features that would conflict with the curated
   backports (see "Deliberately not ported" below).
-- `origin` = `vitorebatista/AeroSpace` (the fork). `upstream` = `nikitabobko/AeroSpace`.
+- `origin` = `vitorebatista/AeroSpace-edge` (the fork). `upstream` = `nikitabobko/AeroSpace`.
+  **Renamed 2026-08-27** from `vitorebatista/AeroSpace`; GitHub redirects the old URL, but use the new
+  name in commands. The app bundle id (`bobko.aerospace`) and the `aerospace` CLI name are deliberately
+  unchanged — renaming those would break the socket path, third-party clients and users' configs.
   If `upstream` is missing: `git remote add upstream https://github.com/nikitabobko/AeroSpace.git`
 
 ## Sync state (update this section every sync)
@@ -214,10 +217,10 @@ merge — trust the `-warnings-as-errors` build, not the diagnostics.
 ### 5. Open one PR per fix
 ```bash
 git push -u origin port/<slug>
-gh pr create --repo vitorebatista/AeroSpace --base main --head port/<slug> --title "..." --body "..."
+gh pr create --repo vitorebatista/AeroSpace-edge --base main --head port/<slug> --title "..." --body "..."
 ```
-gh's default repo is the fork (`gh repo set-default vitorebatista/AeroSpace` if ever needed) — always
-pass `--repo vitorebatista/AeroSpace` to be safe. PR body: summary + `Ports nikitabobko/AeroSpace#<N>`
+gh's default repo is the fork (`gh repo set-default vitorebatista/AeroSpace-edge` if ever needed) — always
+pass `--repo vitorebatista/AeroSpace-edge` to be safe. PR body: summary + `Ports nikitabobko/AeroSpace#<N>`
 (or `Backports upstream commit <sha>`) + test/doc coverage + caveats.
 
 ### 6. Merge (local merge train — handles the many shared-file conflicts efficiently)
@@ -269,7 +272,7 @@ The script (see git history of `/tmp/lean-release2.sh` pattern) does, with
 ## Creating the GitHub release
 ```bash
 gh release create "v0.20.3-Beta-fork.N" ".release/AeroSpace-v0.20.3-Beta-fork.N.zip" \
-  --repo vitorebatista/AeroSpace --target main --prerelease \
+  --repo vitorebatista/AeroSpace-edge --target main --prerelease \
   --title "AeroSpace v0.20.3-Beta-fork.N" --notes-file <notes.md>
 ```
 - Version scheme: upstream beta base + `-fork.N`; bump `N` each release. The version shows in the

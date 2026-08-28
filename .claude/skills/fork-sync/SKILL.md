@@ -1,7 +1,7 @@
 ---
 name: fork-sync
 description: >-
-  Sync the vitorebatista/AeroSpace fork with upstream nikitabobko/AeroSpace. Finds new upstream
+  Sync the vitorebatista/AeroSpace-edge fork with upstream nikitabobko/AeroSpace. Finds new upstream
   commits and open PRs since the recorded sync point, triages them (bug fixes + safe small
   features), backports the delta as individual build+test-verified PRs, can merge them via a
   conflict-aware merge train, cut a `-fork.N` release, and update the changelog/sync-state docs.
@@ -13,7 +13,7 @@ description: >-
 
 # Fork sync
 
-Keep the `vitorebatista/AeroSpace` fork current with upstream `nikitabobko/AeroSpace` by backporting
+Keep the `vitorebatista/AeroSpace-edge` fork current with upstream `nikitabobko/AeroSpace` by backporting
 only the *new* worthwhile changes since the last sync — cheaply, without re-triaging everything.
 
 All credit for AeroSpace belongs to [@nikitabobko](https://github.com/nikitabobko). Preserve the MIT
@@ -66,7 +66,7 @@ Per the runbook: branch off `origin/main` (`port/<slug>`), apply the change
 generated files from `.adoc`), satisfy the **doc checklist** (`.adoc` synopsis+body, `guide.adoc`/
 `default-config.toml`, `grammar/commands-bnf-grammar.txt`), then verify with
 `./build-debug.sh -Xswiftc -warnings-as-errors` **and** `./swift-test.sh` before opening one PR per
-fix with `gh pr create --repo vitorebatista/AeroSpace --base main`.
+fix with `gh pr create --repo vitorebatista/AeroSpace-edge --base main`.
 
 Porting does heavy Swift builds, so run port agents **serially in the shared working copy** (warm
 `.build` cache, no branch clobbering) rather than many parallel cold builds. Each PR body must cite
@@ -82,7 +82,7 @@ no-conflict-markers check before `git push origin main`. See the runbook for the
 ### Phase 5 — Release (only if the user asks)
 Use the runbook's **lean release build** (the official `build-release.sh` fails in this environment on
 docs/shell-completion tooling). Bump `-fork.N`, build the universal app + CLI, then
-`gh release create v<ver> --repo vitorebatista/AeroSpace --target main --prerelease <zip>`.
+`gh release create v<ver> --repo vitorebatista/AeroSpace-edge --target main --prerelease <zip>`.
 
 ### Phase 6 — Update the markdown (always, after any change)
 This is part of the job, not an afterthought — it's what keeps future syncs cheap and the repo honest:
