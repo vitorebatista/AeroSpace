@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it be converted to "SwiftUI struct"?
+public func menuBar(viewModel: TrayMenuModel, openSettings: @escaping () -> Void) -> some Scene { // todo should it be converted to "SwiftUI struct"?
     MenuBarExtra {
         let shortIdentification = "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitShortHash)"
         let identification      = "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitHash)"
@@ -42,6 +42,7 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
             }.keyboardShortcut("E", modifiers: .command)
             openConfigButton()
             reloadConfigButton()
+            settingsWindowButton(openSettings: openSettings)
             getExperimentalUISettingsMenu(viewModel: viewModel)
             Menu {
                 Button("Check Now") { Task { await runCheckForUpdatesFlow() } }
@@ -121,6 +122,19 @@ func openConfigButton(showShortcutGroup: Bool = false) -> some View {
     switch showShortcutGroup {
         case true: shortcutGroup(label: Text("⌘ ,"), content: button)
         case false: button
+    }
+}
+
+@MainActor @ViewBuilder
+func settingsWindowButton(openSettings: @escaping () -> Void) -> some View {
+    Button("Settings…") {
+        SettingsModel.shared.load()
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == settingsWindowId }) {
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            openSettings()
+        }
     }
 }
 

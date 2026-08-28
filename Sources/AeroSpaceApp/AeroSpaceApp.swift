@@ -7,6 +7,7 @@ import SwiftUI
 struct AeroSpaceApp: App {
     @StateObject var viewModel = TrayMenuModel.shared
     @StateObject var messageModel = MessageModel.shared
+    @StateObject var settingsModel = SettingsModel.shared
     @Environment(\.openWindow) var openWindow: OpenWindowAction
 
     init() {
@@ -14,12 +15,13 @@ struct AeroSpaceApp: App {
     }
 
     var body: some Scene {
-        menuBar(viewModel: viewModel)
+        menuBar(viewModel: viewModel, openSettings: { openWindow(id: settingsWindowId) })
         getMessageWindow(messageModel: messageModel)
             .onChange(of: messageModel.message) { message in
                 if message != nil {
                     openWindow(id: messageWindowId)
                 }
             }
+        getSettingsWindow(model: settingsModel)
     }
 }

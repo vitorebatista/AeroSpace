@@ -18,8 +18,10 @@ enum SettingsStatus: Equatable {
 }
 
 @MainActor
-final class SettingsModel: ObservableObject {
-    static let shared = SettingsModel()
+public final class SettingsModel: ObservableObject {
+    // `public` because `AeroSpaceApp` (a separate SPM target) holds `.shared` as a
+    // `@StateObject` to keep it alive for the settings window's lifetime.
+    public static let shared = SettingsModel()
 
     @Published var draft: ConfigTomlWriter.ConfigDraft = ConfigTomlWriter.ConfigDraft.defaults
     @Published var mode: SettingsMode = .form
