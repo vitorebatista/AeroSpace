@@ -34,24 +34,18 @@ weeks rather than release cycles. Same tree model, same config file, same comman
 used AeroSpace you already know how to use this. What differs is the release cadence and what's
 already fixed.
 
-<div class="edge-stats" markdown>
+<div class="edge-badges" markdown>
 
-<div markdown>
-**v1.13**
-<span>current release, versioned `1.MINOR[.PATCH]` independently of upstream</span>
-</div>
-
-<div markdown>
-**52**
-<span>fixes and features carried, each traceable in the [fork changelog](https://github.com/vitorebatista/AeroSpace-edge/blob/main/CHANGELOG-FORK.md)</span>
-</div>
-
-<div markdown>
-**227**
-<span>tests green before any branch merges — warnings are errors</span>
-</div>
+[![latest release](https://img.shields.io/github/v/release/vitorebatista/AeroSpace-edge?include_prereleases&label=release&color=6366F1&style=for-the-badge)](https://github.com/vitorebatista/AeroSpace-edge/releases/latest)
+[![backported pull requests](https://img.shields.io/github/issues-search?query=repo%3Avitorebatista%2FAeroSpace-edge%20is%3Apr%20is%3Amerged&label=merged%20PRs&color=22D3EE&style=for-the-badge)](https://github.com/vitorebatista/AeroSpace-edge/pulls?q=is%3Apr+is%3Amerged)
+[![last commit](https://img.shields.io/github/last-commit/vitorebatista/AeroSpace-edge?label=last%20commit&color=A855F7&style=for-the-badge)](https://github.com/vitorebatista/AeroSpace-edge/commits/main)
+[![license](https://img.shields.io/badge/license-MIT-64748B?style=for-the-badge)](https://github.com/vitorebatista/AeroSpace-edge/blob/main/LICENSE.txt)
 
 </div>
+
+Versions are `1.MINOR[.PATCH]`, numbered independently of upstream — minor for new behavior,
+patch for fixes and packaging. Every backport is traceable to its upstream PR in the
+[fork changelog](https://github.com/vitorebatista/AeroSpace-edge/blob/main/CHANGELOG-FORK.md).
 
 ## What you get
 

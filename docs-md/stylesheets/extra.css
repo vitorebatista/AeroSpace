@@ -230,40 +230,24 @@
   color: #fff;
 }
 
-/* Three-up numbers under the pitch. */
-.edge-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  gap: 1.4rem;
-  margin: 2rem 0;
-  padding: 1.4rem 0;
+/* Live project stats. Values come from shields.io rather than being typed here,
+   so they can't go stale. */
+.edge-badges {
+  margin: 2rem 0 1rem;
+  padding: 1.4rem 0 0;
   border-top: 1px solid var(--md-default-fg-color--lightest);
-  border-bottom: 1px solid var(--md-default-fg-color--lightest);
 }
 
-.edge-stats > div > p {
+.md-typeset .edge-badges p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
   margin: 0;
 }
 
-.edge-stats strong {
-  display: block;
-  font-size: 1.9rem;
-  line-height: 1.1;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  background: var(--edge-gradient);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  width: fit-content;
-}
-
-.edge-stats span {
-  display: block;
-  margin-top: 0.35em;
-  font-size: 0.72rem;
-  line-height: 1.5;
-  color: var(--md-default-fg-color--light);
+.md-typeset .edge-badges img {
+  height: 1.6rem;
+  vertical-align: middle;
 }
 
 /* Feature grid */

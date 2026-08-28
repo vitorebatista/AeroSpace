@@ -50,7 +50,7 @@ jobs:
       - run: env # Debug
       - uses: actions/checkout@v6
       - run: ./.github/gh-actions-runner-xcode-select.sh
-      - run: brew install bash fish xcbeautify swiftly
+      - run: brew install bash fish xcbeautify swiftly pandoc # pandoc: build-docs.sh builds the man pages
       - run: swiftly init --skip-install --assume-yes --verbose && swiftly install
       - name: './build-release.sh'
         run: |
