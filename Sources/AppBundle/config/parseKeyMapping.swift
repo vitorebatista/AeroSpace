@@ -60,3 +60,18 @@ private func parseKeyNotationToKeyCode(_ raw: Json, _ backtrace: ConfigBacktrace
 private func isValidKeyNotation(_ str: String) -> Bool {
     str.rangeOfCharacter(from: .whitespacesAndNewlines) == nil && !str.contains("-")
 }
+
+extension KeyMapping {
+    /// Read-only accessors for the settings window. `preset` and the raw notation map are
+    /// `fileprivate` so that nothing else can bypass `resolve()`.
+    var presetForSettings: Preset { preset }
+
+    /// The raw overrides as key-code *names*, which is how they are written in the config
+    /// file. `rawKeyNotationToKeyCode` holds resolved `Key` values, so this inverts
+    /// `keyNotationToKeyCode` to recover the name.
+    var rawNotationNamesForSettings: [String: String] {
+        var nameByKey: [Key: String] = [:]
+        for (name, key) in keyNotationToKeyCode where nameByKey[key] == nil { nameByKey[key] = name }
+        return rawKeyNotationToKeyCode.compactMapValues { nameByKey[$0] }
+    }
+}

@@ -199,6 +199,29 @@ extension TomlBlockDocument {
     }
 }
 
+// MARK: - Top-level key access
+
+extension TomlBlockDocument {
+    /// The source text of a top-level `key = value` block, or `nil` if the key is absent.
+    /// Used to decide whether a default-valued option is already spelled out in the file.
+    func text(forKeyValue key: String) -> String? {
+        blocks.first { $0.isKeyValue && $0.name == key }?.text
+    }
+
+    /// Appends verbatim top-level text (the Callbacks pane's content) at the end of the
+    /// top-level key region, before the first table header.
+    mutating func setRawTopLevel(text: String) {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let insertAt = blocks.firstIndex(where: { $0.isTable }) ?? blocks.count
+        var target = insertAt
+        while target > 0, blocks[target - 1].isTrivia { target -= 1 }
+        if target > 0 {
+            blocks[target - 1] = blocks[target - 1].withText { $0.hasSuffix("\n") ? $0 : $0 + "\n" }
+        }
+        blocks.insert(.trivia(text: text.hasSuffix("\n") ? text : text + "\n"), at: target)
+    }
+}
+
 // MARK: - Table access
 
 extension TomlBlockDocument {
