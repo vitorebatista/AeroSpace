@@ -1,0 +1,6 @@
+# Material for MkDocs' plugin API breaks in MkDocs 2.0, so the major is pinned.
+# The rest are ranges on purpose: CI runners ship a different Python than a dev
+# box, and an exact pin resolves to "no matching distribution" on the older one.
+mkdocs<2
+mkdocs-material>=9.5,<10
+mkdocs-llmstxt>=0.3,<1

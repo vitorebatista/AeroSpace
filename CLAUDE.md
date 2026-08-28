@@ -24,7 +24,8 @@ local build setup (Xcode, swiftly, codesign certificate, etc.).
 - `Sources/Common/` — code shared between client and server, mainly command-line arg
   parsing (`cmdArgs/`) and utilities.
 - `Sources/AppBundleTests/` — tests (XCTest), mirrors the `AppBundle` structure.
-- `docs/` — Asciidoc (`.adoc`) sources for the website and man pages.
+- `docs-md/` — Markdown sources for the website (Material for MkDocs) and man pages.
+- `docs/config-examples/` — TOML configs shipped with the app and asserted on in tests.
 - `grammar/` — shell-completion grammar and the command BNF grammar.
 
 ## Build & test commands
@@ -55,16 +56,16 @@ A change is only "done" when `./build-debug.sh -Xswiftc -warnings-as-errors` **a
 
 Some tracked source files are generated and have a `Generated` suffix:
 
-- `Sources/Common/cmdHelpGenerated.swift` — generated from the `tag::synopsis` blocks of
-  `docs/aerospace-*.adoc` by `./script/generate-cmd-help.sh`.
-- `Sources/Cli/subcommandDescriptionsGenerated.swift` — generated from `:manpurpose:` in
-  `docs/aerospace-*.adoc` (regenerated automatically by `build-debug.sh`).
+- `Sources/Common/cmdHelpGenerated.swift` — generated from the ` ```synopsis ` fenced block
+  of `docs-md/commands/*.md` by `./script/generate-cmd-help.sh`.
+- `Sources/Cli/subcommandDescriptionsGenerated.swift` — generated from the `description:`
+  frontmatter key in `docs-md/commands/*.md` (regenerated automatically by `build-debug.sh`).
 - `Sources/Common/versionGenerated.swift`, `Sources/Common/gitHashGenerated.swift` — generated.
 - `ShellParserGenerated/` — generated from the ANTLR grammar (`grammar/ShellLexer.g4`,
   `grammar/ShellParser.g4`) via `./script/generate-shell-parser.sh` (needs antlr).
 
-To change command help text, edit the `.adoc` synopsis and run
-`./script/generate-cmd-help.sh` (pure bash/sed, no external deps) — do not edit the
+To change command help text, edit the ` ```synopsis ` block in the command's `.md` page and
+run `./script/generate-cmd-help.sh` (pure bash/awk, no external deps) — do not edit the
 generated `.swift` by hand. `build-debug.sh` reproduces the generated files
 deterministically, so a correct edit leaves the tree clean.
 
@@ -88,10 +89,10 @@ deterministically, so a correct edit leaves the tree clean.
 When a change adds or modifies a **command, CLI flag, config option, or format variable**,
 update the user-facing docs in the SAME change. From `dev-docs/architecture.md`:
 
-- [ ] `docs/aerospace-<command>.adoc` — synopsis (`tag::synopsis`) **and** the description
+- [ ] `docs-md/commands/<command>.md` — the ` ```synopsis ` block **and** the description
       body / examples for the new flag or subcommand.
-- [ ] `docs/commands.adoc` if the command list itself changes.
-- [ ] `docs/guide.adoc` and/or `docs/config-examples/default-config.toml` for new config
+- [ ] `mkdocs.yml` nav + the card list in `docs-md/index.md` if the command list itself changes.
+- [ ] `docs-md/guide.md` and/or `docs/config-examples/default-config.toml` for new config
       options or user-visible behavior.
 - [ ] `grammar/commands-bnf-grammar.txt` for shell completion.
 - [ ] Regenerate generated files (`./script/generate-cmd-help.sh`; `build-debug.sh` handles
