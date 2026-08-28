@@ -35,7 +35,7 @@ undocumented.
 |===
 | TOML key | Control | Notes
 
-| `config-version` | stepper (int) | shown read-mostly, in General
+| `config-version` | stepper (int) | in General; editable, but the parser only accepts the versions it knows, so a bad value fails validation on save
 | `start-at-login` | toggle |
 | `auto-reload-config` | toggle |
 | `automatically-unhide-macos-hidden-apps` | toggle |
@@ -191,9 +191,12 @@ subsequent explicit `reloadConfig()` is idempotent, so this is harmless.
 * *Ambiguous config* (`findCustomConfigUrl()` returns `.ambiguousConfigError`) —
   the window opens read-only with the existing ambiguity message and a button to
   reveal the candidates in Finder. It must not guess which file to write.
-* *Unparseable config on open* — the form cannot be populated. Open with only the
-  raw panes available, seeded from the whole file text, plus the parse error. The
-  block document does not need a valid TOML to split blocks.
+* *Unparseable config on open* — the form cannot be populated, because there is
+  no `Config` to bind to. The window opens in a degraded single-pane mode: one
+  raw editor over the whole file text, the parse error above it, and the same
+  validate-then-save flow. The category sidebar is hidden in this mode. Block
+  splitting is not needed here, so the failure mode stays trivial. Once the file
+  parses, a normal `load()` restores the full window.
 * *Config edited externally while the window is open* — handled by the
   modification-date check at step 4, not by watching. No live merge.
 * *Raw pane containing keys that belong to another pane* — the validation step
