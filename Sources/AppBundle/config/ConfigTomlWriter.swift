@@ -153,7 +153,11 @@ enum ConfigTomlWriter {
             "workspace-to-monitor-force-assignment": workspaceAssignmentTable(draft.workspaceToMonitorForceAssignment),
         ]
         for name in regeneratedTables {
-            document.replaceTable(named: name, with: tableBodies[name] ?? nil)
+            // `tableBodies[name]` is doubly-optional (`String??`): the outer optional is the
+            // dictionary lookup, the inner is the table's own "no body" case. `flatMap { $0 }`
+            // flattens that to `String?` — swiftlint's `redundant_nil_coalescing` misreads the
+            // equivalent `?? nil` as a no-op here, same false positive as `MacApp.swift:185`.
+            document.replaceTable(named: name, with: tableBodies[name].flatMap { $0 })
         }
 
         // Raw panes. Each spliced block is tagged with a name its own predicate matches
