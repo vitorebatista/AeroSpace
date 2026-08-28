@@ -70,6 +70,31 @@ AeroSpace tries to find the custom config in two locations:
 
 If the config is found in more than one location then the ambiguity is reported.
 
+[#settings-window]
+=== Settings window
+
+`AeroSpace-edge` can edit its own config. Open *Settings -> Settings…* from the menu bar
+menu.
+
+The window writes the same config file described in <<config-location>> — it is an editor
+for that file, not a separate store. Saving validates the result with the same parser
+AeroSpace uses at startup; if the result wouldn't load, nothing is written and the error
+is shown in the window.
+
+Options with a fixed set of values get a control. Keybindings, `on-window-detected` rules,
+and the command callbacks are an AeroSpace command DSL rather than a fixed set of values,
+so they are edited as TOML text in their own sections of the window, with parse feedback
+as you type.
+
+Comments and key order in your config are preserved, with one exception: the `gaps`,
+`key-mapping`, `exec`, and `workspace-to-monitor-force-assignment` tables — including their
+sub-tables, such as `[gaps.inner]`, `[key-mapping.key-notation-to-key-code]`, and
+`[exec.env-vars]` — are rewritten in full when one of their values changes, so comments
+written inside those tables are lost. Comments everywhere else are kept.
+
+The window refuses to write anything when several config files exist at once, since it
+can't know which one you meant.
+
 === Config samples
 
 Please see the following config samples:
