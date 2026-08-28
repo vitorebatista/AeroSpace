@@ -64,13 +64,15 @@ struct ServerArgs: Sendable {
 }
 
 private let serverHelp = """
-    USAGE: \(CommandLine.arguments.first ?? "AeroSpace.app/Contents/MacOS/AeroSpace") [<options>]
+    USAGE: \(CommandLine.arguments.first ?? "\(aeroSpaceAppName).app/Contents/MacOS/\(aeroSpaceAppName)") [<options>]
 
     OPTIONS:
       -h, --help              Print help
-      -v, --version           Print AeroSpace.app version
-      --config-path <path>    Config path. It will take priority over ~/.aerospace.toml
-                              and ${XDG_CONFIG_HOME}/aerospace/aerospace.toml
+      -v, --version           Print \(aeroSpaceAppName).app version
+      --config-path <path>    Config path. It will take priority over ~/.aerospace-edge.toml,
+                              ${XDG_CONFIG_HOME}/aerospace-edge/aerospace-edge.toml, and the
+                              upstream AeroSpace config (~/.aerospace.toml,
+                              ${XDG_CONFIG_HOME}/aerospace/aerospace.toml) used as a fallback
       --read-only             Disable window management.
                               Useful if you want to use only debug-windows or other query commands.
     """

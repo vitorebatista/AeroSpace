@@ -781,8 +781,8 @@ AeroSpace listens on a Unix-domain stream socket:
 
 [source]
 ----
-/tmp/bobko.aerospace-${USER}.sock        # AeroSpace.app (release builds)
-/tmp/bobko.aerospace.debug-${USER}.sock  # AeroSpace-Debug.app (debug builds only)
+/tmp/vitorebatista.aerospace-edge-${USER}.sock        # AeroSpace-edge.app (release builds)
+/tmp/vitorebatista.aerospace-edge.debug-${USER}.sock  # AeroSpace-edge-Debug.app (debug builds only)
 ----
 
 `${USER}` is the result of `NSUserName()` in Swift (typically equivalent to `$USER` / `id -un` / `whoami` in shell).
@@ -909,7 +909,7 @@ A minimal Python client that runs `aerospace list-workspaces --focused`:
 import json, os, socket, struct
 
 SOCKET_PROTOCOL_VERSION = 1
-sock_path = f"/tmp/bobko.aerospace-{os.getlogin()}.sock"
+sock_path = f"/tmp/vitorebatista.aerospace-edge-{os.getlogin()}.sock"
 
 def send_frame(s, payload):
     s.sendall(struct.pack("<I", len(payload)) + payload)

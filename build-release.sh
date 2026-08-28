@@ -23,7 +23,7 @@ done
 ./script/check-uncommitted-files.sh
 ./generate.sh --build-version "$build_version" --codesign-identity "$codesign_identity" --generate-git-hash
 
-swift build -c release --arch arm64 --arch x86_64 --product aerospace -Xswiftc -warnings-as-errors # CLI
+swift build -c release --arch arm64 --arch x86_64 --product aerospace-edge -Xswiftc -warnings-as-errors # CLI
 
 # todo: make xcodebuild use the same toolchain as swift
 # toolchain="$(plutil -extract CFBundleIdentifier raw ~/Library/Developer/Toolchains/swift-6.1-RELEASE.xctoolchain/Info.plist)"
@@ -46,38 +46,38 @@ xcodebuild-pretty .release/xcodebuild.log clean build \
 
 git checkout .
 
-cp -r ".xcode-build/Build/Products/$xcode_configuration/AeroSpace.app" .release
-cp -r .build/apple/Products/Release/aerospace .release
+cp -r ".xcode-build/Build/Products/$xcode_configuration/AeroSpace-edge.app" .release
+cp -r .build/apple/Products/Release/aerospace-edge .release
 
 ################
 ### SIGN CLI ###
 ################
 
-codesign -s "$codesign_identity" .release/aerospace
+codesign -s "$codesign_identity" .release/aerospace-edge
 
 ################
 ### VALIDATE ###
 ################
 
 expected_layout=$(cat <<EOF
-.release/AeroSpace.app
-.release/AeroSpace.app/Contents
-.release/AeroSpace.app/Contents/_CodeSignature
-.release/AeroSpace.app/Contents/_CodeSignature/CodeResources
-.release/AeroSpace.app/Contents/MacOS
-.release/AeroSpace.app/Contents/MacOS/AeroSpace
-.release/AeroSpace.app/Contents/Resources
-.release/AeroSpace.app/Contents/Resources/default-config.toml
-.release/AeroSpace.app/Contents/Resources/AppIcon.icns
-.release/AeroSpace.app/Contents/Resources/Assets.car
-.release/AeroSpace.app/Contents/Info.plist
-.release/AeroSpace.app/Contents/PkgInfo
+.release/AeroSpace-edge.app
+.release/AeroSpace-edge.app/Contents
+.release/AeroSpace-edge.app/Contents/_CodeSignature
+.release/AeroSpace-edge.app/Contents/_CodeSignature/CodeResources
+.release/AeroSpace-edge.app/Contents/MacOS
+.release/AeroSpace-edge.app/Contents/MacOS/AeroSpace-edge
+.release/AeroSpace-edge.app/Contents/Resources
+.release/AeroSpace-edge.app/Contents/Resources/default-config.toml
+.release/AeroSpace-edge.app/Contents/Resources/AppIcon.icns
+.release/AeroSpace-edge.app/Contents/Resources/Assets.car
+.release/AeroSpace-edge.app/Contents/Info.plist
+.release/AeroSpace-edge.app/Contents/PkgInfo
 EOF
 )
 
-if test "$expected_layout" != "$(find .release/AeroSpace.app)"; then
+if test "$expected_layout" != "$(find .release/AeroSpace-edge.app)"; then
     echo "!!! Expect/Actual layout don't match !!!"
-    find .release/AeroSpace.app
+    find .release/AeroSpace-edge.app
     exit 1
 fi
 
@@ -96,13 +96,13 @@ check-contains-hash() {
     fi
 }
 
-check-universal-binary .release/AeroSpace.app/Contents/MacOS/AeroSpace
+check-universal-binary .release/AeroSpace-edge.app/Contents/MacOS/AeroSpace-edge
 check-universal-binary .release/aerospace
 
-check-contains-hash .release/AeroSpace.app/Contents/MacOS/AeroSpace
+check-contains-hash .release/AeroSpace-edge.app/Contents/MacOS/AeroSpace-edge
 check-contains-hash .release/aerospace
 
-codesign -v .release/AeroSpace.app
+codesign -v .release/AeroSpace-edge.app
 codesign -v .release/aerospace
 
 ############
