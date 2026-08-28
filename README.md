@@ -31,7 +31,7 @@ How it stays trustworthy while moving fast:
 
 - **Every change is its own reviewed pull request** — 59 of them so far — never a bulk merge.
 - **Nothing lands untested.** `./build-debug.sh -Xswiftc -warnings-as-errors` and `./swift-test.sh` both
-  pass before a branch merges; warnings are errors, and the suite runs 226 tests.
+  pass before a branch merges; warnings are errors, and the suite runs 227 tests.
 - **52 fixes and features** carried so far, each traceable to where it came from in
   [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md).
 - **Refactors and breaking config changes stay out.** Moving fast on fixes and slow on churn is the
@@ -65,39 +65,73 @@ And one thing that has no upstream equivalent, written here:
   ⚠️ `smart` currently has a [known regression](./CHANGELOG-FORK.md); the default `'always'` is the
   upstream behavior and is safe.
 
+## Installs alongside anything else
+
+AeroSpace‑edge is its own app — its own bundle id, name, icon, socket, CLI and Accessibility grant.
+It doesn't overwrite an existing AeroSpace install, so you can run one, quit it, run the other, and
+decide on evidence. Nothing is replaced, nothing is lost.
+
+| | upstream AeroSpace | AeroSpace‑edge |
+|---|---|---|
+| App | `/Applications/AeroSpace.app` | `/Applications/AeroSpace-edge.app` |
+| Spotlight | "AeroSpace" | "AeroSpace-edge" |
+| Bundle id | `bobko.aerospace` | `vitorebatista.aerospace-edge` |
+| CLI | `aerospace` | `aerospace-edge` |
+| Socket | `/tmp/bobko.aerospace-$USER.sock` | `/tmp/vitorebatista.aerospace-edge-$USER.sock` |
+| Config | `~/.aerospace.toml` | `~/.aerospace-edge.toml`, falling back to `~/.aerospace.toml` |
+
+**Run one at a time.** Two tiling window managers on the same keybindings will fight over your windows.
+
+### Config: shared by default
+
+With no `~/.aerospace-edge.toml`, AeroSpace‑edge reads your existing `~/.aerospace.toml` (or
+`$XDG_CONFIG_HOME/aerospace/aerospace.toml`). That's deliberate — it's what makes a comparison fair:
+same config, same keybindings, only the binary changes.
+
+Create `~/.aerospace-edge.toml` (or `$XDG_CONFIG_HOME/aerospace-edge/aerospace-edge.toml`) when you want
+options that only exist here. The fork's own config wins whenever it exists, and having both files is not
+an error.
+
 ## Install
 
 Download the latest zip from [**Releases**](https://github.com/vitorebatista/AeroSpace-edge/releases/latest),
 then:
 
 ```bash
-unzip AeroSpace-v1.9.zip
-mv AeroSpace-v*/AeroSpace.app /Applications/
-cp  AeroSpace-v*/bin/aerospace /usr/local/bin/   # or anywhere on your PATH
-open -a /Applications/AeroSpace.app
+unzip AeroSpace-edge-v1.10.zip
+mv AeroSpace-edge-v*/AeroSpace-edge.app /Applications/
+cp  AeroSpace-edge-v*/bin/aerospace-edge /usr/local/bin/   # or anywhere on your PATH
+open -a /Applications/AeroSpace-edge.app
 ```
 
-Both binaries are universal (arm64 + x86_64). Your existing `~/.aerospace.toml` works as-is —
-this fork adds config options, it never renames or removes them.
+Both binaries are universal (arm64 + x86_64).
 
-There's no Homebrew cask, and there won't be one. Upstream's cask installs upstream's builds, which
-is the right default for almost everyone.
+There's no Homebrew cask, and there won't be one.
 
 ### The one thing that will surprise you
 
-**Every release is signed ad-hoc, so macOS revokes the Accessibility grant on each upgrade.** The app
-notices its own permission is gone, clears its TCC entry, and exits at launch. It looks like a crash.
-It isn't.
+**Builds are signed ad-hoc, so macOS revokes the Accessibility grant on every upgrade.** The app notices
+its permission is gone, clears its TCC entry, and exits at launch. It looks like a crash. It isn't.
 
-After replacing the app: **System Settings → Privacy & Security → Accessibility**, switch AeroSpace
-back on (add `/Applications/AeroSpace.app` with **+** if the row disappeared), then launch it again.
-Expect this on every upgrade.
+After installing or upgrading: **System Settings → Privacy & Security → Accessibility**, switch
+AeroSpace‑edge on (add `/Applications/AeroSpace-edge.app` with **+** if the row isn't there), then launch
+it again. This is a separate entry from any other window manager's — granting it affects nothing else.
 
-Confirm you're on the right build:
+Confirm you're talking to the right server:
 
 ```bash
-aerospace --version   # client and server should both report ...-fork.N
+aerospace-edge --version   # client and server should report the same 1.x version
 ```
+
+### Uninstalling
+
+```bash
+rm -rf /Applications/AeroSpace-edge.app
+rm -f  /usr/local/bin/aerospace-edge
+rm -f  ~/.aerospace-edge.toml            # only if you made one
+```
+
+Any other install, its config and its Accessibility grant are untouched throughout.
 
 ## Documentation
 
