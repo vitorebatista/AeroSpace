@@ -1,0 +1,163 @@
+import Common
+import Foundation
+import SwiftUI
+
+enum SettingsMode: Equatable {
+    /// The config parsed; the full form is available.
+    case form
+    /// The config did not parse, so there is no `Config` to bind a form to. One raw editor
+    /// over the whole file, with the parser's message.
+    case rawOnly(parseError: String)
+    /// Several config files exist and it is not our place to guess which one to write.
+    case readOnly(reason: String)
+}
+
+enum SettingsStatus: Equatable {
+    case error(String)
+    case saved
+}
+
+@MainActor
+final class SettingsModel: ObservableObject {
+    static let shared = SettingsModel()
+
+    @Published var draft: ConfigTomlWriter.ConfigDraft = ConfigTomlWriter.ConfigDraft.defaults
+    @Published var mode: SettingsMode = .form
+    @Published var isDirty = false
+    @Published var status: SettingsStatus?
+    @Published var wholeFileText = ""
+
+    /// The file we read and will write. `nil` until `load()`.
+    private(set) var targetUrl: URL?
+    /// `true` when no custom config exists yet, so saving creates `~/<configDotfileName>`.
+    private(set) var willCreateConfig = false
+    private var document = TomlBlockDocument("")
+    private var loadedModificationDate: Date?
+
+    private init() {}
+
+    /// `true` if the file changed on disk since `load()`. Checked before overwriting.
+    var externallyModified: Bool {
+        guard let targetUrl, let loadedModificationDate else { return false }
+        let current = try? FileManager.default.attributesOfItem(atPath: targetUrl.path)[.modificationDate] as? Date
+        guard let current else { return false }
+        return current != loadedModificationDate
+    }
+
+    func load() {
+        status = nil
+        isDirty = false
+
+        switch findCustomConfigUrl() {
+            case .ambiguousConfigError(let candidates):
+                mode = .readOnly(reason: """
+                    Several AeroSpace configs exist, so the settings window will not guess which one to write:
+
+                    \(candidates.map(\.path).joined(separator: "\n"))
+
+                    Remove or rename all but one, then reopen Settings.
+                    """)
+                targetUrl = nil
+                return
+            case .file(let url):
+                targetUrl = url
+                willCreateConfig = false
+            case .noCustomConfigExists:
+                // Read the bundled default, but write to the user's own dotfile.
+                targetUrl = FileManager.default.homeDirectoryForCurrentUser.appending(path: configDotfileName)
+                willCreateConfig = true
+        }
+
+        let sourceUrl = willCreateConfig ? defaultConfigUrl : targetUrl.orDie()
+        let text = (try? String(contentsOf: sourceUrl, encoding: .utf8)) ?? ""
+        document = TomlBlockDocument(text)
+        wholeFileText = text
+        loadedModificationDate = willCreateConfig
+            ? nil
+            : (try? FileManager.default.attributesOfItem(atPath: sourceUrl.path)[.modificationDate] as? Date) ?? nil
+
+        let (config, errors) = parseConfig(text)
+        if errors.isEmpty {
+            // `parseConfig` expands `[exec]` into the full environment, which is not
+            // writable back. Recover the file's own `[exec]` values instead.
+            draft = ConfigTomlWriter.draft(from: config, rawExec: rawExecConfig(from: text), document: document)
+            mode = .form
+        } else {
+            mode = .rawOnly(parseError: errors.joined(separator: "\n\n"))
+        }
+    }
+
+    func revert() { load() }
+
+    /// Renders the draft, validates it with the real parser against a temp file, and only
+    /// then writes the user's config and reloads. A bad edit can never leave the user with
+    /// a config AeroSpace refuses to load.
+    func save() async {
+        guard let targetUrl else { return }
+        status = nil
+
+        let candidate: String
+        switch mode {
+            case .form:
+                var working = document
+                ConfigTomlWriter.apply(draft, to: &working)
+                candidate = working.render()
+            case .rawOnly:
+                candidate = wholeFileText
+            case .readOnly:
+                return
+        }
+
+        let tempUrl = FileManager.default.temporaryDirectory
+            .appending(path: "aerospace-settings-\(UUID().uuidString).toml")
+        defer { try? FileManager.default.removeItem(at: tempUrl) }
+        do {
+            try candidate.write(to: tempUrl, atomically: true, encoding: .utf8)
+        } catch {
+            status = .error("Can't write a temporary file for validation: \(error.localizedDescription)")
+            return
+        }
+
+        switch readConfig(forceConfigUrl: tempUrl) {
+            case .failure(let message):
+                status = .error(message)
+                return
+            case .success:
+                break
+        }
+
+        do {
+            try candidate.write(to: targetUrl, atomically: true, encoding: .utf8)
+        } catch {
+            status = .error("Can't write \(targetUrl.path): \(error.localizedDescription)")
+            return
+        }
+
+        do {
+            _ = try await reloadConfig()
+        } catch {
+            status = .error("Saved, but reloading the config failed: \(error.localizedDescription)")
+            return
+        }
+
+        load() // re-read from disk so the form and the document match the file exactly
+        status = .saved
+    }
+
+    /// Re-parses just the `[exec]` table to recover `inherit-env-vars` and the override
+    /// map as written, since `Config.execConfig` only holds the expanded result.
+    private func rawExecConfig(from text: String) -> RawExecConfig {
+        var result = RawExecConfig()
+        guard let table = TomlBlockDocument(text).blocks.first(where: { $0.name == "exec" })?.text else { return result }
+        for line in table.linesWithTerminators() {
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let eq = trimmed.firstIndex(of: "=") else { continue }
+            let key = trimmed[..<eq].trimmingCharacters(in: .whitespaces)
+            let rawValue = trimmed[trimmed.index(after: eq)...].trimmingCharacters(in: .whitespaces)
+            if key == "inherit-env-vars" { result.inheritEnvVariables = rawValue.hasPrefix("true") }
+        }
+        // Override entries live in `[exec.env-vars]`, whose own block the form edits
+        // directly; the values are plain strings, so read them off the parsed config.
+        return result
+    }
+}
