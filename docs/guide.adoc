@@ -81,16 +81,30 @@ for that file, not a separate store. Saving validates the result with the same p
 AeroSpace uses at startup; if the result wouldn't load, nothing is written and the error
 is shown in the window.
 
+If you don't have a custom config yet, the window opens on <<default-config,the default
+config>> and the first save writes it to `~/.aerospace-edge.toml`, together with whatever
+you changed. The footer tells you so before you save.
+
 Options with a fixed set of values get a control. Keybindings, `on-window-detected` rules,
 and the command callbacks are an AeroSpace command DSL rather than a fixed set of values,
 so they are edited as TOML text in their own sections of the window, with parse feedback
-as you type.
+as you type. That feedback checks the pane on its own, as a fragment, so it can't see
+problems that only exist in the context of the whole file — Save is the authority, and it
+can still reject a pane that reported itself fine.
+
+Only what you actually change is written. A key, a table, or a pane you never touched is
+left byte for byte as it was, so saving is never a reformat of the whole file.
 
 Comments and key order in your config are preserved, with one exception: the `gaps`,
 `key-mapping`, `exec`, and `workspace-to-monitor-force-assignment` tables — including their
 sub-tables, such as `[gaps.inner]`, `[key-mapping.key-notation-to-key-code]`, and
 `[exec.env-vars]` — are rewritten in full when one of their values changes, so comments
 written inside those tables are lost. Comments everywhere else are kept.
+
+If the config doesn't parse at all, there is no parsed config to build a form from, so the
+window degrades to a single raw editor over the whole file with the parser's message above
+it. Fix the file there and save: the save re-reads what it wrote, so once the file parses
+the form comes back on its own.
 
 The window refuses to write anything when several config files exist at once, since it
 can't know which one you meant.

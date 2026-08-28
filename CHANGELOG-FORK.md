@@ -46,9 +46,14 @@ in place, rather than being a separate config store. Fork-only; no upstream equi
   including their sub-tables (`[gaps.inner]`, `[key-mapping.key-notation-to-key-code]`,
   `[exec.env-vars]`, and similar) — are regenerated in full whenever a value in them
   changes, so comments written there don't survive.
+- **Only what changed is written.** A key, a table, or a raw pane you didn't touch is left
+  byte for byte as it was — a save is never a reformat of the whole file.
+- **A first save with no custom config** creates `~/.aerospace-edge.toml`, seeded from the
+  bundled default config the window opened on.
 - **Degrades safely when it can't edit normally:** an unparseable config opens as a single
-  raw editor over the whole file with the parse error shown, and if several config files
-  exist at once the window refuses to write anything rather than guess which one you meant.
+  raw editor over the whole file with the parse error shown (a save re-reads the file, so
+  the form returns once it parses), and if several config files exist at once the window
+  refuses to write anything rather than guess which one you meant.
 
 ## v1.13 (2026-08-28)
 
