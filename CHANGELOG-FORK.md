@@ -25,6 +25,22 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
+## Unreleased
+
+- **"Check for Updates…" in the menu bar.** Finds the newest release, shows what changed, and on
+  confirmation downloads it, verifies it, replaces the app (and the CLI, where it's writable) in place,
+  and relaunches. Fork-only; no upstream equivalent.
+  - Versions compare component-wise and numerically, so 1.10 correctly sorts after 1.9 — a string
+    comparison would have told every 1.10+ user to "update" back to 1.9 forever.
+  - It reads the full release list rather than GitHub's `/releases/latest`, which skips prereleases:
+    every AeroSpace-edge release is a prerelease, so that endpoint would report "no updates" forever.
+  - Downloads are restricted to HTTPS on GitHub's own hosts, re-checked after redirects, and the
+    unpacked payload is rejected unless its bundle id and version match the release it claims to be —
+    the app is replacing its own bundle with this, so it's a trust boundary.
+  - Because builds are ad-hoc signed, macOS revokes Accessibility whenever the app is replaced. The
+    updater says so up front instead of leaving the user with an app that appears to quit on launch.
+    A paid Apple Developer ID would remove that step.
+
 ## v1.11 (2026-08-27)
 
 - **Refuses to start while another AeroSpace is running.** Two tiling window managers on the same

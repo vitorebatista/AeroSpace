@@ -49,6 +49,9 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
         getExperimentalUISettingsMenu(viewModel: viewModel)
         openConfigButton()
         reloadConfigButton()
+        Button("Check for Updates…") {
+            Task { await runCheckForUpdatesFlow() }
+        }
         Button("Quit \(aeroSpaceAppName)") {
             terminationHandler.beforeTermination()
             terminateApp()

@@ -109,6 +109,9 @@ open -a /Applications/AeroSpace-edge.app
 
 Both binaries are universal (arm64 + x86_64).
 
+You only have to do this once: after that, **Check for Updates…** in the menu bar finds new releases,
+downloads them and installs them in place.
+
 There's no Homebrew cask, and there won't be one.
 
 ### The one thing that will surprise you
@@ -125,6 +128,19 @@ Confirm you're talking to the right server:
 ```bash
 aerospace-edge --version   # client and server should report the same 1.x version
 ```
+
+### Updating
+
+**Check for Updates…** in the menu-bar menu. It finds the newest release, shows what changed, and on
+confirmation downloads it, verifies it, replaces the app and the CLI in place, and relaunches.
+
+The one manual step is unavoidable: builds are ad-hoc signed, so macOS revokes Accessibility whenever
+the app is replaced, and you'll be asked to grant it again. The updater tells you this is coming rather
+than leaving you to wonder why the app quit. Signing with a paid Apple Developer ID would remove the
+step — until then, no updater can avoid it.
+
+The updater only accepts downloads from this repository's GitHub releases over HTTPS, and refuses to
+install a payload whose bundle id or version doesn't match the release it claims to be.
 
 ### Uninstalling
 
