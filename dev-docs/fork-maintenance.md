@@ -265,6 +265,9 @@ The script (see git history of `/tmp/lean-release2.sh` pattern) does, with
 2. `swift build -c release --arch arm64 --arch x86_64 --product aerospace -Xswiftc -warnings-as-errors`
 3. `xcrun xcodebuild clean build -scheme AeroSpace -destination "generic/platform=macOS" -configuration Release -derivedDataPath .xcode-build`
 4. `git checkout .` (restores generated files + `project.pbxproj` that xcodegen/version-stamping dirtied)
+   > ⚠️ **`git checkout .` discards ALL uncommitted tracked changes, not just the generated ones.**
+   > Commit your work *before* running a release build. (Bit us on fork.10: the source half of the
+   > rename was wiped and only the docs got committed.)
 5. assemble `.release/AeroSpace-v<ver>/` = `AeroSpace.app` (from `.xcode-build/Build/Products/Release/`)
    + `bin/aerospace` (`codesign -s - --force`) + `legal/`, then `zip -qr`.
 - The app is codesigned ad-hoc by xcodebuild (`--codesign-identity -`); both binaries come out universal.
