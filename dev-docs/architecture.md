@@ -46,8 +46,9 @@ todo
 ../Sources/Common/cmdArgs/
 
 Command checklist:
-- [ ] Documentation in `../docs/aerospace-*` and `../docs/commands.adoc`
-  - [ ] Check that site looks alright `./.site/commands.html`
+- [ ] Documentation in `../docs-md/commands/<command>.md` (+ the nav in `../mkdocs.yml`
+      and the card list in `../docs-md/index.md` if the command list changed)
+  - [ ] Check that the site looks alright: `./build-docs.sh`, then open `./.site/index.html`
   - [ ] Check that man page looks alright `./.man`
 - [ ] Do `--window-id` and/or `--workspace` flags make sense for the command?
 - [ ] Shell completion `../grammar/commands-bnf-grammar.txt`

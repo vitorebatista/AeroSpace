@@ -35,18 +35,18 @@ public let aeroSpaceAppVersion = "$build_version"
 EOF
 
 entries() {
-    for file in docs/aerospace-*.adoc; do
+    for file in docs-md/commands/*.md; do
         if grep -q 'exec-and-forget' <<< $file; then
             continue
         fi
-        subcommand=$(basename $file | sed 's/^aerospace-//' | sed 's/\.adoc$//')
-        desc="$(grep :manpurpose: "$file" | sed -E 's/:manpurpose: //')"
+        subcommand=$(basename $file | sed 's/\.md$//')
+        desc="$(sed -n 's/^description: //p' "$file" | head -1)"
         echo "    [\"  $subcommand\", \"$desc\"],"
     done
 }
 
 cat <<EOF > ./Sources/Cli/subcommandDescriptionsGenerated.swift
-// FILE IS GENERATED FROM docs/aerospace-*.adoc files
+// FILE IS GENERATED FROM docs-md/commands/*.md files
 // TO REGENERATE THE FILE RUN generate.sh
 
 let subcommandDescriptions = [

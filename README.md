@@ -161,8 +161,8 @@ as-is and there's no point duplicating it:
   [Commands](https://nikitabobko.github.io/AeroSpace/commands) ·
   [Goodies](https://nikitabobko.github.io/AeroSpace/goodies)
 
-What AeroSpace‑edge adds on top is in [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md) and in the `.adoc`
-sources under [`docs/`](./docs), which ship with those additions folded in.
+What AeroSpace‑edge adds on top is in [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md) and in the Markdown
+sources under [`docs-md/`](./docs-md), which ship with those additions folded in.
 
 ## How it's kept current
 

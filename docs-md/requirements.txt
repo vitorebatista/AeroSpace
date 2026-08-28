@@ -1,0 +1,4 @@
+# Pinned: Material for MkDocs' plugin API breaks in MkDocs 2.0.
+mkdocs<2
+mkdocs-material==9.7.7
+mkdocs-llmstxt==0.5.0

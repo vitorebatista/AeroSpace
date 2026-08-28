@@ -1,0 +1,106 @@
+site_name: AeroSpace
+site_description: An i3-like tiling window manager for macOS
+site_url: https://vitorebatista.github.io/AeroSpace-edge/
+repo_url: https://github.com/vitorebatista/AeroSpace-edge
+repo_name: vitorebatista/AeroSpace-edge
+edit_uri: edit/main/docs-md/
+docs_dir: docs-md
+
+theme:
+  name: material
+  logo: assets/edge-logo.svg
+  favicon: assets/edge-appicon.svg
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Inter
+    code: JetBrains Mono
+  features:
+    - navigation.sections
+    - navigation.instant
+    - navigation.top
+    - navigation.footer
+    - content.code.copy
+    - content.action.edit
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle: { icon: material/weather-sunny, name: Switch to light mode }
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle: { icon: material/weather-night, name: Switch to dark mode }
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search
+  - llmstxt:
+      markdown_description: An i3-like tiling window manager for macOS.
+      sections:
+        Commands:
+          - commands/*.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - def_list
+  - toc: { permalink: true }
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.tabbed: { alternate_style: true }
+
+nav:
+  - Home: index.md
+  - Guide: guide.md
+  - Goodies: goodies.md
+  - Commands:
+      - aerospace.md
+      - commands/balance-sizes.md
+      - commands/close-all-windows-but-current.md
+      - commands/close.md
+      - commands/config.md
+      - commands/debug-windows.md
+      - commands/enable-normalization.md
+      - commands/enable.md
+      - commands/exec-and-forget.md
+      - commands/false.md
+      - commands/flatten-workspace-tree.md
+      - commands/focus-back-and-forth.md
+      - commands/focus-monitor.md
+      - commands/focus.md
+      - commands/fullscreen.md
+      - commands/join-with.md
+      - commands/layout.md
+      - commands/list-apps.md
+      - commands/list-exec-env-vars.md
+      - commands/list-modes.md
+      - commands/list-monitors.md
+      - commands/list-windows.md
+      - commands/list-workspaces.md
+      - commands/macos-native-fullscreen.md
+      - commands/macos-native-minimize.md
+      - commands/mode.md
+      - commands/move-mouse.md
+      - commands/move-node-to-monitor.md
+      - commands/move-node-to-workspace.md
+      - commands/move-workspace-to-monitor.md
+      - commands/move.md
+      - commands/reload-config.md
+      - commands/resize.md
+      - commands/split.md
+      - commands/subscribe.md
+      - commands/summon-workspace.md
+      - commands/swap.md
+      - commands/test.md
+      - commands/trigger-binding.md
+      - commands/true.md
+      - commands/volume.md
+      - commands/workspace-back-and-forth.md
+      - commands/workspace.md

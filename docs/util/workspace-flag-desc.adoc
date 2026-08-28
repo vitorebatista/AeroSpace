@@ -1,2 +1,0 @@
-Act on the specified workspace instead of the focused workspace.
-The flag takes precedence over `AEROSPACE_WINDOW_ID` and `AEROSPACE_WORKSPACE` xref:./guide.adoc#environment-variables[environment variables].
