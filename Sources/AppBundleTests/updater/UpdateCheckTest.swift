@@ -39,9 +39,9 @@ final class UpdateCheckTest: XCTestCase {
     /// way GitHub's /releases/latest does would mean never finding an update at all.
     func testPrereleasesAreEligible() {
         let json = releasesJson("""
-        [{"tag_name":"v1.11","draft":false,"prerelease":true,"body":"notes",
-          "assets":[{"name":"AeroSpace-edge-v1.11.zip","browser_download_url":"https://github.com/vitorebatista/AeroSpace-edge/releases/download/v1.11/AeroSpace-edge-v1.11.zip"}]}]
-        """)
+            [{"tag_name":"v1.11","draft":false,"prerelease":true,"body":"notes",
+              "assets":[{"name":"AeroSpace-edge-v1.11.zip","browser_download_url":"https://github.com/vitorebatista/AeroSpace-edge/releases/download/v1.11/AeroSpace-edge-v1.11.zip"}]}]
+            """)
         let release = newestRelease(inReleasesJson: json)
         assertEquals(release?.tag, "v1.11")
         assertEquals(release?.version.description, "1.11")
@@ -49,27 +49,27 @@ final class UpdateCheckTest: XCTestCase {
 
     func testPicksHighestVersionNotFirstListed() {
         let json = releasesJson("""
-        [{"tag_name":"v1.9","draft":false,"body":"","assets":[{"name":"a.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.9/a.zip"}]},
-         {"tag_name":"v1.11","draft":false,"body":"","assets":[{"name":"b.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.11/b.zip"}]},
-         {"tag_name":"v1.10","draft":false,"body":"","assets":[{"name":"c.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.10/c.zip"}]}]
-        """)
+            [{"tag_name":"v1.9","draft":false,"body":"","assets":[{"name":"a.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.9/a.zip"}]},
+             {"tag_name":"v1.11","draft":false,"body":"","assets":[{"name":"b.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.11/b.zip"}]},
+             {"tag_name":"v1.10","draft":false,"body":"","assets":[{"name":"c.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.10/c.zip"}]}]
+            """)
         assertEquals(newestRelease(inReleasesJson: json)?.version.description, "1.11")
     }
 
     func testDraftsAreIgnored() {
         let json = releasesJson("""
-        [{"tag_name":"v1.12","draft":true,"body":"","assets":[{"name":"a.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.12/a.zip"}]},
-         {"tag_name":"v1.11","draft":false,"body":"","assets":[{"name":"b.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.11/b.zip"}]}]
-        """)
+            [{"tag_name":"v1.12","draft":true,"body":"","assets":[{"name":"a.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.12/a.zip"}]},
+             {"tag_name":"v1.11","draft":false,"body":"","assets":[{"name":"b.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.11/b.zip"}]}]
+            """)
         assertEquals(newestRelease(inReleasesJson: json)?.version.description, "1.11")
     }
 
     /// A release with no installable asset (notes-only, or assets still uploading) must not be offered.
     func testReleaseWithoutZipIsSkipped() {
         let json = releasesJson("""
-        [{"tag_name":"v1.12","draft":false,"body":"","assets":[]},
-         {"tag_name":"v1.11","draft":false,"body":"","assets":[{"name":"b.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.11/b.zip"}]}]
-        """)
+            [{"tag_name":"v1.12","draft":false,"body":"","assets":[]},
+             {"tag_name":"v1.11","draft":false,"body":"","assets":[{"name":"b.zip","browser_download_url":"https://github.com/x/y/releases/download/v1.11/b.zip"}]}]
+            """)
         assertEquals(newestRelease(inReleasesJson: json)?.version.description, "1.11")
     }
 
@@ -77,8 +77,8 @@ final class UpdateCheckTest: XCTestCase {
     /// rather than followed.
     func testAssetOnForeignHostIsRejected() {
         let json = releasesJson("""
-        [{"tag_name":"v1.12","draft":false,"body":"","assets":[{"name":"evil.zip","browser_download_url":"https://evil.example.com/evil.zip"}]}]
-        """)
+            [{"tag_name":"v1.12","draft":false,"body":"","assets":[{"name":"evil.zip","browser_download_url":"https://evil.example.com/evil.zip"}]}]
+            """)
         assertNil(newestRelease(inReleasesJson: json))
     }
 

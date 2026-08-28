@@ -101,5 +101,4 @@ final class MenuBarTest: XCTestCase {
         assertEquals(names(inUse), [])
         assertEquals(names(available), [])
     }
-
 }
