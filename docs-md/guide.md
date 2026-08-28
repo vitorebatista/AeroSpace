@@ -8,43 +8,56 @@ This Guide is designed to be read from top to bottom as a whole. You can skip pa
 
 ## Installation
 
-### Homebrew installation (Preferred)
+AeroSpace-edge is distributed as a zip on the
+[releases page](https://github.com/vitorebatista/AeroSpace-edge/releases/latest). There is
+no Homebrew cask for the fork — `brew install --cask nikitabobko/tap/aerospace` installs
+*upstream* AeroSpace, which is a different app.
 
-[Homebrew](https://brew.sh/) is a package manager for macOS
+1.  Download the latest zip from the
+    [releases page](https://github.com/vitorebatista/AeroSpace-edge/releases/latest)
 
-``` bash
-brew install --cask nikitabobko/tap/aerospace
+2.  Unpack the zip
+
+3.  Put the unpacked `AeroSpace-edge-v$VERSION/AeroSpace-edge.app` in `/Applications`
+
+4.  Put the unpacked `AeroSpace-edge-v$VERSION/bin/aerospace-edge` anywhere on your `$PATH`
+    (optional; only needed to interact with AeroSpace-edge from the CLI)
+
+```bash
+unzip AeroSpace-edge-v*.zip
+mv AeroSpace-edge-v*/AeroSpace-edge.app /Applications/
+cp  AeroSpace-edge-v*/bin/aerospace-edge /usr/local/bin/
+open -a /Applications/AeroSpace-edge.app
 ```
 
-**(Optional)** You might need to configure your shell to enable completion provided by homebrew packages: <https://docs.brew.sh/Shell-Completion> AeroSpace provides bash, fish and zsh completions.
+Shell completions for bash, fish and zsh ship in the zip under `shell-completion/`.
 
-You can also install specific previous [pinned homebrew Casks versions](https://github.com/nikitabobko/homebrew-tap/tree/main/Casks):
+!!! note "The CLI is `aerospace-edge`"
 
-``` bash
-brew install --cask nikitabobko/tap/aerospace@0.12.0
-```
+    Every command page in these docs writes the synopsis as `aerospace <subcommand>`,
+    because that is what the program prints in its own `--help` output. The binary you
+    actually type is `aerospace-edge`, so `aerospace focus left` on a command page is
+    `aerospace-edge focus left` in your shell (and in `exec-and-forget` bindings).
 
-### Manual installation
+### Installs alongside upstream AeroSpace
 
-1.  Download the latest available zip from [releases page](https://github.com/nikitabobko/AeroSpace/releases)
+The fork has its own bundle id (`vitorebatista.aerospace-edge`), app name, socket and
+Accessibility grant, so it never overwrites an existing `/Applications/AeroSpace.app`. You
+can keep both installed and run one at a time.
 
-2.  Unpack zip
-
-3.  Put unpacked `AeroSpace-v$VERSION/AeroSpace.app` to `/Applications`
-
-4.  Put unpacked `AeroSpace-v$VERSION/bin/aerospace` anywhere to `$PATH` (The step is optional. It is only needed if you want to be able to interact with AeroSpace from CLI)
+### Gatekeeper
 
 If you see this message
 
-    "AeroSpace.app" can't be opened because Apple cannot check it for malicious software.
+    "AeroSpace-edge.app" can't be opened because Apple cannot check it for malicious software.
 
 **Option 1** to resolve the problem
 
-    xattr -d com.apple.quarantine /Applications/AeroSpace.app
+    xattr -d com.apple.quarantine /Applications/AeroSpace-edge.app
 
 **Option 2** to resolve the problem
 
-1.  navigate in Finder to `/Applications/AeroSpace.app`
+1.  navigate in Finder to `/Applications/AeroSpace-edge.app`
 
 2.  Right mouse click
 
@@ -54,13 +67,26 @@ If you see this message
 
 ### Custom config location
 
-AeroSpace tries to find the custom config in two locations:
+AeroSpace-edge looks for its own config first, then falls back to an upstream AeroSpace
+config. In priority order:
 
-1.  `~/.aerospace.toml`
+1.  `~/.aerospace-edge.toml`
 
-2.  `${XDG_CONFIG_HOME}/aerospace/aerospace.toml` (environment variable `XDG_CONFIG_HOME` fallbacks to `~/.config` if the variable is not presented)
+2.  `${XDG_CONFIG_HOME}/aerospace-edge/aerospace-edge.toml`
 
-If the config is found in more than one location then the ambiguity is reported.
+3.  `~/.aerospace.toml`
+
+4.  `${XDG_CONFIG_HOME}/aerospace/aerospace.toml`
+
+(`XDG_CONFIG_HOME` falls back to `~/.config` if the variable is not set.)
+
+The two tiers are resolved independently, so having both an `aerospace-edge` config and an
+upstream `aerospace` config is not ambiguous — the fork's own config simply wins. That lets
+you run the fork next to upstream on the very same config, while `~/.aerospace-edge.toml`
+stays available for fork-only options upstream would reject.
+
+If the config is found in more than one location *within the same tier*, the ambiguity is
+reported.
 
 ### Config samples
 
@@ -91,7 +117,7 @@ Rule of thumb: all the "scalar like" values always fall back to the default conf
 That allows you to keep your config tidy and clean from trivial config keys for which you like the default values. You can bootstrap your custom config by copying the default config from the app installation -
 
 ``` shell
-cp /Applications/AeroSpace.app/Contents/Resources/default-config.toml ~/.aerospace.toml
+cp /Applications/AeroSpace-edge.app/Contents/Resources/default-config.toml ~/.aerospace-edge.toml
 ```
 
 [Download default-config.toml](config-examples/default-config.toml)

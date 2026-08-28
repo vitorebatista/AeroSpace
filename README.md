@@ -154,15 +154,19 @@ Any other install, its config and its Accessibility grant are untouched througho
 
 ## Documentation
 
-The config format, the commands and the tree model are unchanged, so the AeroSpace manual applies
-as-is and there's no point duplicating it:
+The fork ships its own manual, with every backported flag and config key already folded in:
 
-- [Guide](https://nikitabobko.github.io/AeroSpace/guide) ·
-  [Commands](https://nikitabobko.github.io/AeroSpace/commands) ·
-  [Goodies](https://nikitabobko.github.io/AeroSpace/goodies)
+- **[vitorebatista.github.io/AeroSpace-edge](https://vitorebatista.github.io/AeroSpace-edge/)** —
+  [Guide](https://vitorebatista.github.io/AeroSpace-edge/guide/) ·
+  [Commands](https://vitorebatista.github.io/AeroSpace-edge/#commands) ·
+  [Goodies](https://vitorebatista.github.io/AeroSpace-edge/goodies/)
 
-What AeroSpace‑edge adds on top is in [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md) and in the Markdown
-sources under [`docs-md/`](./docs-md), which ship with those additions folded in.
+Sources live under [`docs-md/`](./docs-md); the site is built with Material for MkDocs and published
+by [`.github/workflows/docs.yml`](./.github/workflows/docs.yml). Release history is in
+[`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md).
+
+Agents and LLM tooling can read
+[`/llms.txt`](https://vitorebatista.github.io/AeroSpace-edge/llms.txt) for a machine-readable index.
 
 ## How it's kept current
 

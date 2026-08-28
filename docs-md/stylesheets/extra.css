@@ -196,6 +196,117 @@
   }
 }
 
+.edge-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin: 0 0 2rem;
+}
+
+/* Material colours .md-button from --md-primary-fg-color, which we repoint at the
+   header background; set both button variants explicitly instead. */
+.md-typeset .edge-cta .md-button {
+  color: var(--md-typeset-a-color);
+  border-color: currentcolor;
+}
+
+.md-typeset .edge-cta .md-button:hover,
+.md-typeset .edge-cta .md-button:focus {
+  background: var(--edge-indigo);
+  border-color: var(--edge-indigo);
+  color: #fff;
+}
+
+.md-typeset .edge-cta .md-button--primary {
+  background: var(--edge-indigo);
+  border-color: var(--edge-indigo);
+  color: #fff;
+}
+
+.md-typeset .edge-cta .md-button--primary:hover,
+.md-typeset .edge-cta .md-button--primary:focus {
+  background: var(--edge-purple);
+  border-color: var(--edge-purple);
+  color: #fff;
+}
+
+/* Three-up numbers under the pitch. */
+.edge-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1.4rem;
+  margin: 2rem 0;
+  padding: 1.4rem 0;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.edge-stats > div > p {
+  margin: 0;
+}
+
+.edge-stats strong {
+  display: block;
+  font-size: 1.9rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  background: var(--edge-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  width: fit-content;
+}
+
+.edge-stats span {
+  display: block;
+  margin-top: 0.35em;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  color: var(--md-default-fg-color--light);
+}
+
+/* Feature grid */
+.edge-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1.1rem;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.edge-features > div {
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.5rem;
+  background: var(--md-code-bg-color);
+}
+
+.md-typeset .edge-features h3 {
+  margin: 0 0 0.5em;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  border: none;
+  padding: 0;
+}
+
+.md-typeset .edge-features h3::before {
+  content: "";
+  display: block;
+  width: 1.9rem;
+  height: 3px;
+  margin-bottom: 0.7rem;
+  border-radius: 2px;
+  background: var(--edge-gradient);
+}
+
+.edge-features p {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: var(--md-default-fg-color--light);
+}
+
 /* Command index cards */
 .edge-cards {
   display: grid;

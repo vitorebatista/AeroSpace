@@ -1,5 +1,5 @@
-site_name: AeroSpace
-site_description: An i3-like tiling window manager for macOS
+site_name: AeroSpace-edge
+site_description: An i3-like tiling window manager for macOS - the AeroSpace-edge fork
 site_url: https://vitorebatista.github.io/AeroSpace-edge/
 repo_url: https://github.com/vitorebatista/AeroSpace-edge
 repo_name: vitorebatista/AeroSpace-edge
@@ -41,7 +41,7 @@ extra_css:
 plugins:
   - search
   - llmstxt:
-      markdown_description: An i3-like tiling window manager for macOS.
+      markdown_description: "An i3-like tiling window manager for macOS. CLI binary: aerospace-edge."
       sections:
         Commands:
           - commands/*.md
