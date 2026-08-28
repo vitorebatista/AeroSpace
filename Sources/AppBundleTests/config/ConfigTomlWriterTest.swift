@@ -6,11 +6,19 @@ import XCTest
 final class ConfigTomlWriterTest: XCTestCase {
     /// Applies a draft to an empty document, re-parses the result with the real parser,
     /// and returns the parsed config. Fails the test if the output does not parse.
+    ///
+    /// The pre-edit draft is built from `Config()`, not `defaultConfig`, so that it agrees
+    /// with the empty document it is applied to — `SettingsModel` always derives the draft
+    /// from the very config it parsed out of the document, and the writer now compares
+    /// against that draft to decide what to touch. Seeding it from `defaultConfig` (which
+    /// sets `config-version = 2` and a full `persistent-workspaces` list) would claim the
+    /// empty document already contained values it does not.
     private func roundTrip(_ mutate: (inout ConfigTomlWriter.ConfigDraft) -> Void) -> Config {
-        var draft = ConfigTomlWriter.draft(from: defaultConfig, rawExec: RawExecConfig(), document: TomlBlockDocument(""))
+        let original = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: TomlBlockDocument(""))
+        var draft = original
         mutate(&draft)
         var document = TomlBlockDocument("")
-        ConfigTomlWriter.apply(draft, to: &document)
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
         let text = document.render()
         let (parsed, errors) = parseConfig(text)
         assertEquals(errors, [], additionalMsg: "generated config did not parse:\n\(text)")
@@ -64,7 +72,12 @@ final class ConfigTomlWriterTest: XCTestCase {
     }
 
     func testPersistentWorkspacesRoundTrips() {
-        let parsed = roundTrip { draft in draft.persistentWorkspaces = ["1", "web", "it's"] }
+        // `config-version = 2` is not incidental: the key is rejected outright below that,
+        // so this is the only combination a user can actually save.
+        let parsed = roundTrip { draft in
+            draft.configVersion = 2
+            draft.persistentWorkspaces = ["1", "web", "it's"]
+        }
         assertEquals(Array(parsed.persistentWorkspaces), ["1", "web", "it's"])
     }
 
@@ -83,9 +96,10 @@ final class ConfigTomlWriterTest: XCTestCase {
         assertEquals(config.configVersion, 1)
         assertEquals(Array(config.persistentWorkspaces), ["1"])
 
-        var draft = ConfigTomlWriter.draft(from: config, rawExec: RawExecConfig(), document: document)
+        let original = ConfigTomlWriter.draft(from: config, rawExec: RawExecConfig(), document: document)
+        var draft = original
         draft.startAtLogin = true // an unrelated edit, the way a real save would make one
-        ConfigTomlWriter.apply(draft, to: &document)
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
 
         let rendered = document.render()
         assertEquals(rendered.contains("persistent-workspaces"), false, additionalMsg: rendered)
@@ -96,10 +110,11 @@ final class ConfigTomlWriterTest: XCTestCase {
         // (already invalid on its own, since the parser rejects that combination) stays
         // writable rather than being silently dropped by the settings window.
         var alreadyPresentDocument = TomlBlockDocument("persistent-workspaces = ['1']\n")
-        var alreadyPresentDraft = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: alreadyPresentDocument)
+        let alreadyPresentOriginal = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: alreadyPresentDocument)
+        var alreadyPresentDraft = alreadyPresentOriginal
         alreadyPresentDraft.configVersion = 1
         alreadyPresentDraft.persistentWorkspaces = ["1", "2"]
-        ConfigTomlWriter.apply(alreadyPresentDraft, to: &alreadyPresentDocument)
+        ConfigTomlWriter.apply(alreadyPresentDraft, original: alreadyPresentOriginal, to: &alreadyPresentDocument)
         assertEquals(alreadyPresentDocument.render(), "persistent-workspaces = ['1', '2']\n")
     }
 
@@ -194,9 +209,10 @@ final class ConfigTomlWriterTest: XCTestCase {
         // ("stays minimal") and with how the type is used for real (Task 5 always builds
         // the draft from the Config parsed from the SAME document).
         var document = TomlBlockDocument("start-at-login = false\n")
-        var draft = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: document)
+        let original = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: document)
+        var draft = original
         draft.startAtLogin = true
-        ConfigTomlWriter.apply(draft, to: &document)
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
         assertEquals(document.render(), "start-at-login = true\n")
     }
 
@@ -209,10 +225,17 @@ final class ConfigTomlWriterTest: XCTestCase {
         // `testDefaultsAreNotWrittenWhenAbsentFromTheFile` above: `defaultConfig` sets
         // `config-version` / `persistent-workspaces` beyond `Config()`'s bare defaults,
         // which would leak into this near-empty document's exact-equality assertion too.
-        var document = TomlBlockDocument("start-at-login = true\n")
-        var draft = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: document)
+        let text = "start-at-login = true\n"
+        var document = TomlBlockDocument(text)
+        // Built from the config parsed out of THIS document, the way `SettingsModel.load()`
+        // does: the writer only touches a key whose value differs from the one it loaded,
+        // so an `original` that disagreed with the document would skip the branch entirely.
+        let (config, errors) = parseConfig(text)
+        assertEquals(errors, [])
+        let original = ConfigTomlWriter.draft(from: config, rawExec: RawExecConfig(), document: document)
+        var draft = original
         draft.startAtLogin = false
-        ConfigTomlWriter.apply(draft, to: &document)
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
         assertEquals(document.render(), "start-at-login = false\n")
     }
 
@@ -222,10 +245,11 @@ final class ConfigTomlWriterTest: XCTestCase {
         // `[exec.env-vars]` too, or the freshly-generated `[exec]` body (which re-emits
         // its own `[exec.env-vars]`) duplicates the table and the result fails to parse.
         var document = TomlBlockDocument("[exec]\ninherit-env-vars = false\n\n[exec.env-vars]\nFOO = 'bar'\n")
-        var draft = ConfigTomlWriter.draft(from: defaultConfig, rawExec: RawExecConfig(), document: document)
+        let original = ConfigTomlWriter.draft(from: defaultConfig, rawExec: RawExecConfig(), document: document)
+        var draft = original
         draft.inheritEnvVars = false
         draft.envVars = ["FOO": "bar", "BAZ": "qux"]
-        ConfigTomlWriter.apply(draft, to: &document)
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
         let text = document.render()
         assertEquals(text.components(separatedBy: "[exec.env-vars]").count - 1, 1, additionalMsg: text)
         let (parsed, errors) = parseConfig(text)
@@ -236,9 +260,10 @@ final class ConfigTomlWriterTest: XCTestCase {
 
     func testCommentsOutsideRegeneratedTablesSurvive() {
         var document = TomlBlockDocument("# my note\nstart-at-login = false\n\n[mode.main.binding]\nalt-h = 'focus left'\n")
-        var draft = ConfigTomlWriter.draft(from: defaultConfig, rawExec: RawExecConfig(), document: document)
+        let original = ConfigTomlWriter.draft(from: defaultConfig, rawExec: RawExecConfig(), document: document)
+        var draft = original
         draft.startAtLogin = true
-        ConfigTomlWriter.apply(draft, to: &document)
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
         assertEquals(document.render().contains("# my note"), true)
         assertEquals(document.render().contains("alt-h = 'focus left'"), true)
     }
@@ -251,15 +276,102 @@ final class ConfigTomlWriterTest: XCTestCase {
         var document = TomlBlockDocument(text)
         let (config, errors) = parseConfig(text)
         assertEquals(errors, [])
-        var draft = ConfigTomlWriter.draft(from: config, rawExec: RawExecConfig(), document: document)
+        let original = ConfigTomlWriter.draft(from: config, rawExec: RawExecConfig(), document: document)
+        var draft = original
         draft.accordionPadding = 99
         draft.gaps = draft.gaps.copy(\.inner.vertical, .constant(7))
-        ConfigTomlWriter.apply(draft, to: &document)
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
         let (reparsed, reErrors) = parseConfig(document.render())
         assertEquals(reErrors, [], additionalMsg: document.render())
         assertEquals(reparsed.accordionPadding, 99)
         assertEquals(reparsed.gaps.inner.vertical, .constant(7))
         // The bindings the default config ships with must survive an unrelated edit.
         assertEquals(reparsed.modes[mainModeId]?.bindings.count, config.modes[mainModeId]?.bindings.count)
+    }
+
+    /// Reads `docs/config-examples/default-config.toml` — the file the settings window
+    /// itself seeds a brand-new config from, and the closest thing to "a real user's file"
+    /// this suite has.
+    private func defaultConfigText() -> String {
+        try! String(
+            contentsOf: projectRoot.appending(component: "docs/config-examples/default-config.toml"),
+            encoding: .utf8,
+        )
+    }
+
+    func testApplyingAnUnchangedDraftIsByteIdentical() {
+        // The whole feature's promise, on the whole stock config: opening the window and
+        // saving without touching anything must give back exactly the bytes that went in —
+        // no reflowed multi-line `persistent-workspaces`, no re-indented `[gaps]`, no
+        // `[key-mapping]` deleted for holding the default preset, no callbacks pulled out
+        // from under the comments that explain them.
+        let text = defaultConfigText()
+        var document = TomlBlockDocument(text)
+        let (config, errors) = parseConfig(text)
+        assertEquals(errors, [])
+        let draft = ConfigTomlWriter.draft(
+            from: config,
+            rawExec: SettingsModel.rawExecConfig(from: text),
+            document: document,
+        )
+        ConfigTomlWriter.apply(draft, original: draft, to: &document)
+        assertEquals(document.render(), text)
+    }
+
+    func testAnUnrelatedEditLeavesEveryOtherRegionAlone() {
+        // The realistic save: one toggle flipped, everything else untouched. Only the
+        // `start-at-login` line may differ — in particular the four regenerated tables must
+        // stay exactly where and how they were, even though `[gaps]` (all zeroes) and
+        // `[key-mapping]` (preset 'qwerty') both hold nothing but default values.
+        let text = defaultConfigText()
+        var document = TomlBlockDocument(text)
+        let (config, errors) = parseConfig(text)
+        assertEquals(errors, [])
+        let original = ConfigTomlWriter.draft(
+            from: config,
+            rawExec: SettingsModel.rawExecConfig(from: text),
+            document: document,
+        )
+        var draft = original
+        draft.startAtLogin = true
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
+
+        let rendered = document.render()
+        assertEquals(rendered, text.replacingOccurrences(of: "start-at-login = false", with: "start-at-login = true"))
+        for table in ConfigTomlWriter.regeneratedTables {
+            assertEquals(rendered.contains("[\(table)]"), text.contains("[\(table)]"), additionalMsg: table)
+        }
+        let (reparsed, reErrors) = parseConfig(rendered)
+        assertEquals(reErrors, [], additionalMsg: rendered)
+        assertEquals(reparsed.startAtLogin, true)
+    }
+
+    func testTablesHoldingOnlyDefaultsSurviveAnUnrelatedEdit() {
+        // The narrow form of the above, spelled out: `replaceTable(named:with: nil)` deletes
+        // a family whose values equal the defaults, so an untouched one must never reach it.
+        let text = "[key-mapping]\npreset = 'qwerty'\n\n[gaps]\ninner.horizontal = 0\n"
+        var document = TomlBlockDocument(text)
+        let (config, errors) = parseConfig(text)
+        assertEquals(errors, [])
+        let original = ConfigTomlWriter.draft(from: config, rawExec: RawExecConfig(), document: document)
+        var draft = original
+        draft.startAtLogin = true
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
+        assertEquals(document.render(), "start-at-login = true\n" + text)
+    }
+
+    func testNotationAndEnvVarNamesAreQuotedOnlyWhenTheyHaveToBe() {
+        // A bare key can't carry a dot (it would nest a sub-table) or a space (invalid
+        // TOML); an ordinary name must still be spelled bare, the way a human would.
+        var document = TomlBlockDocument("")
+        let original = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: document)
+        var draft = original
+        draft.keyNotationToKeyCode = ["a.b": "quote", "q": "quote"]
+        draft.envVars = ["MY VAR": "hello", "MY_VAR": "hello"]
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
+        let rendered = document.render()
+        for expected in ["'a.b' = 'quote'", "q = 'quote'", "'MY VAR' = 'hello'", "MY_VAR = 'hello'"] {
+            assertEquals(rendered.contains(expected), true, additionalMsg: "\(expected) missing from:\n\(rendered)")
+        }
     }
 }

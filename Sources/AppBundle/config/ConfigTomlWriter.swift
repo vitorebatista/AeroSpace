@@ -58,8 +58,10 @@ enum ConfigTomlWriter {
         "exec-on-workspace-change",
     ]
 
-    /// The nested tables the form models completely and therefore regenerates wholesale.
-    private static let regeneratedTables = ["gaps", "key-mapping", "exec", "workspace-to-monitor-force-assignment"]
+    /// The nested tables the form models completely and therefore regenerates wholesale —
+    /// but only when one of the fields feeding them actually changed, see `apply`. Kept as
+    /// a list so the set the docs promise is greppable from one place.
+    static let regeneratedTables = ["gaps", "key-mapping", "exec", "workspace-to-monitor-force-assignment"]
 
     // MARK: - Reading a draft out of a parsed config + the document
 
@@ -102,76 +104,117 @@ enum ConfigTomlWriter {
 
     // MARK: - Writing a draft into the document
 
-    @MainActor static func apply(_ draft: ConfigDraft, to document: inout TomlBlockDocument) {
+    /// Writes `draft` into `document`, touching only what the user actually changed.
+    ///
+    /// `original` is the draft as it was loaded from this same document. Every region —
+    /// scalar, regenerated table family, raw pane, callback block — is written only when
+    /// its own contributing fields differ from `original`, and is otherwise left completely
+    /// alone rather than removed and re-inserted. That is what makes an untouched region
+    /// byte-identical after a save: re-emitting even an unchanged value would still reflow
+    /// its spacing, collapse a multi-line array onto one line, relocate a table, or delete a
+    /// table whose values happen to equal the defaults (which the stock config's `[gaps]`
+    /// and `[key-mapping]` both do).
+    @MainActor static func apply(_ draft: ConfigDraft, original: ConfigDraft, to document: inout TomlBlockDocument) {
         let defaults = ConfigDraft.defaults
 
-        // Top-level scalars. `setOrOmit` keeps a value out of the file when it equals the
-        // default AND is not already present, so the window never bloats a minimal config.
-        func setOrOmit(_ key: String, _ value: String, isDefault: Bool) {
-            if isDefault, document.text(forKeyValue: key) == nil { return }
-            document.set(key: key, tomlValue: value)
+        // Top-level scalars. A scalar the user did not touch is never rewritten; one that
+        // was is written unless it equals the default AND is absent from the file, so the
+        // window never bloats a minimal config.
+        func setScalar<Value: Equatable>(
+            _ key: String,
+            _ keyPath: KeyPath<ConfigDraft, Value>,
+            _ serialize: (Value) -> String,
+        ) {
+            let value = draft[keyPath: keyPath]
+            if value == original[keyPath: keyPath] { return }
+            if value == defaults[keyPath: keyPath], document.text(forKeyValue: key) == nil { return }
+            document.set(key: key, tomlValue: serialize(value))
         }
 
-        setOrOmit("start-at-login", TomlValue.of(draft.startAtLogin), isDefault: draft.startAtLogin == defaults.startAtLogin)
-        setOrOmit("auto-reload-config", TomlValue.of(draft.autoReloadConfig), isDefault: draft.autoReloadConfig == defaults.autoReloadConfig)
-        setOrOmit("automatically-unhide-macos-hidden-apps", TomlValue.of(draft.automaticallyUnhideMacosHiddenApps), isDefault: draft.automaticallyUnhideMacosHiddenApps == defaults.automaticallyUnhideMacosHiddenApps)
-        setOrOmit("enable-normalization-flatten-containers", TomlValue.of(draft.enableNormalizationFlattenContainers), isDefault: draft.enableNormalizationFlattenContainers == defaults.enableNormalizationFlattenContainers)
-        setOrOmit("enable-normalization-opposite-orientation-for-nested-containers", TomlValue.of(draft.enableNormalizationOppositeOrientationForNestedContainers), isDefault: draft.enableNormalizationOppositeOrientationForNestedContainers == defaults.enableNormalizationOppositeOrientationForNestedContainers)
-        setOrOmit("enable-normalization-binary-tree", TomlValue.of(draft.enableNormalizationBinaryTree), isDefault: draft.enableNormalizationBinaryTree == defaults.enableNormalizationBinaryTree)
-        setOrOmit("default-root-container-layout", TomlValue.of(draft.defaultRootContainerLayout.rawValue), isDefault: draft.defaultRootContainerLayout == defaults.defaultRootContainerLayout)
-        setOrOmit("default-root-container-orientation", TomlValue.of(draft.defaultRootContainerOrientation.rawValue), isDefault: draft.defaultRootContainerOrientation == defaults.defaultRootContainerOrientation)
-        setOrOmit("accordion-padding", TomlValue.of(draft.accordionPadding), isDefault: draft.accordionPadding == defaults.accordionPadding)
-        setOrOmit("focus-follows-app-activation", TomlValue.of(draft.focusFollowsAppActivation.rawValue), isDefault: draft.focusFollowsAppActivation == defaults.focusFollowsAppActivation)
-        setOrOmit("new-window-prevent-flicker", TomlValue.of(draft.newWindowPreventFlicker), isDefault: draft.newWindowPreventFlicker == defaults.newWindowPreventFlicker)
-        setOrOmit("focused-window-border", TomlValue.of(draft.focusedWindowBorder), isDefault: draft.focusedWindowBorder == defaults.focusedWindowBorder)
-        setOrOmit("focused-window-border-color", TomlValue.of(draft.focusedWindowBorderColor), isDefault: draft.focusedWindowBorderColor == defaults.focusedWindowBorderColor)
-        setOrOmit("focused-window-border-width", TomlValue.of(draft.focusedWindowBorderWidth), isDefault: draft.focusedWindowBorderWidth == defaults.focusedWindowBorderWidth)
-        setOrOmit("focused-window-border-opacity", TomlValue.of(draft.focusedWindowBorderOpacity), isDefault: draft.focusedWindowBorderOpacity == defaults.focusedWindowBorderOpacity)
-        setOrOmit("focused-window-border-radius", TomlValue.of(draft.focusedWindowBorderRadius), isDefault: draft.focusedWindowBorderRadius == defaults.focusedWindowBorderRadius)
-        setOrOmit("focused-window-border-inset", TomlValue.of(draft.focusedWindowBorderInset), isDefault: draft.focusedWindowBorderInset == defaults.focusedWindowBorderInset)
-        setOrOmit("config-version", TomlValue.of(draft.configVersion), isDefault: draft.configVersion == defaults.configVersion)
+        setScalar("start-at-login", \.startAtLogin) { TomlValue.of($0) }
+        setScalar("auto-reload-config", \.autoReloadConfig) { TomlValue.of($0) }
+        setScalar("automatically-unhide-macos-hidden-apps", \.automaticallyUnhideMacosHiddenApps) { TomlValue.of($0) }
+        setScalar("enable-normalization-flatten-containers", \.enableNormalizationFlattenContainers) { TomlValue.of($0) }
+        setScalar("enable-normalization-opposite-orientation-for-nested-containers", \.enableNormalizationOppositeOrientationForNestedContainers) { TomlValue.of($0) }
+        setScalar("enable-normalization-binary-tree", \.enableNormalizationBinaryTree) { TomlValue.of($0) }
+        setScalar("default-root-container-layout", \.defaultRootContainerLayout) { TomlValue.of($0.rawValue) }
+        setScalar("default-root-container-orientation", \.defaultRootContainerOrientation) { TomlValue.of($0.rawValue) }
+        setScalar("accordion-padding", \.accordionPadding) { TomlValue.of($0) }
+        setScalar("focus-follows-app-activation", \.focusFollowsAppActivation) { TomlValue.of($0.rawValue) }
+        setScalar("new-window-prevent-flicker", \.newWindowPreventFlicker) { TomlValue.of($0) }
+        setScalar("focused-window-border", \.focusedWindowBorder) { TomlValue.of($0) }
+        setScalar("focused-window-border-color", \.focusedWindowBorderColor) { TomlValue.of($0) }
+        setScalar("focused-window-border-width", \.focusedWindowBorderWidth) { TomlValue.of($0) }
+        setScalar("focused-window-border-opacity", \.focusedWindowBorderOpacity) { TomlValue.of($0) }
+        setScalar("focused-window-border-radius", \.focusedWindowBorderRadius) { TomlValue.of($0) }
+        setScalar("focused-window-border-inset", \.focusedWindowBorderInset) { TomlValue.of($0) }
+        setScalar("config-version", \.configVersion) { TomlValue.of($0) }
         // `persistent-workspaces` is a config-version-2-only key: the parser treats it as
         // a semantic error in a config-version <= 1 file (and derives `persistentWorkspaces`
         // itself from the file's bindings there instead). Only ever write it when the
         // draft is actually on version 2, or the key is already — and therefore validly —
         // present; there is no legitimate v1 file containing this key.
         if draft.configVersion >= 2 || document.text(forKeyValue: "persistent-workspaces") != nil {
-            setOrOmit(
-                "persistent-workspaces",
-                TomlValue.array(draft.persistentWorkspaces.map { TomlValue.of($0) }),
-                isDefault: draft.persistentWorkspaces.isEmpty,
-            )
+            setScalar("persistent-workspaces", \.persistentWorkspaces) { names in
+                TomlValue.array(names.map { TomlValue.of($0) })
+            }
         }
 
-        // Nested tables: regenerated wholesale (see the spec), driven from
-        // `regeneratedTables` so that list stays the single source of truth for which
-        // tables the form owns outright. `nil` body deletes the table.
-        let tableBodies: [String: String?] = [
-            "gaps": gapsTable(draft.gaps, defaults: defaults.gaps),
-            "key-mapping": keyMappingTable(draft, defaults: defaults),
-            "exec": execTable(draft, defaults: defaults),
-            "workspace-to-monitor-force-assignment": workspaceAssignmentTable(draft.workspaceToMonitorForceAssignment),
+        // Nested tables the form models completely: regenerated wholesale, but only when
+        // one of their own values changed. A `nil` body deletes the table, on the grounds
+        // that its values now equal the parser's fallbacks and it carries no information —
+        // which is exactly why `changed` has to gate this. An untouched `[gaps]` of all
+        // zeroes IS all-defaults, and regenerating it unconditionally would delete the
+        // stock config's table and orphan the comment block introducing it.
+        //
+        // Still driven off `regeneratedTables`, so that list stays the single source of
+        // truth for which tables the form owns outright.
+        let regenerated: [String: (changed: Bool, body: String?)] = [
+            "gaps": (
+                draft.gaps != original.gaps,
+                gapsTable(draft.gaps, defaults: defaults.gaps),
+            ),
+            "key-mapping": (
+                draft.keyMappingPreset != original.keyMappingPreset || draft.keyNotationToKeyCode != original.keyNotationToKeyCode,
+                keyMappingTable(draft, defaults: defaults),
+            ),
+            "exec": (
+                draft.inheritEnvVars != original.inheritEnvVars || draft.envVars != original.envVars,
+                execTable(draft, defaults: defaults),
+            ),
+            "workspace-to-monitor-force-assignment": (
+                draft.workspaceToMonitorForceAssignment != original.workspaceToMonitorForceAssignment,
+                workspaceAssignmentTable(draft.workspaceToMonitorForceAssignment),
+            ),
         ]
         for name in regeneratedTables {
-            // `tableBodies[name]` is doubly-optional (`String??`): the outer optional is the
-            // dictionary lookup, the inner is the table's own "no body" case. `flatMap { $0 }`
-            // flattens that to `String?` — swiftlint's `redundant_nil_coalescing` misreads the
-            // equivalent `?? nil` as a no-op here, same false positive as `MacApp.swift:185`.
-            document.replaceTable(named: name, with: tableBodies[name].flatMap { $0 })
+            guard let table = regenerated[name], table.changed else { continue }
+            document.replaceTable(named: name, with: table.body)
         }
 
         // Raw panes. Each spliced block is tagged with a name its own predicate matches
         // ("mode" / "on-window-detected"), so calling `apply` again on the same document
         // finds and replaces it instead of appending a duplicate.
-        document.replaceTables(matching: isKeybindingTable, with: draft.rawKeybindings, name: "mode")
-        document.replaceTables(matching: isWindowRuleTable, with: draft.rawWindowRules, name: "on-window-detected")
+        if draft.rawKeybindings != original.rawKeybindings {
+            document.replaceTables(matching: isKeybindingTable, with: draft.rawKeybindings, name: "mode")
+        }
+        if draft.rawWindowRules != original.rawWindowRules {
+            document.replaceTables(matching: isWindowRuleTable, with: draft.rawWindowRules, name: "on-window-detected")
+        }
         // The callbacks pane, by contrast, splices in as untagged trivia (see
         // `setRawTopLevel`) and `remove(key:)` cannot find it to remove before
         // re-inserting — so unlike the two panes above, this one relies on `apply` being
         // called at most once per `TomlBlockDocument` instance. That holds today: Task 5's
         // save flow always applies to a fresh copy of the on-disk document.
-        for key in callbackKeys { document.remove(key: key) }
-        document.setRawTopLevel(text: draft.rawCallbacks)
+        //
+        // It also gathers keys the file may spell in several separate places into one
+        // block at one position, so an unchanged pane must not run at all: on the stock
+        // config that alone would pull three callbacks out from under the three comment
+        // blocks that explain them.
+        if draft.rawCallbacks != original.rawCallbacks {
+            for key in callbackKeys { document.remove(key: key) }
+            document.setRawTopLevel(text: draft.rawCallbacks)
+        }
     }
 
     // MARK: - Table bodies

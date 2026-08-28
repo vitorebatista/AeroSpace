@@ -43,6 +43,9 @@ public final class SettingsModel: ObservableObject {
     /// `true` when no custom config exists yet, so saving creates `~/<configDotfileName>`.
     private(set) var willCreateConfig = false
     private var document = TomlBlockDocument("")
+    /// `draft` as `load()` read it, before the user touched anything. `apply` compares
+    /// against it so a region the user never went near is left byte-for-byte alone.
+    private var loadedDraft: ConfigTomlWriter.ConfigDraft = ConfigTomlWriter.ConfigDraft.defaults
     private var loadedModificationDate: Date?
 
     private init() {}
@@ -103,6 +106,7 @@ public final class SettingsModel: ObservableObject {
             // `parseConfig` expands `[exec]` into the full environment, which is not
             // writable back. Recover the file's own `[exec]` values instead.
             draft = ConfigTomlWriter.draft(from: config, rawExec: Self.rawExecConfig(from: text), document: document)
+            loadedDraft = draft
             mode = .form
         } else {
             mode = .rawOnly(parseError: errors.joined(separator: "\n\n"))
@@ -122,7 +126,7 @@ public final class SettingsModel: ObservableObject {
         switch mode {
             case .form:
                 var working = document
-                ConfigTomlWriter.apply(draft, to: &working)
+                ConfigTomlWriter.apply(draft, original: loadedDraft, to: &working)
                 candidate = working.render()
             case .rawOnly:
                 candidate = wholeFileText
