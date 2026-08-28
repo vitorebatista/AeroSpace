@@ -128,11 +128,16 @@ func openConfigButton(showShortcutGroup: Bool = false) -> some View {
 @MainActor @ViewBuilder
 func settingsWindowButton(openSettings: @escaping () -> Void) -> some View {
     Button("Settings…") {
-        SettingsModel.shared.load()
         NSApp.activate(ignoringOtherApps: true)
         if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == settingsWindowId }) {
+            // Already open: just bring it forward. Do NOT reload here — `SettingsModel.load()`
+            // resets `isDirty` and overwrites `draft` from disk, which would silently discard
+            // an unsaved edit in a window the user only backgrounded, not closed.
             window.makeKeyAndOrderFront(nil)
         } else {
+            // Not open (first click ever, or the user closed it): `SettingsView.onAppear`
+            // calls `model.load()` once the new window's content view is created, so there's
+            // nothing to load here.
             openSettings()
         }
     }

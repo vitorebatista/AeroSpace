@@ -88,7 +88,7 @@ struct SettingsView: View {
             Label("This config doesn't parse, so only raw editing is available.", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.yellow)
             Text(parseError).font(.caption.monospaced()).textSelection(.enabled)
-            TextEditor(text: Binding(get: { model.wholeFileText }, set: { model.wholeFileText = $0; model.isDirty = true }))
+            TextEditor(text: Binding(get: { model.wholeFileText }, set: { model.wholeFileText = $0; markDirty() }))
                 .font(.system(size: 12).monospaced())
         }
         .padding()
