@@ -197,4 +197,14 @@ final class TomlBlockDocumentTest: XCTestCase {
         assertEquals(TomlValue.array([TomlValue.of("1"), TomlValue.of("2")]), "['1', '2']")
         assertEquals(TomlValue.array([]), "[]")
     }
+
+    func testValueSerialiserEscapesControlCharactersInsteadOfEmittingARawLiteral() {
+        // A raw newline inside a single-quoted literal string is invalid TOML (literal
+        // strings are single-line) — this must fall back to an escaped basic string.
+        assertEquals(TomlValue.of("line1\nline2"), "\"line1\\nline2\"")
+        // Same, but also containing a quote that would have forced the basic-string
+        // path anyway — the newline still needs its own escape, not a raw embedded one.
+        assertEquals(TomlValue.of("it's\nbroken"), "\"it's\\nbroken\"")
+        assertEquals(TomlValue.of("a\tb"), "\"a\\tb\"")
+    }
 }

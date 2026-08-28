@@ -244,17 +244,28 @@ enum TomlValue {
 
     /// Prefers a literal (single-quoted) string, since AeroSpace configs and commands are
     /// full of backslashes and regexes that a basic string would force us to escape.
-    /// Falls back to a basic string when the value itself contains a single quote.
+    /// Falls back to an escaped basic string when the value contains a single quote or a
+    /// control character (a raw newline, tab, etc. can't appear in a single-line literal
+    /// string — TOML literal strings are always single-line).
     static func of(_ value: String) -> String {
-        if !value.contains("'") { return "'\(value)'" }
+        if !value.contains("'"), !value.unicodeScalars.contains(where: isTomlControlCharacter) {
+            return "'\(value)'"
+        }
         let escaped = value
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+            .replacingOccurrences(of: "\t", with: "\\t")
         return "\"\(escaped)\""
     }
 
     /// `items` must already be serialised.
     static func array(_ items: [String]) -> String { "[\(items.joined(separator: ", "))]" }
+
+    private static func isTomlControlCharacter(_ scalar: Unicode.Scalar) -> Bool {
+        scalar.value < 0x20 || scalar.value == 0x7F
+    }
 }
 
 extension StringProtocol {
