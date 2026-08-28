@@ -199,6 +199,75 @@ extension TomlBlockDocument {
     }
 }
 
+// MARK: - Table access
+
+extension TomlBlockDocument {
+    func text(forTablesMatching predicate: (String) -> Bool) -> String {
+        matchingTableSpan(predicate).sorted().map { blocks[$0].text }.joined()
+    }
+
+    /// Replaces the named table wholesale, at the position it already occupies. Passing
+    /// `nil` deletes it. Any top-level dotted key under `name.` is dropped too, because
+    /// `gaps.inner.vertical = 5` and `[gaps]` + `inner.vertical = 5` are the same
+    /// setting and leaving both would be a duplicate definition.
+    mutating func replaceTable(named name: String, with body: String?) {
+        blocks.removeAll { $0.isKeyValue && $0.name?.hasPrefix(name + ".") == true }
+        let existing = blocks.firstIndex { $0.isTable && $0.name == name }
+        switch (existing, body) {
+            case (let index?, let body?):
+                blocks[index] = .table(name: name, text: Self.newlineTerminated(body))
+            case (let index?, nil):
+                blocks.remove(at: index)
+                // Drop a blank-only trivia block left dangling where the table used to be.
+                if index < blocks.count, blocks[index].isTrivia,
+                   blocks[index].text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                {
+                    blocks.remove(at: index)
+                }
+            case (nil, let body?):
+                appendTable(name: name, body: body)
+            case (nil, nil):
+                break
+        }
+    }
+
+    /// Replaces the span of all matching tables with `text`, positioned at the first
+    /// match. Used by the raw-TOML panes, which own a whole family of tables at once.
+    mutating func replaceTables(matching predicate: (String) -> Bool, with text: String) {
+        let span = matchingTableSpan(predicate)
+        guard let first = span.min() else {
+            appendTable(name: "", body: text)
+            return
+        }
+        for index in span.sorted(by: >) { blocks.remove(at: index) }
+        blocks.insert(.table(name: "", text: Self.newlineTerminated(text)), at: first)
+    }
+
+    /// The indices of tables matching `predicate`, plus any trivia block that sits
+    /// strictly between two matching tables. `splitTrailingTrivia` (see parsing) turns
+    /// the blank line after a table into its own trivia block, so without this a plain
+    /// join of matched tables would silently lose the blank line that separates them.
+    private func matchingTableSpan(_ predicate: (String) -> Bool) -> Set<Int> {
+        let tables = Set(blocks.indices.filter { blocks[$0].isTable && blocks[$0].name.map(predicate) == true })
+        var span = tables
+        for i in blocks.indices where blocks[i].isTrivia && tables.contains(i - 1) && tables.contains(i + 1) {
+            span.insert(i)
+        }
+        return span
+    }
+
+    private mutating func appendTable(name: String, body: String) {
+        if let last = blocks.indices.last {
+            blocks[last] = blocks[last].withText { $0.hasSuffix("\n") ? $0 : $0 + "\n" }
+        }
+        blocks.append(.table(name: name, text: Self.newlineTerminated(body)))
+    }
+
+    private static func newlineTerminated(_ text: String) -> String {
+        text.isEmpty || text.hasSuffix("\n") ? text : text + "\n"
+    }
+}
+
 private extension TomlBlock {
     var isKeyValue: Bool { if case .keyValue = self { true } else { false } }
     var isTable: Bool { if case .table = self { true } else { false } }

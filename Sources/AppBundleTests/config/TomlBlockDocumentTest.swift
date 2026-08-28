@@ -207,4 +207,93 @@ final class TomlBlockDocumentTest: XCTestCase {
         assertEquals(TomlValue.of("it's\nbroken"), "\"it's\\nbroken\"")
         assertEquals(TomlValue.of("a\tb"), "\"a\\tb\"")
     }
+
+    private static let tablesFixture = """
+        start-at-login = true
+
+        [gaps]
+        inner.vertical = 2
+
+        [mode.main.binding]
+        alt-h = 'focus left'
+
+        [mode.service.binding]
+        esc = 'mode main'
+
+        [exec]
+        inherit-env-vars = true
+
+        """
+
+    func testTextForTablesMatching() {
+        let doc = TomlBlockDocument(Self.tablesFixture)
+        assertEquals(
+            doc.text(forTablesMatching: { $0.hasPrefix("mode.") }),
+            """
+            [mode.main.binding]
+            alt-h = 'focus left'
+
+            [mode.service.binding]
+            esc = 'mode main'
+
+            """,
+        )
+        assertEquals(doc.text(forTablesMatching: { $0 == "nope" }), "")
+    }
+
+    func testReplaceTableKeepsPosition() {
+        var doc = TomlBlockDocument(Self.tablesFixture)
+        doc.replaceTable(named: "gaps", with: "[gaps]\ninner.vertical = 9\n")
+        assertEquals(
+            doc.render(),
+            Self.tablesFixture.replacingOccurrences(of: "inner.vertical = 2", with: "inner.vertical = 9"),
+        )
+    }
+
+    func testReplaceTableWithNilDeletesIt() {
+        var doc = TomlBlockDocument("a = 1\n\n[gaps]\ninner.vertical = 2\n\n[exec]\nx = 1\n")
+        doc.replaceTable(named: "gaps", with: nil)
+        assertEquals(doc.render(), "a = 1\n\n[exec]\nx = 1\n")
+    }
+
+    func testReplaceTableAlsoDropsTopLevelDottedKeys() {
+        // `gaps.inner.vertical = 5` at top level is the same setting spelled differently;
+        // regenerating `[gaps]` must not leave a duplicate definition behind.
+        var doc = TomlBlockDocument("gaps.inner.vertical = 5\nstart-at-login = true\n")
+        doc.replaceTable(named: "gaps", with: "[gaps]\ninner.vertical = 9\n")
+        assertEquals(doc.render(), "start-at-login = true\n[gaps]\ninner.vertical = 9\n")
+    }
+
+    func testReplaceAbsentTableAppends() {
+        var doc = TomlBlockDocument("a = 1\n")
+        doc.replaceTable(named: "gaps", with: "[gaps]\ninner.vertical = 9\n")
+        assertEquals(doc.render(), "a = 1\n[gaps]\ninner.vertical = 9\n")
+    }
+
+    func testReplaceTablesMatchingSplicesAtFirstMatch() {
+        var doc = TomlBlockDocument(Self.tablesFixture)
+        doc.replaceTables(matching: { $0.hasPrefix("mode.") }, with: "[mode.main.binding]\nalt-j = 'focus down'\n")
+        assertEquals(
+            doc.render(),
+            """
+            start-at-login = true
+
+            [gaps]
+            inner.vertical = 2
+
+            [mode.main.binding]
+            alt-j = 'focus down'
+
+            [exec]
+            inherit-env-vars = true
+
+            """,
+        )
+    }
+
+    func testReplaceTablesMatchingWhenNoneMatchAppends() {
+        var doc = TomlBlockDocument("a = 1\n")
+        doc.replaceTables(matching: { $0.hasPrefix("mode.") }, with: "[mode.main.binding]\nalt-j = 'focus down'\n")
+        assertEquals(doc.render(), "a = 1\n[mode.main.binding]\nalt-j = 'focus down'\n")
+    }
 }
