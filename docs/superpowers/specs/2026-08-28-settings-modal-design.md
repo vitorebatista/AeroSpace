@@ -119,8 +119,30 @@ API:
   TOML)
 * `mutating func remove(key: String)` — used when a form control returns to its
   default and the key was absent originally
+* `mutating func replaceTable(named: String, with body: String?)` — replaces a
+  whole named table block, `nil` to delete it; also drops any top-level dotted
+  key under `name.`
 * `mutating func replaceTables(matching: (String) -> Bool, with text: String)` —
   splices a raw pane's text over the span its blocks occupy, preserving position
+
+==== Nested tables are regenerated, not surgically edited
+
+TOML lets a nested value be spelled three ways — `[gaps.inner]` with
+`vertical = 5`, `[gaps]` with `inner.vertical = 5`, or a top-level
+`gaps.inner.vertical = 5`. Chasing all three per key is where a hand-rolled
+mutator turns into a TOML implementation.
+
+So the four nested tables the form fully models — `gaps`, `key-mapping`, `exec`,
+`workspace-to-monitor-force-assignment` — are *regenerated wholesale* from the
+draft `Config` whenever any of their values changes, via `replaceTable`. The
+regenerated block is written at the position the old one occupied.
+
+The bounded cost: comments written *inside* one of those four tables are lost
+when a value in that table changes. Comments everywhere else in the file, and
+inside those tables when nothing in them changes, are untouched. This is the
+one place the window is not comment-preserving, and it is a deliberate trade
+against implementing nested-key mutation. Top-level scalars and
+`persistent-workspaces` keep full per-key surgical editing.
 
 Value serialisation is a handful of tiny helpers next to it (`Bool`, `Int`,
 `String`, string array, per-monitor array). Nothing generic — each is two lines.
