@@ -96,7 +96,7 @@ enum ConfigTomlWriter {
             // normally already ends in "\n", but a file whose last line lacks a trailing
             // newline would otherwise glue two callback keys onto one line when joined.
             rawCallbacks: callbackKeys.compactMap { document.text(forKeyValue: $0) }
-                .map { $0.hasSuffix("\n") ? $0 : $0 + "\n" }.joined(),
+                .map { $0.endsWithNewline ? $0 : $0 + "\n" }.joined(),
         )
     }
 
@@ -230,7 +230,9 @@ enum ConfigTomlWriter {
         if !draft.keyNotationToKeyCode.isEmpty {
             body += "\n[key-mapping.key-notation-to-key-code]\n"
             for (notation, code) in draft.keyNotationToKeyCode.sorted(by: { $0.key < $1.key }) {
-                body += "\(notation) = \(TomlValue.of(code))\n"
+                // `TomlValue.key`, not a bare interpolation: a notation containing a dot
+                // would otherwise be emitted as a dotted key and read back as a sub-table.
+                body += "\(TomlValue.key(notation)) = \(TomlValue.of(code))\n"
             }
         }
         return body
@@ -243,7 +245,10 @@ enum ConfigTomlWriter {
         if !draft.envVars.isEmpty {
             body += "\n[exec.env-vars]\n"
             for (name, value) in draft.envVars.sorted(by: { $0.key < $1.key }) {
-                body += "\(name) = \(TomlValue.of(value))\n"
+                // `TomlValue.key`, not a bare interpolation: an env-var name is arbitrary
+                // text, and a space or a dot in it would otherwise produce invalid TOML or
+                // an unintended sub-table.
+                body += "\(TomlValue.key(name)) = \(TomlValue.of(value))\n"
             }
         }
         return body

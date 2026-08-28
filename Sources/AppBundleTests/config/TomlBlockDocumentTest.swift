@@ -306,6 +306,50 @@ final class TomlBlockDocumentTest: XCTestCase {
         assertEquals(doc.render(), "a = 1\n[mode.main.binding]\nalt-j = 'focus down'\n")
     }
 
+    func testCrlfDocumentSplitsIntoLines() {
+        // Swift treats "\r\n" as a SINGLE Character, so `char == "\n"` never fires on a CRLF
+        // document: without an explicit CRLF case in `linesWithTerminators()` the whole file
+        // came back as one block, and `set` then dropped everything after the first key as
+        // if it were a continuation line — silently, and producing valid TOML that `save()`'s
+        // validation pass had no reason to reject.
+        let text = "a = 1\r\n\r\n[gaps]\r\ninner.vertical = 2\r\n"
+        let doc = TomlBlockDocument(text)
+        assertEquals(doc.render(), text)
+        assertEquals(doc.blocks.count, 3)
+        assertEquals(doc.blocks[0], .keyValue(key: "a", text: "a = 1\r\n"))
+        assertEquals(doc.blocks[1], .trivia(text: "\r\n"))
+        assertEquals(doc.blocks[2], .table(name: "gaps", text: "[gaps]\r\ninner.vertical = 2\r\n"))
+    }
+
+    func testSetKeepsTheLineEndingTheFileAlreadyUsed() {
+        // A rewritten key keeps its own CRLF rather than becoming the one LF line in the
+        // middle of the user's file — and the keys after it are still there.
+        var crlf = TomlBlockDocument("a = 1\r\nb = 2\r\n")
+        crlf.set(key: "a", tomlValue: "9")
+        assertEquals(crlf.render(), "a = 9\r\nb = 2\r\n")
+
+        // A trailing comment survives too, on its own CRLF line.
+        var withComment = TomlBlockDocument("a = 1 # keep me\r\nb = 2\r\n")
+        withComment.set(key: "a", tomlValue: "9")
+        assertEquals(withComment.render(), "a = 9 # keep me\r\nb = 2\r\n")
+
+        // And a last line with no terminator at all still gets none.
+        var unterminated = TomlBlockDocument("a = 1")
+        unterminated.set(key: "a", tomlValue: "9")
+        assertEquals(unterminated.render(), "a = 9")
+    }
+
+    func testSetAbsentKeyInACrlfDocumentDoesNotGlueLines() {
+        // Pinning a known limitation, not an aspiration: a key that is *rewritten* keeps the
+        // file's own terminator, but a brand-new line (here, and in a regenerated table body)
+        // is still emitted with LF. That leaves one mixed ending in a CRLF file — cosmetic,
+        // and every parser accepts it; giving the generated table bodies the file's terminator
+        // would mean threading it through every builder in `ConfigTomlWriter`.
+        var doc = TomlBlockDocument("a = 1\r\n[gaps]\r\ninner.vertical = 2\r\n")
+        doc.set(key: "b", tomlValue: "2")
+        assertEquals(doc.render(), "a = 1\r\nb = 2\n[gaps]\r\ninner.vertical = 2\r\n")
+    }
+
     func testReplaceTablesMatchingLeavesAnUnmatchedTableInBetweenUntouched() {
         // Two matching tables separated by a *non-matching* table (not just trivia):
         // the span to splice must stop at each match, not swallow the unmatched table

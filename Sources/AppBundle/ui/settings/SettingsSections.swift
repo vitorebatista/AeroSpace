@@ -46,8 +46,21 @@ struct GeneralSection: View {
             SettingsGroup("macOS integration") {
                 Toggle("Automatically unhide macOS hidden apps", isOn: tracked($draft.automaticallyUnhideMacosHiddenApps, onEdit))
             }
-            SettingsGroup("Config version", footer: "Only versions AeroSpace understands are accepted; an unknown value is rejected when you save.") {
-                Stepper("config-version: \(draft.configVersion)", value: tracked($draft.configVersion, onEdit), in: 1 ... 9)
+            SettingsGroup(
+                "Config version",
+                footer: """
+                    This is the format your config is written in, not a version to bump. \
+                    Version 2 is current. On version 1, 'persistent-workspaces' is rejected \
+                    and AeroSpace instead derives the workspace list from your bindings and \
+                    monitor assignments — so switching down loses the explicit list, and \
+                    switching up starts with whatever list it had derived.
+                    """,
+            ) {
+                Picker("Config version", selection: tracked($draft.configVersion, onEdit)) {
+                    Text("2 (current)").tag(2)
+                    Text("1 (legacy)").tag(1)
+                }
+                .pickerStyle(.radioGroup)
             }
         }
     }

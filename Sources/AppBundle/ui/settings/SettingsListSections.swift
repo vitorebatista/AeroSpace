@@ -309,9 +309,13 @@ struct WorkspacesSection: View {
                     valueFor: { rows in
                         var result: [String: [MonitorDescription]] = [:]
                         for row in rows where !row.key.isEmpty {
-                            result[row.key] = row.value
+                            let parsed = row.value
                                 .split(separator: ",")
                                 .compactMap { parseMonitorDescription($0.trimmingCharacters(in: .whitespaces)).getOrNil() }
+                            // Skip, don't drop: a half-typed monitor parses to nothing, and
+                            // committing that empty list would assign the workspace to no
+                            // monitor at all rather than leaving it as it was.
+                            if !parsed.isEmpty { result[row.key] = parsed }
                         }
                         return result
                     },
@@ -394,12 +398,16 @@ private struct PersistentWorkspacesEditor: View {
     }
 
     private static func rowsFor(_ names: OrderedSet<String>) -> [Row] { names.map { Row(name: $0) } }
-    private static func valueFor(_ rows: [Row]) -> OrderedSet<String> { OrderedSet(rows.map(\.name)) }
+    /// Empty rows are dropped, the same way `dictionaryFromKeyValueRows` drops an
+    /// empty key: a freshly-added row the user hasn't named yet is still on screen (it
+    /// lives in `rows`), but committing it would write `persistent-workspaces = ['']`,
+    /// which `parsePersistentWorkspaces` has no name validation to reject.
+    private static func valueFor(_ rows: [Row]) -> OrderedSet<String> {
+        OrderedSet(rows.map(\.name).filter { !$0.isEmpty })
+    }
 }
 
 // MARK: - Key Mapping
-
-extension KeyMapping.Preset: Hashable {}
 
 @MainActor
 struct KeyMappingSection: View {

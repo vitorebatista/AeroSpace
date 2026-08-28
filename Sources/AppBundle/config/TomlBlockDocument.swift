@@ -108,9 +108,9 @@ struct TomlBlockDocument {
     /// trivia block, so replacing the table does not carry away a comment that
     /// introduces whatever comes next.
     ///
-    /// ponytail: this can also move a comment that genuinely trailed the table's last
-    /// key. Rendering is unaffected either way; erring toward "belongs to what follows"
-    /// is the safer half for splicing.
+    /// Note: this can also move a comment that genuinely trailed the table's last key.
+    /// Rendering is unaffected either way; erring toward "belongs to what follows" is
+    /// the safer half for splicing.
     private static func splitTrailingTrivia(name: String, text: String) -> [TomlBlock] {
         let lines = text.linesWithTerminators()
         var cut = lines.count
@@ -164,7 +164,7 @@ extension TomlBlockDocument {
         // The block we are inserting after must end with a newline, or the new key would
         // be glued onto it.
         if target > 0 {
-            blocks[target - 1] = blocks[target - 1].withText { $0.hasSuffix("\n") ? $0 : $0 + "\n" }
+            blocks[target - 1] = blocks[target - 1].withText { $0.endsWithNewline ? $0 : $0 + "\n" }
         }
         blocks.insert(.keyValue(key: key, text: line), at: target)
     }
@@ -173,9 +173,9 @@ extension TomlBlockDocument {
         blocks.removeAll { $0.name == key && $0.isKeyValue }
     }
 
-    /// Rewrites `key = <old>` to `key = <new>`, keeping leading indentation and any
-    /// trailing `#` comment from the FIRST line, and dropping any continuation lines of
-    /// a multi-line old value.
+    /// Rewrites `key = <old>` to `key = <new>`, keeping leading indentation, the block's
+    /// own line terminator, and any trailing `#` comment from the FIRST line, and dropping
+    /// any continuation lines of a multi-line old value.
     private static func rewriteValue(of text: String, key: String, to tomlValue: String) -> String {
         let lines = text.linesWithTerminators()
         guard let first = lines.first else { return "\(key) = \(tomlValue)\n" }
@@ -183,12 +183,15 @@ extension TomlBlockDocument {
         // Only treat a `#` as a comment if it is outside the value's quotes. Reuse the
         // scanner by asking it where the comment starts.
         let comment = trailingComment(of: first)
-        let terminator = lines.last?.hasSuffix("\n") == true ? "\n" : ""
+        // Reuse the terminator the block already had, so rewriting a key in a CRLF file
+        // doesn't leave it as the one LF line in the middle of the user's document.
+        let last = lines.last ?? ""
+        let terminator = last.hasSuffix("\r\n") ? "\r\n" : (last.hasSuffix("\n") ? "\n" : "")
         return "\(indent)\(key) = \(tomlValue)\(comment)\(terminator)"
     }
 
-    /// Returns `" # ..."` (with its original spacing) if the line ends in a comment that
-    /// is not inside a string, else `""`.
+    /// Returns the line's trailing comment as `" # ..."`, normalised to a single leading
+    /// space, or `""` when the line ends in no comment outside a string.
     private static func trailingComment(of line: String) -> String {
         if let index = tomlCommentStart(of: line) {
             let raw = line[index...]
@@ -216,9 +219,9 @@ extension TomlBlockDocument {
         var target = insertAt
         while target > 0, blocks[target - 1].isTrivia { target -= 1 }
         if target > 0 {
-            blocks[target - 1] = blocks[target - 1].withText { $0.hasSuffix("\n") ? $0 : $0 + "\n" }
+            blocks[target - 1] = blocks[target - 1].withText { $0.endsWithNewline ? $0 : $0 + "\n" }
         }
-        blocks.insert(.trivia(text: text.hasSuffix("\n") ? text : text + "\n"), at: target)
+        blocks.insert(.trivia(text: text.endsWithNewline ? text : text + "\n"), at: target)
     }
 }
 
@@ -300,13 +303,13 @@ extension TomlBlockDocument {
             // Never force a newline onto an empty block: an empty string has no "line" to
             // terminate, and turning it into a bare "\n" would render as a spurious blank
             // line (this bit whenever two panes were spliced back to back).
-            blocks[last] = blocks[last].withText { $0.isEmpty || $0.hasSuffix("\n") ? $0 : $0 + "\n" }
+            blocks[last] = blocks[last].withText { $0.isEmpty || $0.endsWithNewline ? $0 : $0 + "\n" }
         }
         blocks.append(.table(name: name, text: Self.newlineTerminated(body)))
     }
 
     private static func newlineTerminated(_ text: String) -> String {
-        text.isEmpty || text.hasSuffix("\n") ? text : text + "\n"
+        text.isEmpty || text.endsWithNewline ? text : text + "\n"
     }
 }
 
@@ -374,6 +377,20 @@ enum TomlValue {
     /// `items` must already be serialised.
     static func array(_ items: [String]) -> String { "[\(items.joined(separator: ", "))]" }
 
+    /// A name on the LEFT of `=`: bare when it holds nothing but the characters a bare TOML
+    /// key allows, quoted otherwise. Names reaching here are arbitrary user text (env-var
+    /// names, key notations), and emitting one bare unconditionally would produce invalid
+    /// TOML for a name containing a space and an unintended sub-table for one containing a
+    /// dot. Quoting unconditionally would be safe too, but it would spell every ordinary
+    /// `PATH = ...` as `'PATH' = ...` in the user's own file.
+    static func key(_ name: String) -> String {
+        name.isEmpty || name.rangeOfCharacter(from: bareKeyCharacters.inverted) != nil ? of(name) : name
+    }
+
+    private static let bareKeyCharacters = CharacterSet(
+        charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-",
+    )
+
     private static func isTomlControlCharacter(_ scalar: Unicode.Scalar) -> Bool {
         scalar.value < 0x20 || scalar.value == 0x7F
     }
@@ -381,12 +398,18 @@ enum TomlValue {
 
 extension StringProtocol {
     /// Splits into lines, each keeping its trailing `\n` (or `\r\n`) if it had one.
+    ///
+    /// The `\r\n` case needs saying out loud: Swift treats a CRLF pair as ONE `Character`,
+    /// so it is not equal to `"\n"` and a `char == "\n"` test alone never fires on a CRLF
+    /// document — the whole file would come back as a single "line", every top-level block
+    /// would collapse into one, and rewriting a key would then drop everything after it as
+    /// if it were a continuation line. Same reason `endsWithNewline` exists below.
     func linesWithTerminators() -> [String] {
         var result: [String] = []
         var current = ""
         for char in self {
             current.append(char)
-            if char == "\n" {
+            if char == "\n" || char == "\r\n" {
                 result.append(current)
                 current = ""
             }
@@ -394,6 +417,10 @@ extension StringProtocol {
         if !current.isEmpty { result.append(current) }
         return result
     }
+
+    /// `true` if the text already ends in a line terminator. Not `hasSuffix("\n")`, which
+    /// is `false` for a CRLF-terminated line — see `linesWithTerminators()`.
+    var endsWithNewline: Bool { hasSuffix("\n") || hasSuffix("\r\n") }
 }
 
 /// Tracks just enough TOML lexical state across lines to know where a top-level line

@@ -180,7 +180,13 @@ struct SettingsView: View {
         // Replace every occurrence of the temp validation path with the real config path.
         // The marker "aerospace-settings-" is unique to the temp file name minted in
         // `SettingsModel.save()`; walk outward from it to the surrounding path boundaries.
-        while let markerRange = result.range(of: "aerospace-settings-") {
+        //
+        // The search resumes past what was just substituted rather than restarting from
+        // the beginning: `realPath` is the user's own config path and could itself contain
+        // the marker, and re-finding it every pass would spin here forever — on the
+        // MainActor, i.e. a hung app.
+        var searchFrom = result.startIndex
+        while let markerRange = result.range(of: "aerospace-settings-", range: searchFrom ..< result.endIndex) {
             var start = markerRange.lowerBound
             while start > result.startIndex {
                 let prev = result.index(before: start)
@@ -188,7 +194,11 @@ struct SettingsView: View {
                 start = prev
             }
             guard let tomlRange = result.range(of: ".toml", range: markerRange.upperBound ..< result.endIndex) else { break }
+            // Mutating invalidates every index into `result`, so carry the resume point
+            // across as an offset and recompute it afterwards.
+            let resumeOffset = result.distance(from: result.startIndex, to: start) + realPath.count
             result.replaceSubrange(start ..< tomlRange.upperBound, with: realPath)
+            searchFrom = result.index(result.startIndex, offsetBy: resumeOffset, limitedBy: result.endIndex) ?? result.endIndex
         }
         return result
     }

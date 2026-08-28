@@ -27,6 +27,10 @@ struct KeyMapping: ConvenienceCopyable, Equatable, Sendable {
     }
 }
 
+/// The settings window uses `Preset` as a SwiftUI `Picker` tag, which requires
+/// `Hashable`. Declared next to the type rather than in the UI layer.
+extension KeyMapping.Preset: Hashable {}
+
 func parseKeyMapping(_ raw: Json, _ backtrace: ConfigBacktrace, _ errors: inout [ConfigParseError]) -> KeyMapping {
     parseTable(raw, KeyMapping(), keyMappingParser, backtrace, &errors)
 }
