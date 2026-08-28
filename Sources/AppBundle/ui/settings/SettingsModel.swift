@@ -1,6 +1,7 @@
 import Common
 import Foundation
 import SwiftUI
+import TOMLDecoder
 
 enum SettingsMode: Equatable {
     /// The config parsed; the full form is available.
@@ -101,7 +102,7 @@ public final class SettingsModel: ObservableObject {
         if errors.isEmpty {
             // `parseConfig` expands `[exec]` into the full environment, which is not
             // writable back. Recover the file's own `[exec]` values instead.
-            draft = ConfigTomlWriter.draft(from: config, rawExec: rawExecConfig(from: document), document: document)
+            draft = ConfigTomlWriter.draft(from: config, rawExec: Self.rawExecConfig(from: text), document: document)
             mode = .form
         } else {
             mode = .rawOnly(parseError: errors.joined(separator: "\n\n"))
@@ -172,34 +173,31 @@ public final class SettingsModel: ObservableObject {
         status = .saved
     }
 
-    /// Recovers `inherit-env-vars` and the override map as written in `[exec]` /
-    /// `[exec.env-vars]`, since `Config.execConfig` only holds the expanded environment.
-    /// Takes the already-built document (`load()` just built one) rather than
-    /// re-parsing the text into a throwaway one.
-    private func rawExecConfig(from document: TomlBlockDocument) -> RawExecConfig {
+    /// Recovers `inherit-env-vars` and the override map exactly as written in the file,
+    /// which `Config` cannot give back: `Config.execConfig` holds the *expanded*
+    /// environment, and `parseEnvVariables` has already interpolated every `$VAR`.
+    ///
+    /// This deliberately re-deserialises the config text with `TOMLDecoder` — the same
+    /// deserialiser `parseConfig` runs — rather than reading values out of the block
+    /// document. The block document carries source text verbatim and does not interpret
+    /// it, so recovering values from it means hand-lexing TOML, and every gap in that lexer
+    /// (a trailing comment, a partially quoted value, `exec.inherit-env-vars` written as a
+    /// dotted key with no `[exec]` header) silently produces a *valid* wrong value that
+    /// `save()`'s validation pass cannot catch. Going through the real deserialiser removes
+    /// the whole class. It is un-interpolated because interpolation happens later, in
+    /// `parseEnvVariables`, which is exactly what we need to write back.
+    nonisolated static func rawExecConfig(from configText: String) -> RawExecConfig {
         var result = RawExecConfig()
-        if let table = document.blocks.first(where: { $0.name == "exec" })?.text {
-            for line in table.linesWithTerminators() {
-                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard let eq = trimmed.firstIndex(of: "=") else { continue }
-                let key = trimmed[..<eq].trimmingCharacters(in: .whitespaces)
-                let rawValue = trimmed[trimmed.index(after: eq)...].trimmingCharacters(in: .whitespaces)
-                if key == "inherit-env-vars" { result.inheritEnvVariables = rawValue == "true" }
-            }
+        guard let root = try? [String: Any](TOMLTable(source: configText)),
+              let exec = root["exec"] as? [String: Any]
+        else {
+            return result
         }
-        // `[exec.env-vars]` is its own table block. Values are plain (possibly quoted)
-        // strings; the parser will do interpolation and validation on save.
-        if let envTable = document.blocks.first(where: { $0.name == "exec.env-vars" })?.text {
-            for line in envTable.linesWithTerminators().dropFirst() { // drop the header line
-                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty, !trimmed.hasPrefix("#"), let eq = trimmed.firstIndex(of: "=") else { continue }
-                let key = trimmed[..<eq].trimmingCharacters(in: .whitespaces)
-                var value = trimmed[trimmed.index(after: eq)...].trimmingCharacters(in: .whitespaces)
-                for quote in ["'", "\""] where value.hasPrefix(quote) && value.hasSuffix(quote) && value.count >= 2 {
-                    value = String(value.dropFirst().dropLast())
-                }
-                result.overriddenVars[key] = value
-            }
+        if let inheritEnvVars = exec["inherit-env-vars"] as? Bool { result.inheritEnvVariables = inheritEnvVars }
+        // Non-string values are left out on purpose: the real parser rejects them, and
+        // `save()`'s validation pass will report that against the user's own text.
+        for (name, value) in exec["env-vars"] as? [String: Any] ?? [:] {
+            if let value = value as? String { result.overriddenVars[name] = value }
         }
         return result
     }
