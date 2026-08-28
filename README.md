@@ -16,28 +16,35 @@
 
 ## What this is
 
-[AeroSpace](https://github.com/nikitabobko/AeroSpace) is an i3-like tiling window manager for macOS,
-written by [@nikitabobko](https://github.com/nikitabobko). It's excellent. This is **not** a competitor
-to it, a rewrite of it, or a place to get support for it.
+**AeroSpace‑edge is an i3-like tiling window manager for macOS that ships fixes as soon as they exist,
+not whenever the next release is tagged.**
 
-It's a **build of AeroSpace that ships fixes before upstream cuts a release.** Upstream merges and
-reviews at its own pace, and plenty of good work — bug fixes, small quality-of-life additions — sits in
-merged commits or open pull requests for months before it reaches a tagged build. This fork picks that
-work up early.
+Tree-based tiling, real keyboard control, plain-text config, a CLI you can script, no SIP disabling and
+no private-API tricks. If you've used AeroSpace, you already know how to use this — same tree model, same
+config file, same commands. What's different is the release cadence and what's already fixed.
 
-The recipe hasn't changed since day one:
+The fix you need is usually written before you hit the bug. It sits in a merged commit or an open pull
+request while the release it belongs to takes months to land. AeroSpace‑edge exists to close that gap:
+the work gets picked up, adapted, tested and shipped, in weeks rather than release cycles.
 
-- Pinned to upstream `main` at commit [`63e0976b`](https://github.com/nikitabobko/AeroSpace/commit/63e0976b).
-- **52 upstream fixes and features** backported on top, each one its own reviewed pull request,
-  each one build- and test-verified before it lands.
-- Large refactors and breaking config changes are deliberately left out — they're what makes forks rot.
-- Everything that got pulled in is listed, with its upstream origin, in
+How it stays trustworthy while moving fast:
+
+- **Every change is its own reviewed pull request** — 59 of them so far — never a bulk merge.
+- **Nothing lands untested.** `./build-debug.sh -Xswiftc -warnings-as-errors` and `./swift-test.sh` both
+  pass before a branch merges; warnings are errors, and the suite runs 226 tests.
+- **52 fixes and features** carried so far, each traceable to where it came from in
   [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md).
+- **Refactors and breaking config changes stay out.** Moving fast on fixes and slow on churn is the
+  whole trick — it's what keeps a fork from rotting.
+- **It installs as its own app**, so it can sit next to another window manager and be judged on results
+  rather than on a promise.
 
-Ten releases so far. Current: **v1.10** — also the first that installs as its own app rather than
-replacing upstream (see below). Versions are `1.MINOR[.PATCH]`: minor for a release carrying upstream
-backports, patch for fork-only fixes. The upstream commit this is based on is recorded in the changelog,
-not in the version string.
+Ten releases so far. Current: **v1.10**. Versions are `1.MINOR[.PATCH]` — minor when a release carries
+new backports, patch for fork-only fixes.
+
+Built on [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace) at commit
+[`63e0976b`](https://github.com/nikitabobko/AeroSpace/commit/63e0976b), MIT, with full credit
+[below](#credit).
 
 ## Why you might want it
 
@@ -94,14 +101,15 @@ aerospace --version   # client and server should both report ...-fork.N
 
 ## Documentation
 
-The fork doesn't maintain its own manual — upstream's docs are the docs, and they're good:
+The config format, the commands and the tree model are unchanged, so the AeroSpace manual applies
+as-is and there's no point duplicating it:
 
 - [Guide](https://nikitabobko.github.io/AeroSpace/guide) ·
   [Commands](https://nikitabobko.github.io/AeroSpace/commands) ·
   [Goodies](https://nikitabobko.github.io/AeroSpace/goodies)
 
-Anything this fork adds on top is documented in [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md), and in the
-`.adoc` sources under [`docs/`](./docs) which ship with the fork's own additions folded in.
+What AeroSpace‑edge adds on top is in [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md) and in the `.adoc`
+sources under [`docs/`](./docs), which ship with those additions folded in.
 
 ## How it's kept current
 
