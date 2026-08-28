@@ -310,12 +310,12 @@ extension TomlBlockDocument {
     }
 }
 
-private extension TomlBlock {
-    var isKeyValue: Bool { if case .keyValue = self { true } else { false } }
-    var isTable: Bool { if case .table = self { true } else { false } }
-    var isTrivia: Bool { if case .trivia = self { true } else { false } }
+extension TomlBlock {
+    fileprivate var isKeyValue: Bool { if case .keyValue = self { true } else { false } }
+    fileprivate var isTable: Bool { if case .table = self { true } else { false } }
+    fileprivate var isTrivia: Bool { if case .trivia = self { true } else { false } }
 
-    func withText(_ transform: (String) -> String) -> TomlBlock {
+    fileprivate func withText(_ transform: (String) -> String) -> TomlBlock {
         switch self {
             case .trivia(let text): .trivia(text: transform(text))
             case .keyValue(let key, let text): .keyValue(key: key, text: transform(text))

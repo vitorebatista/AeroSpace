@@ -187,7 +187,7 @@ struct SettingsView: View {
                 if result[prev].isWhitespace || result[prev] == "\"" || result[prev] == "'" { break }
                 start = prev
             }
-            guard let tomlRange = result.range(of: ".toml", range: markerRange.upperBound..<result.endIndex) else { break }
+            guard let tomlRange = result.range(of: ".toml", range: markerRange.upperBound ..< result.endIndex) else { break }
             result.replaceSubrange(start ..< tomlRange.upperBound, with: realPath)
         }
         return result
