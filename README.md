@@ -7,7 +7,7 @@
 **AeroSpace, with upstream's fixes already in.**
 
 [![latest release](https://img.shields.io/github/v/release/vitorebatista/AeroSpace-edge?include_prereleases&label=release&color=6366F1)](https://github.com/vitorebatista/AeroSpace-edge/releases/latest)
-[![license](https://img.shields.io/badge/license-MIT-22D3EE)](./LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-22D3EE)](./LICENSE.txt)
 [![upstream](https://img.shields.io/badge/upstream-nikitabobko%2FAeroSpace-A855F7)](https://github.com/nikitabobko/AeroSpace)
 
 </div>
@@ -34,7 +34,8 @@ The recipe hasn't changed since day one:
 - Everything that got pulled in is listed, with its upstream origin, in
   [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md).
 
-Nine releases so far. Current: **v0.20.3-Beta-fork.9**.
+Ten releases so far. Current: **v0.20.3-Beta-fork.10**, which is also the first one that installs
+as its own app rather than replacing upstream — see below.
 
 ## Why you might want it
 
@@ -165,7 +166,7 @@ If AeroSpace is useful to you, [sponsor the person who wrote it](https://github.
 
 ## License
 
-MIT, unchanged from upstream — `Copyright (c) 2023 Nikita Bobko`. See [`LICENSE`](./LICENSE).
+MIT, unchanged from upstream — `Copyright (c) 2023 Nikita Bobko`. See [`LICENSE.txt`](./LICENSE.txt).
 
 > **Not affiliated with, endorsed by, or supported by the upstream project.** These are unofficial
 > builds. Don't report problems with them to upstream — bring them

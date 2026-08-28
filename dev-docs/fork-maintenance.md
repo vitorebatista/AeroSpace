@@ -29,7 +29,10 @@ Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for A
   skipped: `c548c7f8` (`Monitor` → `MonitorInfo` rename, part of the "track upstream main" milestone)
   and `ae2aa7aa` (upstream-only PR-labelling CI) — and 17 new open PRs, of which it ported #2244,
   #2232, #2211, #2228 and #2225 as fork PRs #55–#59.
-- **Released:** `v0.20.3-Beta-fork.9` (fork PRs #55–#59, cut 2026-08-27) — bug-fix-only cycle:
+- **Released:** `v0.20.3-Beta-fork.10` (cut 2026-08-27) — no backports; the fork becomes its own app
+  (see "App identity" above), new logo/icon, repo rename, README rewrite, and release zips renamed to
+  `AeroSpace-edge-v<ver>.zip` with `legal/` included (fork.9's zip shipped an empty `legal/`).
+  Previous: `v0.20.3-Beta-fork.9` (fork PRs #55–#59, cut 2026-08-27) — bug-fix-only cycle:
   iTerm2 Settings window detection (#55), `isUnitTest` hot-path crash (#56), `balance-sizes` total
   weight (#57), `FocusCommand` "is already unbound" race crash (#58), native-tab window replacement
   into the old tree slot (#59). See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md) for the per-PR fork

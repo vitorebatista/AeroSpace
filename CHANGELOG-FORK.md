@@ -8,6 +8,31 @@ Each entry links the original upstream PR (where all credit belongs) and the cor
 PR that backports it. This fork is not an official release and is not affiliated with or endorsed
 by the upstream maintainer.
 
+## v0.20.3-Beta-fork.10 (2026-08-27)
+
+No upstream backports in this one. The fork becomes **its own app**, so it can be installed and tried
+side by side with an upstream AeroSpace install instead of replacing it.
+
+- App is now `AeroSpace-edge.app` (debug: `AeroSpace-edge-Debug.app`), bundle id
+  `vitorebatista.aerospace-edge`, CLI `aerospace-edge`. Separate Spotlight entry, separate icon,
+  separate Accessibility grant, separate `start-at-login` registration.
+- Socket moves with the bundle id — `/tmp/vitorebatista.aerospace-edge-${USER}.sock`. Third-party
+  socket clients pointed at the fork need this path; upstream's socket is untouched, so both servers
+  can be installed at once (run one at a time — two window managers on the same keybindings fight).
+- **Config falls back to upstream's.** With no `~/.aerospace-edge.toml` (or
+  `${XDG_CONFIG_HOME}/aerospace-edge/aerospace-edge.toml`), the fork reads `~/.aerospace.toml` /
+  `${XDG_CONFIG_HOME}/aerospace/aerospace.toml`, so a comparison runs on the very same config. Create
+  the edge-specific file only for fork-only options that upstream would refuse to parse. The fork's own
+  config wins when present; having both is not an "ambiguous config" error. Covered by `ConfigFileTest`.
+- The legacy LaunchAgent cleanup is now scoped to the fork's own id — it will not delete a co-installed
+  upstream AeroSpace's `bobko.aerospace.plist`.
+- New logo and app icon; repo renamed to `vitorebatista/AeroSpace-edge`; README rewritten.
+- Release zips are now `AeroSpace-edge-v<ver>.zip` and ship `legal/` (LICENSE + third-party licenses),
+  which the fork.9 zip was missing.
+
+Upgrading from fork.9 or earlier: the old `AeroSpace.app` and `aerospace` CLI are a *different app* to
+macOS now. Delete them if you don't want both, and grant Accessibility to `AeroSpace-edge.app`.
+
 ## v0.20.3-Beta-fork.9 (2026-08-27)
 
 New backports since fork.8 (delta past upstream review point `d56e1637`; 2 new upstream-`main`
