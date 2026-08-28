@@ -80,7 +80,10 @@ decide on evidence. Nothing is replaced, nothing is lost.
 | Socket | `/tmp/bobko.aerospace-$USER.sock` | `/tmp/vitorebatista.aerospace-edge-$USER.sock` |
 | Config | `~/.aerospace.toml` | `~/.aerospace-edge.toml`, falling back to `~/.aerospace.toml` |
 
-**Run one at a time.** Two tiling window managers on the same keybindings will fight over your windows.
+**It won't let you run two at once.** On startup, AeroSpace‑edge checks whether another AeroSpace is
+already running and refuses to start if one is — two tiling window managers on the same keybindings
+would fight over your windows. You get a dialog offering to quit the other one and continue, or to quit
+AeroSpace‑edge and keep what you had. Nothing starts managing windows until that's resolved.
 
 ### Config: shared by default
 

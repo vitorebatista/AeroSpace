@@ -25,6 +25,16 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
+## Unreleased
+
+- **Refuses to start while another AeroSpace is running.** Two tiling window managers on the same
+  keybindings fight over the same windows, so on startup AeroSpace-edge looks for a running upstream
+  AeroSpace (`bobko.aerospace`, or its debug build) and blocks with a dialog: quit the other one and
+  continue, or quit AeroSpace-edge and keep what's already running. It re-checks after quitting the
+  other app, so a refused or slow quit re-prompts instead of starting anyway. The check runs before the
+  Accessibility prompt — a window-manager conflict is the more useful thing to be told about — and is
+  skipped under `--read-only`, which doesn't manage windows. Fork-only; no upstream equivalent.
+
 ## v1.10 (2026-08-27)
 
 No upstream backports in this one. The fork becomes **its own app**, so it can be installed and tried

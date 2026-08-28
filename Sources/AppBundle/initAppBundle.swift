@@ -25,6 +25,9 @@ import Foundation
             )
         }
 
+        // Before the accessibility prompt: if another AeroSpace owns the windows, that's the thing the
+        // user needs to hear about, not a permissions dialog.
+        await checkNoConflictingAeroSpaceIsRunning()
         checkAccessibilityPermissions()
         startUnixSocketServer()
         GlobalObserver.initObserver()
