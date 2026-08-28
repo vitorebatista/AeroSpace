@@ -39,7 +39,7 @@ How it stays trustworthy while moving fast:
 - **It installs as its own app**, so it can sit next to another window manager and be judged on results
   rather than on a promise.
 
-Eleven releases so far. Current: **v1.11**. Versions are `1.MINOR[.PATCH]` — minor for new behavior,
+Twelve releases so far. Current: **v1.12**. Versions are `1.MINOR[.PATCH]` — minor for new behavior,
 patch for fixes and packaging.
 
 Built on [nikitabobko/AeroSpace](https://github.com/nikitabobko/AeroSpace) at commit

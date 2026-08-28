@@ -25,7 +25,7 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
-## Unreleased
+## v1.12 (2026-08-27)
 
 - **"Check for Updates…" in the menu bar.** Finds the newest release, shows what changed, and on
   confirmation downloads it, verifies it, replaces the app (and the CLI, where it's writable) in place,
