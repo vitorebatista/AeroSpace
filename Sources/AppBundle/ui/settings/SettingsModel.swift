@@ -76,13 +76,13 @@ public final class SettingsModel: ObservableObject {
         wholeFileText = text
         loadedModificationDate = willCreateConfig
             ? nil
-            : (try? FileManager.default.attributesOfItem(atPath: sourceUrl.path)[.modificationDate] as? Date) ?? nil
+            : (try? FileManager.default.attributesOfItem(atPath: sourceUrl.path)[.modificationDate] as? Date)
 
         let (config, errors) = parseConfig(text)
         if errors.isEmpty {
             // `parseConfig` expands `[exec]` into the full environment, which is not
             // writable back. Recover the file's own `[exec]` values instead.
-            draft = ConfigTomlWriter.draft(from: config, rawExec: rawExecConfig(from: text), document: document)
+            draft = ConfigTomlWriter.draft(from: config, rawExec: rawExecConfig(from: document), document: document)
             mode = .form
         } else {
             mode = .rawOnly(parseError: errors.joined(separator: "\n\n"))
@@ -146,20 +146,35 @@ public final class SettingsModel: ObservableObject {
         status = .saved
     }
 
-    /// Re-parses just the `[exec]` table to recover `inherit-env-vars` and the override
-    /// map as written, since `Config.execConfig` only holds the expanded result.
-    private func rawExecConfig(from text: String) -> RawExecConfig {
+    /// Recovers `inherit-env-vars` and the override map as written in `[exec]` /
+    /// `[exec.env-vars]`, since `Config.execConfig` only holds the expanded environment.
+    /// Takes the already-built document (`load()` just built one) rather than
+    /// re-parsing the text into a throwaway one.
+    private func rawExecConfig(from document: TomlBlockDocument) -> RawExecConfig {
         var result = RawExecConfig()
-        guard let table = TomlBlockDocument(text).blocks.first(where: { $0.name == "exec" })?.text else { return result }
-        for line in table.linesWithTerminators() {
-            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let eq = trimmed.firstIndex(of: "=") else { continue }
-            let key = trimmed[..<eq].trimmingCharacters(in: .whitespaces)
-            let rawValue = trimmed[trimmed.index(after: eq)...].trimmingCharacters(in: .whitespaces)
-            if key == "inherit-env-vars" { result.inheritEnvVariables = rawValue.hasPrefix("true") }
+        if let table = document.blocks.first(where: { $0.name == "exec" })?.text {
+            for line in table.linesWithTerminators() {
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard let eq = trimmed.firstIndex(of: "=") else { continue }
+                let key = trimmed[..<eq].trimmingCharacters(in: .whitespaces)
+                let rawValue = trimmed[trimmed.index(after: eq)...].trimmingCharacters(in: .whitespaces)
+                if key == "inherit-env-vars" { result.inheritEnvVariables = rawValue == "true" }
+            }
         }
-        // Override entries live in `[exec.env-vars]`, whose own block the form edits
-        // directly; the values are plain strings, so read them off the parsed config.
+        // `[exec.env-vars]` is its own table block. Values are plain (possibly quoted)
+        // strings; the parser will do interpolation and validation on save.
+        if let envTable = document.blocks.first(where: { $0.name == "exec.env-vars" })?.text {
+            for line in envTable.linesWithTerminators().dropFirst() { // drop the header line
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty, !trimmed.hasPrefix("#"), let eq = trimmed.firstIndex(of: "=") else { continue }
+                let key = trimmed[..<eq].trimmingCharacters(in: .whitespaces)
+                var value = trimmed[trimmed.index(after: eq)...].trimmingCharacters(in: .whitespaces)
+                for quote in ["'", "\""] where value.hasPrefix(quote) && value.hasSuffix(quote) && value.count >= 2 {
+                    value = String(value.dropFirst().dropLast())
+                }
+                result.overriddenVars[key] = value
+            }
+        }
         return result
     }
 }

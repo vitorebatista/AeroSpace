@@ -1,0 +1,92 @@
+@testable import AppBundle
+import Common
+import XCTest
+
+/// Covers the pure row-commit logic behind the settings window's key-value list editors
+/// (key mapping, env-var overrides, per-monitor gaps). These functions are the fix for a
+/// real defect: the original design derived rows straight from a sorted dictionary and
+/// wrote back through a `.filter { !$0.key.isEmpty }` setter, which made "Add" inert (an
+/// appended empty-keyed row was filtered out immediately) and dropped any row while its
+/// key was still half-typed. `dictionaryFromKeyValueRows` / `parsePerMonitorGapRows` are
+/// only ever called to decide what to *write* — the on-screen `rows` array in
+/// `SyncedKeyValueRows` is never rebuilt from their output, only from an external change
+/// — so exercising them here pins the "incomplete rows are skipped, not deleted" contract
+/// without needing a view.
+@MainActor
+final class KeyValueRowsLogicTest: XCTestCase {
+    // MARK: - dictionaryFromKeyValueRows
+
+    func testEmptyKeyedRowIsSkipped() {
+        // This is exactly what "Add" produces before the user types a key: the row must
+        // not appear in the written dictionary, but the caller keeps it in `rows`.
+        let rows = [KeyValueRow(key: "", value: "")]
+        assertEquals(dictionaryFromKeyValueRows(rows), [:])
+    }
+
+    func testHalfTypedKeyIsKeptOnceNonEmpty() {
+        let rows = [KeyValueRow(key: "MY_VAR", value: "")]
+        assertEquals(dictionaryFromKeyValueRows(rows), ["MY_VAR": ""])
+    }
+
+    func testDuplicateKeysLastRowWins() {
+        let rows = [
+            KeyValueRow(key: "A", value: "first"),
+            KeyValueRow(key: "A", value: "second"),
+        ]
+        assertEquals(dictionaryFromKeyValueRows(rows), ["A": "second"])
+    }
+
+    func testMixOfCompleteAndIncompleteRows() {
+        let rows = [
+            KeyValueRow(key: "A", value: "1"),
+            KeyValueRow(key: "", value: "orphaned value"),
+            KeyValueRow(key: "B", value: "2"),
+        ]
+        assertEquals(dictionaryFromKeyValueRows(rows), ["A": "1", "B": "2"])
+    }
+
+    // MARK: - parsePerMonitorGapRows
+
+    func testUnparseableMonitorRowIsSkippedNotDropped() {
+        // "0" isn't a valid 1-based sequence number and an unbalanced "[" isn't a valid
+        // regex — either must not blow up the whole list, just be absent from what gets
+        // written until the user finishes typing something valid.
+        let rows = [
+            KeyValueRow(key: "0", value: "10"),
+            KeyValueRow(key: "[", value: "15"),
+            KeyValueRow(key: "main", value: "20"),
+        ]
+        assertEquals(parsePerMonitorGapRows(rows), [PerMonitorValue(description: .main, value: 20)])
+    }
+
+    func testUnparseableIntValueIsSkipped() {
+        let rows = [KeyValueRow(key: "main", value: "not a number")]
+        assertEquals(parsePerMonitorGapRows(rows), [])
+    }
+
+    func testOrderIsPreserved() {
+        // Order matters: `DynamicConfigValue.getValue` uses first-match-wins.
+        let rows = [
+            KeyValueRow(key: "secondary", value: "5"),
+            KeyValueRow(key: "main", value: "10"),
+        ]
+        assertEquals(parsePerMonitorGapRows(rows), [
+            PerMonitorValue(description: .secondary, value: 5),
+            PerMonitorValue(description: .main, value: 10),
+        ])
+    }
+
+    func testDuplicateMonitorDescriptionsAreBothKept() {
+        // Unlike a dictionary, the per-monitor list is not deduplicated by key — the
+        // first rule to match a monitor wins, so preserving both rows (not collapsing
+        // them) is required for that semantics to be editable at all.
+        let rows = [
+            KeyValueRow(key: "main", value: "10"),
+            KeyValueRow(key: "main", value: "20"),
+        ]
+        assertEquals(parsePerMonitorGapRows(rows), [
+            PerMonitorValue(description: .main, value: 10),
+            PerMonitorValue(description: .main, value: 20),
+        ])
+    }
+}
