@@ -3,13 +3,18 @@ import XCTest
 
 @MainActor
 final class MenuBarTest: XCTestCase {
-    private func ws(_ name: String) -> WorkspaceViewModel {
+    private func ws(
+        _ name: String,
+        isFocused: Bool = false,
+        isEffectivelyEmpty: Bool = true,
+        isVisible: Bool = false,
+    ) -> WorkspaceViewModel {
         WorkspaceViewModel(
             name: name,
             suffix: "",
-            isFocused: false,
-            isEffectivelyEmpty: true,
-            isVisible: false,
+            isFocused: isFocused,
+            isEffectivelyEmpty: isEffectivelyEmpty,
+            isVisible: isVisible,
             hasFullscreenWindows: false,
         )
     }
@@ -48,4 +53,53 @@ final class MenuBarTest: XCTestCase {
         let result = sortWorkspacesForMenuBar([], persistentWorkspaces: ["1", "2"])
         assertEquals(names(result), [])
     }
+
+    // MARK: - In-use / available split
+
+    func testWorkspacesWithWindowsAreInUse() {
+        let (inUse, available) = partitionWorkspacesForMenuBar([
+            ws("1", isEffectivelyEmpty: false),
+            ws("2"),
+            ws("3", isEffectivelyEmpty: false),
+        ])
+        assertEquals(names(inUse), ["1", "3"])
+        assertEquals(names(available), ["2"])
+    }
+
+    /// A workspace you're looking at stays at the top level even with nothing on it — otherwise it would
+    /// vanish into the submenu the moment its last window closed.
+    func testVisibleOrFocusedEmptyWorkspaceStaysInUse() {
+        let (inUse, available) = partitionWorkspacesForMenuBar([
+            ws("1", isVisible: true),
+            ws("2", isFocused: true),
+            ws("3"),
+        ])
+        assertEquals(names(inUse), ["1", "2"])
+        assertEquals(names(available), ["3"])
+    }
+
+    func testAllEmptyAndUnusedMeansEverythingIsAvailable() {
+        let (inUse, available) = partitionWorkspacesForMenuBar([ws("1"), ws("2")])
+        assertEquals(names(inUse), [])
+        assertEquals(names(available), ["1", "2"])
+    }
+
+    /// The caller sorts before partitioning, so the split must not reshuffle either group.
+    func testRelativeOrderIsPreservedWithinEachGroup() {
+        let (inUse, available) = partitionWorkspacesForMenuBar([
+            ws("b", isEffectivelyEmpty: false),
+            ws("z"),
+            ws("a", isEffectivelyEmpty: false),
+            ws("c"),
+        ])
+        assertEquals(names(inUse), ["b", "a"])
+        assertEquals(names(available), ["z", "c"])
+    }
+
+    func testEmptyInputIsHandled() {
+        let (inUse, available) = partitionWorkspacesForMenuBar([])
+        assertEquals(names(inUse), [])
+        assertEquals(names(available), [])
+    }
+
 }

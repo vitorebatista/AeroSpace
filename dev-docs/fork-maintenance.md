@@ -29,7 +29,10 @@ Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for A
   skipped: `c548c7f8` (`Monitor` → `MonitorInfo` rename, part of the "track upstream main" milestone)
   and `ae2aa7aa` (upstream-only PR-labelling CI) — and 17 new open PRs, of which it ported #2244,
   #2232, #2211, #2228 and #2225 as fork PRs #55–#59.
-- **Released:** `v1.12` (cut 2026-08-27) — fork-original feature: "Check for Updates…" in the menu bar
+- **Released:** `v1.13` (cut 2026-08-28) — fork-original: menu-bar menu reorganised (in-use workspaces
+  only + "New" submenu, "Settings" submenu, Sponsor removed, version copy moved under Check for Updates).
+  No backports.
+  Previous: `v1.12` (cut 2026-08-27) — fork-original feature: "Check for Updates…" in the menu bar
   with in-place install (see `Sources/AppBundle/updater/`). No backports.
   Previous: `v1.11` (cut 2026-08-27) — fork-original feature: refuses to start while an upstream
   AeroSpace is running (blocking alert, offers to quit the other app, re-checks). No backports.

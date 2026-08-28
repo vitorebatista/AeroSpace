@@ -8,49 +8,52 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
         let shortIdentification = "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitShortHash)"
         let identification      = "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitHash)"
         Text(shortIdentification)
-        Button("Copy to clipboard") { identification.copyToClipboard() }
-            .keyboardShortcut("C", modifiers: .command)
         Divider()
         if let token: RunSessionGuard = .isServerEnabled {
-            Text("Workspaces:")
-
             // Persistent workspaces first (in config order), then the rest alphabetically.
-            let sortedWorkspaces = sortWorkspacesForMenuBar(viewModel.workspaces, persistentWorkspaces: config.persistentWorkspaces)
+            let sorted = sortWorkspacesForMenuBar(viewModel.workspaces, persistentWorkspaces: config.persistentWorkspaces)
+            let (inUse, available) = partitionWorkspacesForMenuBar(sorted)
 
-            ForEach(sortedWorkspaces, id: \.name) { workspace in
-                Button {
-                    Task {
-                        try await runLightSession(.menuBarButton, token) { _ = Workspace.get(byName: workspace.name).focusWorkspace() }
+            Text("Workspaces:")
+            ForEach(inUse, id: \.name) { workspace in
+                workspaceButton(workspace, token: token)
+            }
+            // Empty workspaces go behind a submenu: with 10 configured workspaces and 2 in use, the
+            // other 8 are just distance between the pointer and everything below them.
+            if !available.isEmpty {
+                Menu {
+                    ForEach(available, id: \.name) { workspace in
+                        workspaceButton(workspace, token: token)
                     }
                 } label: {
-                    Toggle(isOn: .constant(workspace.isFocused)) {
-                        Text(workspace.name + workspace.suffix).font(.system(.body, design: .monospaced))
-                    }
+                    Text("New")
                 }
             }
             Divider()
         }
-        Button {
-            NSWorkspace.shared.open(URL(string: "https://github.com/sponsors/nikitabobko").orDie())
-            viewModel.sponsorshipMessage = sponsorshipPrompts.randomElement().orDie()
-        } label: {
-            Text("Sponsor AeroSpace on GitHub")
-            Text(viewModel.sponsorshipMessage)
-        }
-        Divider()
-        Button(viewModel.isEnabled ? "Disable" : "Enable") {
-            Task {
-                try await runLightSession(.menuBarButton, .forceRun) { () throws in
-                    _ = try await EnableCommand(args: EnableCmdArgs(rawArgs: [], targetState: .toggle))
-                        .run(.defaultEnv, .emptyStdin)
+        Menu {
+            Button(viewModel.isEnabled ? "Disable" : "Enable") {
+                Task {
+                    try await runLightSession(.menuBarButton, .forceRun) { () throws in
+                        _ = try await EnableCommand(args: EnableCmdArgs(rawArgs: [], targetState: .toggle))
+                            .run(.defaultEnv, .emptyStdin)
+                    }
                 }
+            }.keyboardShortcut("E", modifiers: .command)
+            openConfigButton()
+            reloadConfigButton()
+            getExperimentalUISettingsMenu(viewModel: viewModel)
+            Menu {
+                Button("Check Now") { Task { await runCheckForUpdatesFlow() } }
+                Divider()
+                Text(shortIdentification)
+                Button("Copy Version Info") { identification.copyToClipboard() }
+                    .keyboardShortcut("C", modifiers: .command)
+            } label: {
+                Text("Check for Updates")
             }
-        }.keyboardShortcut("E", modifiers: .command)
-        getExperimentalUISettingsMenu(viewModel: viewModel)
-        openConfigButton()
-        reloadConfigButton()
-        Button("Check for Updates…") {
-            Task { await runCheckForUpdatesFlow() }
+        } label: {
+            Text("Settings")
         }
         Button("Quit \(aeroSpaceAppName)") {
             terminationHandler.beforeTermination()
@@ -65,6 +68,39 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
                 .aspectRatio(contentMode: .fit)
         }
     }
+}
+
+@MainActor @ViewBuilder
+func workspaceButton(_ workspace: WorkspaceViewModel, token: RunSessionGuard) -> some View {
+    Button {
+        Task {
+            try await runLightSession(.menuBarButton, token) { _ = Workspace.get(byName: workspace.name).focusWorkspace() }
+        }
+    } label: {
+        Toggle(isOn: .constant(workspace.isFocused)) {
+            Text(workspace.name + workspace.suffix).font(.system(.body, design: .monospaced))
+        }
+    }
+}
+
+/// Splits workspaces into the ones the menu shows directly and the ones hidden behind "New".
+///
+/// "In use" is deliberately wider than "has windows": a workspace that's on screen, or focused, belongs
+/// at the top level even while empty — it's where the user already is, and having it disappear into a
+/// submenu the moment its last window closes would be disorienting.
+/// Relative order within each group is preserved, so the caller's sort still decides ordering.
+func partitionWorkspacesForMenuBar(
+    _ workspaces: [WorkspaceViewModel],
+) -> (inUse: [WorkspaceViewModel], available: [WorkspaceViewModel]) {
+    var inUse: [WorkspaceViewModel] = []
+    var available: [WorkspaceViewModel] = []
+    for workspace in workspaces {
+        switch !workspace.isEffectivelyEmpty || workspace.isVisible || workspace.isFocused {
+            case true: inUse.append(workspace)
+            case false: available.append(workspace)
+        }
+    }
+    return (inUse, available)
 }
 
 @MainActor @ViewBuilder

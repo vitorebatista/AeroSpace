@@ -25,6 +25,23 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
+## v1.13 (2026-08-28)
+
+Menu-bar menu reorganised. With 35 configured workspaces and ~10 in use, the old menu listed all 35 at
+the top level, so "Quit" and everything else sat below a 25-item wall of empty workspaces.
+
+- **Only workspaces in use are listed.** Empty ones move into a **New** submenu. "In use" means has
+  windows, is visible on a monitor, or is focused — a workspace you're looking at stays put even when
+  empty, instead of vanishing into a submenu as its last window closes.
+- **New "Settings" submenu** holds Enable/Disable, Open config, Reload config, Experimental UI Settings,
+  and Check for Updates.
+- **"Sponsor AeroSpace on GitHub" removed** from the menu. The sponsor link is still in the README —
+  support for upstream belongs there, not in a menu the user opens dozens of times a day.
+- **"Copy to clipboard" moved** out of the top level into Check for Updates → **Copy Version Info**,
+  next to the version it copies.
+
+Top level is now: version, workspaces in use, New, Settings, Quit.
+
 ## v1.12 (2026-08-27)
 
 - **"Check for Updates…" in the menu bar.** Finds the newest release, shows what changed, and on
