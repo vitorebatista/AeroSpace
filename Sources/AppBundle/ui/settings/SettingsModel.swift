@@ -36,7 +36,8 @@ public final class SettingsModel: ObservableObject {
     /// before and after a revert) with no other signal that it changed out from under them.
     @Published private(set) var loadGeneration = 0
 
-    /// The file we read and will write. `nil` until `load()`.
+    /// The file we read and will write, as the config lookup spelled it. Kept unresolved
+    /// because it is what the user recognises in a message; `writeUrl` is what we touch.
     private(set) var targetUrl: URL?
     /// `true` when no custom config exists yet, so saving creates `~/<configDotfileName>`.
     private(set) var willCreateConfig = false
@@ -45,12 +46,22 @@ public final class SettingsModel: ObservableObject {
 
     private init() {}
 
+    /// The path writes actually land on. `write(to:atomically:)` renames a fresh temp file
+    /// over the path, which replaces a *symlink* with a regular file instead of writing
+    /// through it — a config symlinked into a dotfiles repo would be silently detached and
+    /// the real file left holding the old contents. Resolving first also keeps the
+    /// modification-date check and the write looking at the same file.
+    private var writeUrl: URL? { targetUrl?.resolvingSymlinksInPath() }
+
     /// `true` if the file changed on disk since `load()`. Checked before overwriting.
     var externallyModified: Bool {
-        guard let targetUrl, let loadedModificationDate else { return false }
-        let current = try? FileManager.default.attributesOfItem(atPath: targetUrl.path)[.modificationDate] as? Date
-        guard let current else { return false }
+        guard let writeUrl, let loadedModificationDate else { return false }
+        guard let current = Self.modificationDate(of: writeUrl) else { return false }
         return current != loadedModificationDate
+    }
+
+    private static func modificationDate(of url: URL) -> Date? {
+        try? FileManager.default.attributesOfItem(atPath: url.path)[.modificationDate] as? Date
     }
 
     func load() {
@@ -82,9 +93,9 @@ public final class SettingsModel: ObservableObject {
         let text = (try? String(contentsOf: sourceUrl, encoding: .utf8)) ?? ""
         document = TomlBlockDocument(text)
         wholeFileText = text
-        loadedModificationDate = willCreateConfig
-            ? nil
-            : (try? FileManager.default.attributesOfItem(atPath: sourceUrl.path)[.modificationDate] as? Date)
+        // Read through the resolved path, the same one `save()` writes, so the two agree
+        // when the config is a symlink (`attributesOfItem` does not follow one).
+        loadedModificationDate = willCreateConfig ? nil : writeUrl.flatMap(Self.modificationDate(of:))
 
         let (config, errors) = parseConfig(text)
         if errors.isEmpty {
@@ -103,7 +114,7 @@ public final class SettingsModel: ObservableObject {
     /// then writes the user's config and reloads. A bad edit can never leave the user with
     /// a config AeroSpace refuses to load.
     func save() async {
-        guard let targetUrl else { return }
+        guard let targetUrl, let writeUrl else { return }
         status = nil
 
         let candidate: String
@@ -136,11 +147,18 @@ public final class SettingsModel: ObservableObject {
                 break
         }
 
+        // The atomic write gives the file the temp file's mode (0644 -> 0755 in practice),
+        // so put the original permissions back afterwards.
+        let originalPermissions = try? FileManager.default
+            .attributesOfItem(atPath: writeUrl.path)[.posixPermissions] as? NSNumber
         do {
-            try candidate.write(to: targetUrl, atomically: true, encoding: .utf8)
+            try candidate.write(to: writeUrl, atomically: true, encoding: .utf8)
         } catch {
             status = .error("Can't write \(targetUrl.path): \(error.localizedDescription)")
             return
+        }
+        if let originalPermissions {
+            try? FileManager.default.setAttributes([.posixPermissions: originalPermissions], ofItemAtPath: writeUrl.path)
         }
 
         do {
