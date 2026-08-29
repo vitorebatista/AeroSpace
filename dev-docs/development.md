@@ -27,7 +27,8 @@ If you struggle to build AeroSpace locally, you can also refer to [builds in Git
 
 ## 2. Create codesign certificate
 
-If you want to run AeroSpace as App Bundle (AeroSpace.app) you need to create self-signed certificate that will be used to codesign AeroSpace.
+If you want to run AeroSpace-edge as an app bundle (`AeroSpace-edge.app`), create a self-signed
+certificate that will be used to code sign AeroSpace-edge.
 Release artifact is built as App Bundle.
 If you only plan to build the debug version of AeroSpace, you can run it from the terminal and custom certificate is not required.
 
@@ -43,17 +44,17 @@ If you only plan to build the debug version of AeroSpace, you can run it from th
 -   `build-debug.sh` - Build debug build to `.debug` dir by using SPM. (Xcode is not involved)
 -   `test.sh` - Run tests.
 -   `swiftformat.sh` - Format the code.
--   `run-debug.sh` - Run AeroSpace.app debug build.
--   `run-cli.sh` - Run `aerospace` in CLI. Arguments are forwarded to `aerospace` binary.
+-   `run-debug.sh` - Run the AeroSpace-edge debug build.
+-   `run-cli.sh` - Run `aerospace-edge` in CLI. Arguments are forwarded to the `aerospace-edge` binary.
 -   `build-docs.sh` - Build the site and man pages to `.site` and `.man` dirs respectively.
 -   `build-shell-completion.sh` - Build shell completion to `.shell-completion`.
-    You can test that the completion works properly by sourcing the file `source ./.shell-completion/zsh/_aerospace`
+    You can test that the completion works properly by sourcing the file `source ./.shell-completion/zsh/_aerospace-edge`
 -   `generate.sh` - Regenerate generated project files. `AeroSpace.xcodeproj` is generated, and some of the source files
     (the source files have `Generated` suffix in their names).
 
 **Release build**
 -   `build-release.sh` - Build release build to `.release` dir by using Xcode.
--   `install-from-sources.sh` - Build release build from sources and install it as `aerospace-dev` brew cask.
+-   `install-from-sources.sh` - Build a release from sources and install it as the `aerospace-edge-dev` brew cask.
     This script is "work in progress".
     Use it on your own risk.
 

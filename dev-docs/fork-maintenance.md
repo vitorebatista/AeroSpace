@@ -16,8 +16,9 @@ Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for A
   backports (see "Deliberately not ported" below).
 - `origin` = `vitorebatista/AeroSpace-edge` (the fork). `upstream` = `nikitabobko/AeroSpace`.
   **Renamed 2026-08-27** from `vitorebatista/AeroSpace`; GitHub redirects the old URL, but use the new
-  name in commands. The app bundle id (`bobko.aerospace`) and the `aerospace` CLI name are deliberately
-  unchanged — renaming those would break the socket path, third-party clients and users' configs.
+  name in commands. The fork deliberately uses the `vitorebatista.aerospace-edge` bundle id,
+  `AeroSpace-edge.app`, and the `aerospace-edge` CLI so it can be installed alongside upstream.
+  Its edge-specific config falls back to the upstream config when no edge config exists.
   If `upstream` is missing: `git remote add upstream https://github.com/nikitabobko/AeroSpace.git`
 
 ## Sync state (update this section every sync)
@@ -270,18 +271,19 @@ run it with `zsh script.sh`, because the interactive shell hook rewrites `rm`/`l
 The script (see git history of `/tmp/lean-release2.sh` pattern) does, with
 `NUKE_PATH=1 PATH="$PWD/.deps/bin:/opt/homebrew/bin:/bin:/usr/bin"`:
 1. `./generate.sh --ignore-shell-parser --ignore-cmd-help --build-version "1.N" --codesign-identity - --generate-git-hash`
-2. `swift build -c release --arch arm64 --arch x86_64 --product aerospace -Xswiftc -warnings-as-errors`
+2. `swift build -c release --arch arm64 --arch x86_64 --product aerospace-edge -Xswiftc -warnings-as-errors`
 3. `xcrun xcodebuild clean build -scheme AeroSpace -destination "generic/platform=macOS" -configuration Release -derivedDataPath .xcode-build`
 4. `git checkout .` (restores generated files + `project.pbxproj` that xcodegen/version-stamping dirtied)
    > ⚠️ **`git checkout .` discards ALL uncommitted tracked changes, not just the generated ones.**
    > Commit your work *before* running a release build. (Bit us on 1.10: the source half of the
    > rename was wiped and only the docs got committed.)
-5. assemble `.release/AeroSpace-v<ver>/` = `AeroSpace.app` (from `.xcode-build/Build/Products/Release/`)
-   + `bin/aerospace` (`codesign -s - --force`) + `legal/`, then `zip -qr`.
+5. assemble `.release/AeroSpace-edge-v<ver>/` = `AeroSpace-edge.app` (from
+   `.xcode-build/Build/Products/Release/`) + `bin/aerospace-edge` (`codesign -s - --force`) +
+   `legal/`, then `zip -qr`.
 - The app is codesigned ad-hoc by xcodebuild (`--codesign-identity -`); both binaries come out universal.
 - **Verify** baked-in version WITHOUT running the CLI (it can hang in non-interactive shells):
-  `plutil -extract CFBundleShortVersionString raw .release/AeroSpace.app/Contents/Info.plist` and
-  `strings .release/aerospace | grep <ver>`.
+  `plutil -extract CFBundleShortVersionString raw .release/AeroSpace-edge.app/Contents/Info.plist` and
+  `strings .release/aerospace-edge | grep <ver>`.
 
 ## Creating the GitHub release
 ```bash
