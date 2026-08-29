@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./docs/assets/edge-logo.svg" width="120" alt="AeroSpace-edge">
+<img src="./docs-md/assets/edge-logo.svg" width="120" alt="AeroSpace-edge">
 
 # AeroSpace‑edge
 
@@ -58,12 +58,22 @@ Grab a release if any of these have bitten you:
 | **CLI** | `layout sticky` · `list-windows --sort` · `enable-normalization` per workspace · `summon-workspace --when-visible` · `debug-windows --app-bundle-id` · resizable floating windows |
 | **Integrations** | the socket protocol handshake modern clients expect (AeroKit, aerospace-swipe, the upstream cask CLI) |
 
-And one thing that has no upstream equivalent, written here:
+And two features that have no upstream equivalent, written here:
 
 - **`focus-follows-app-activation = 'always' \| 'smart'`** — `smart` stops apps that raise themselves
   from dragging you across workspaces, unless a click preceded the activation.
   ⚠️ `smart` currently has a [known regression](./CHANGELOG-FORK.md); the default `'always'` is the
   upstream behavior and is safe.
+
+- **Native Settings window** — edit the same AeroSpace-edge config the app resolves at startup from
+  **Settings → Settings…**, without moving to a separate preference store. Fixed-choice options use
+  native controls; keybindings, window rules and callbacks remain transparent TOML editors for the
+  full command DSL. Save validates the complete candidate with AeroSpace's real parser before writing
+  anything, preserves untouched regions of the file, then reloads the configuration. It also opens a
+  raw recovery editor for an invalid config and refuses to guess when more than one candidate config
+  exists, making routine changes safer without hiding the underlying config.
+
+  ![AeroSpace-edge Settings window, showing the Gaps editor](./docs-md/assets/settings-window.jpg)
 
 ## Installs alongside anything else
 

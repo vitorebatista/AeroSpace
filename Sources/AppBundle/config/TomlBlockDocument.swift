@@ -447,6 +447,11 @@ private struct TomlLineState {
                 }
                 continue
             }
+            // A delimiter-looking sequence in a comment is inert. Check for the start of
+            // a comment before looking for a multiline string; otherwise `# \"\"\"` leaves
+            // us thinking the rest of the document is one giant value and a later form
+            // edit can no longer find the keys and tables that follow it.
+            if line[i] == "#" { return }
             if matches("\"\"\"") { openMultilineDelimiter = "\"\"\""; advance(3); continue }
             if matches("'''") { openMultilineDelimiter = "'''"; advance(3); continue }
             let char = line[i]

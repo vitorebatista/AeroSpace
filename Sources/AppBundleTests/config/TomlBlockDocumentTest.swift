@@ -34,6 +34,19 @@ final class TomlBlockDocumentTest: XCTestCase {
         assertEquals(TomlBlockDocument(text).render(), text)
     }
 
+    func testCommentContainingAMultilineDelimiterDoesNotHideFollowingBlocks() {
+        // TOML comments may contain any text, including the three-quote sequence that
+        // starts a multiline string. The document splitter must stop at the comment
+        // marker before considering delimiters, or it treats every following line as a
+        // continuation and cannot safely edit a later key.
+        var doc = TomlBlockDocument("# Example: \"\"\" is a multiline string delimiter\nstart-at-login = false\n\n[gaps]\ninner.vertical = 2\n")
+        doc.set(key: "start-at-login", tomlValue: "true")
+        assertEquals(
+            doc.render(),
+            "# Example: \"\"\" is a multiline string delimiter\nstart-at-login = true\n\n[gaps]\ninner.vertical = 2\n",
+        )
+    }
+
     func testBlockSplitting() {
         let doc = TomlBlockDocument(
             """

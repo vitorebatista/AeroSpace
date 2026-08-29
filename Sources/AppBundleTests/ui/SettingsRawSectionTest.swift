@@ -59,4 +59,15 @@ final class SettingsRawSectionTest: XCTestCase {
             "[key-mapping]\npreset = 'qwerty'\n\n[key-mapping.key-notation-to-key-code]\nzz = 'a'\n",
         )
     }
+
+    func testKeybindingsPreambleQuotesANotationThatIsNotABareTomlKey() {
+        // A dot is valid in AeroSpace notation (only whitespace and `-` are forbidden),
+        // but TOML would otherwise parse it as a nested key and produce a false error in
+        // the Keybindings pane. The saved config already quotes this case; the preamble
+        // must do the same.
+        let text = "[mode.main.binding]\\nalt-custom.key = 'focus left'\\n"
+        let preamble = keybindingsPreamble(preset: .qwerty, notationOverrides: ["custom.key": "a"])
+        assertEquals(preamble, "[key-mapping]\\npreset = 'qwerty'\\n\\n[key-mapping.key-notation-to-key-code]\\n'custom.key' = 'a'\\n")
+        assertSucc(parseRawSectionFragment(preamble: preamble, text: text))
+    }
 }

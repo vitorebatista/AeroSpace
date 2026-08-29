@@ -108,7 +108,11 @@ func keybindingsPreamble(preset: KeyMapping.Preset, notationOverrides: [String: 
     if !notationOverrides.isEmpty {
         body += "\n[key-mapping.key-notation-to-key-code]\n"
         for (notation, code) in notationOverrides.sorted(by: { $0.key < $1.key }) {
-            body += "\(notation) = \(TomlValue.of(code))\n"
+            // Key notation only forbids whitespace and `-`, so a valid custom notation
+            // can still contain TOML-significant characters such as a dot or quote. Use
+            // the same key serializer as the writer or the pane feedback can reject a
+            // binding that the eventual saved config accepts.
+            body += "\(TomlValue.key(notation)) = \(TomlValue.of(code))\n"
         }
     }
     return body

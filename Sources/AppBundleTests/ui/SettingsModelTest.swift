@@ -36,6 +36,14 @@ final class SettingsModelTest: XCTestCase {
         assertEquals(raw.overriddenVars["FOO"], "bar")
     }
 
+    func testQuotedEnvVarKeyIsSeenAsOneName() {
+        // A dot in a quoted TOML key is part of the environment variable's name, not a
+        // nested table. This is the spelling ConfigTomlWriter emits for UI input such as
+        // "MY.PATH", so recovering it correctly is required before the user edits [exec].
+        let raw = SettingsModel.rawExecConfig(from: "[exec.env-vars]\n'MY.PATH' = 'bin'\n")
+        assertEquals(raw.overriddenVars, ["MY.PATH": "bin"])
+    }
+
     func testValuesAreNotInterpolated() {
         // `$VAR` has to come back exactly as written: this value is destined to be written
         // straight back into the user's file, not to be executed.

@@ -374,4 +374,58 @@ final class ConfigTomlWriterTest: XCTestCase {
             assertEquals(rendered.contains(expected), true, additionalMsg: "\(expected) missing from:\n\(rendered)")
         }
     }
+
+    func testEditingExecPreservesAnInterpolatedValueAndAQuotedVariableName() {
+        // `Config.execConfig` holds an expanded environment, not the text that was in the
+        // file. The Settings window has to use RawExecConfig for the draft, otherwise a
+        // save after changing only `inherit-env-vars` would bake the process's PATH into
+        // the config or lose a TOML-significant variable name.
+        let text = """
+            [exec]
+            inherit-env-vars = false
+
+            [exec.env-vars]
+            'MY.PATH' = '/tools:${PATH}'
+            """
+        var document = TomlBlockDocument(text)
+        let (config, errors) = parseConfig(text)
+        assertEquals(errors, [])
+        let original = ConfigTomlWriter.draft(
+            from: config,
+            rawExec: SettingsModel.rawExecConfig(from: text),
+            document: document,
+        )
+        assertEquals(original.envVars, ["MY.PATH": "/tools:${PATH}"])
+
+        var draft = original
+        draft.inheritEnvVars = true
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
+
+        let rendered = document.render()
+        assertEquals(rendered.contains("'MY.PATH' = '/tools:${PATH}'"), true, additionalMsg: rendered)
+        assertEquals(SettingsModel.rawExecConfig(from: rendered).envVars, ["MY.PATH": "/tools:${PATH}"])
+    }
+
+    func testEditingCallbacksKeepsUnrelatedTopLevelText() {
+        // The Callbacks pane removes and reinserts only its owned callback keys. Its edit
+        // must not discard a future top-level option or its surrounding comment.
+        let text = """
+            # Keep this future option exactly where it is.
+            future-option = 'keep me'
+            on-focus-changed = 'focus left'
+
+            [mode.main.binding]
+            alt-h = 'focus left'
+            """
+        var document = TomlBlockDocument(text)
+        let original = ConfigTomlWriter.draft(from: Config(), rawExec: RawExecConfig(), document: document)
+        var draft = original
+        draft.rawCallbacks = "on-focus-changed = 'focus right'\n"
+        ConfigTomlWriter.apply(draft, original: original, to: &document)
+
+        let rendered = document.render()
+        assertEquals(rendered.contains("# Keep this future option exactly where it is.\nfuture-option = 'keep me'"), true, additionalMsg: rendered)
+        assertEquals(rendered.contains("on-focus-changed = 'focus right'"), true, additionalMsg: rendered)
+        assertEquals(rendered.contains("[mode.main.binding]\nalt-h = 'focus left'"), true, additionalMsg: rendered)
+    }
 }
