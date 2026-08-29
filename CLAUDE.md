@@ -10,17 +10,17 @@ that backports upstream bug fixes and small features not yet merged upstream. Se
 [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md) for what has been backported and
 [`dev-docs/fork-maintenance.md`](./dev-docs/fork-maintenance.md) for fork/release workflow.
 
-It is a client/server app: the `aerospace` CLI (client) talks to `AeroSpace.app`
+It is a client/server app: the `aerospace-edge` CLI (client) talks to `AeroSpace-edge.app`
 (server) over a UNIX socket. See [`dev-docs/architecture.md`](./dev-docs/architecture.md)
 for the layout and [`dev-docs/development.md`](./dev-docs/development.md) for the full
 local build setup (Xcode, swiftly, codesign certificate, etc.).
 
 ## Source layout
 
-- `Sources/AppBundle/` — the server (`AeroSpace.app`); an SPM library. Most logic lives here:
+- `Sources/AppBundle/` — the server (`AeroSpace-edge.app`); an SPM library. Most logic lives here:
   `command/` (command impls), `config/` (TOML config parsing), `tree/` (window/workspace
   tree model), `layout/` (tiling/layout engine), `ui/` (menu bar SwiftUI), `mouse/`.
-- `Sources/Cli/` — the `aerospace` CLI client (pure SPM).
+- `Sources/Cli/` — the `aerospace-edge` CLI client (pure SPM).
 - `Sources/Common/` — code shared between client and server, mainly command-line arg
   parsing (`cmdArgs/`) and utilities.
 - `Sources/AppBundleTests/` — tests (XCTest), mirrors the `AppBundle` structure.
@@ -43,10 +43,10 @@ Always run scripts from the repo root. They `source ./script/setup.sh`, which us
   normal and does NOT mean tests didn't run. To confirm a specific new test executes:
   `swift test --filter <TestName>`.
 - **Full check (what CI runs):** `./test.sh` — debug build (warnings-as-errors) + tests +
-  `aerospace -h/--help/--version` smoke checks + lint + `generate.sh` + a clean-tree check.
+  `aerospace-edge -h/--help/--version` smoke checks + lint + `generate.sh` + a clean-tree check.
 - **Format:** `./format.sh` (swiftformat). **Lint:** `./lint.sh`.
 - **Release build:** `./build-release.sh --build-version <ver> --codesign-identity -`
-  (Xcode-based, outputs `.release/AeroSpace-v<ver>.zip`). Do NOT use
+  (Xcode-based, outputs `.release/AeroSpace-edge-v<ver>.zip`). Do NOT use
   `script/publish-release.sh` in this fork — it pushes tags to the upstream repo.
 
 A change is only "done" when `./build-debug.sh -Xswiftc -warnings-as-errors` **and**

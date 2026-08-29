@@ -3,7 +3,7 @@ import Foundation
 import SwiftUI
 
 @MainActor
-public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it be converted to "SwiftUI struct"?
+public func menuBar(viewModel: TrayMenuModel, openSettings: @escaping () -> Void) -> some Scene { // todo should it be converted to "SwiftUI struct"?
     MenuBarExtra {
         let shortIdentification = "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitShortHash)"
         let identification      = "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitHash)"
@@ -42,6 +42,7 @@ public func menuBar(viewModel: TrayMenuModel) -> some Scene { // todo should it 
             }.keyboardShortcut("E", modifiers: .command)
             openConfigButton()
             reloadConfigButton()
+            settingsWindowButton(openSettings: openSettings)
             getExperimentalUISettingsMenu(viewModel: viewModel)
             Menu {
                 Button("Check Now") { Task { await runCheckForUpdatesFlow() } }
@@ -121,6 +122,24 @@ func openConfigButton(showShortcutGroup: Bool = false) -> some View {
     switch showShortcutGroup {
         case true: shortcutGroup(label: Text("⌘ ,"), content: button)
         case false: button
+    }
+}
+
+@MainActor @ViewBuilder
+func settingsWindowButton(openSettings: @escaping () -> Void) -> some View {
+    Button("Settings…") {
+        NSApp.activate(ignoringOtherApps: true)
+        if let window = NSApplication.shared.windows.first(where: { $0.identifier?.rawValue == settingsWindowId }) {
+            // Already open: just bring it forward. Do NOT reload here — `SettingsModel.load()`
+            // resets `isDirty` and overwrites `draft` from disk, which would silently discard
+            // an unsaved edit in a window the user only backgrounded, not closed.
+            window.makeKeyAndOrderFront(nil)
+        } else {
+            // Not open (first click ever, or the user closed it): `SettingsView.onAppear`
+            // calls `model.load()` once the new window's content view is created, so there's
+            // nothing to load here.
+            openSettings()
+        }
     }
 }
 

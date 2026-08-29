@@ -88,6 +88,41 @@ stays available for fork-only options upstream would reject.
 If the config is found in more than one location *within the same tier*, the ambiguity is
 reported.
 
+### Settings window
+
+Open **Settings → Settings…** from the AeroSpace-edge menu bar menu to edit the active
+config file. The window is an editor for that file, not a separate settings store. Saving
+validates the result with the same parser AeroSpace uses at startup; if it would not load,
+nothing is written and the error is shown in the window.
+
+If you do not have a custom config yet, the window opens on the [default
+config](#default-config). The first save creates `~/.aerospace-edge.toml` from that default,
+including your changes; the footer tells you before it does so.
+
+Options with fixed value sets use form controls. Keybindings, `on-window-detected` rules,
+and command callbacks use AeroSpace's command DSL, so they are edited as TOML text in their
+own sections with parse feedback as you type. That feedback checks each pane as a fragment;
+Save validates the whole file and can still reject a pane that looked valid in isolation.
+
+Every structured option has an info button. Hover it for a short tooltip, or click it for
+the practical effect, the TOML key being changed, and — for spatial settings such as
+layouts, gaps, focus, borders and monitor assignment — a small vector diagram of the
+result.
+
+Only regions you change are written. Untouched keys, tables, and raw panes remain byte for
+byte unchanged, so saving does not reformat the whole file.
+
+Comments and key order are preserved except inside the `gaps`, `key-mapping`, `exec`, and
+`workspace-to-monitor-force-assignment` tables. When a value in one of those tables changes,
+the complete table family is regenerated, including sub-tables such as `[gaps.inner]`,
+`[key-mapping.key-notation-to-key-code]`, and `[exec.env-vars]`; comments inside that family
+are therefore lost.
+
+If the config does not parse, the window falls back to a single raw editor for the entire
+file and displays the parser error. Fix and save it there; the form returns automatically
+once the file parses. If several config files exist within the same resolution tier, the
+window is read-only rather than guessing which file to modify.
+
 ### Config samples
 
 Please see the following config samples:

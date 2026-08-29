@@ -25,6 +25,36 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
+## v1.14 (2026-08-28)
+
+**Settings window.** AeroSpace-edge can now edit its own config from a GUI, reachable from
+Settings → **Settings…** in the menu bar menu. It edits the same config file the fork
+already resolves at startup (`~/.aerospace-edge.toml`, or the `XDG_CONFIG_HOME` equivalent)
+in place, rather than being a separate config store. Fork-only; no upstream equivalent.
+
+- **Save validates before it writes.** The rendered document is checked with the same
+  parser AeroSpace uses at startup; if the result wouldn't load, nothing is written and the
+  error is shown in the window instead.
+- **Form controls for options with a fixed set of values,** covering general, layout, gaps,
+  focus, window border, workspaces/monitors, key mapping, and exec settings.
+- **Keybindings, window rules, and callbacks are edited as TOML text** in their own
+  sections, since the AeroSpace command DSL isn't a fixed set of values — each pane gives
+  advisory parse feedback as you type, with the caveat that it's checked as a fragment and
+  Save validates the whole file.
+- **Comments, key order, and unknown keys survive a save,** with one exception: the
+  `gaps`, `key-mapping`, `exec`, and `workspace-to-monitor-force-assignment` tables —
+  including their sub-tables (`[gaps.inner]`, `[key-mapping.key-notation-to-key-code]`,
+  `[exec.env-vars]`, and similar) — are regenerated in full whenever a value in them
+  changes, so comments written there don't survive.
+- **Only what changed is written.** A key, a table, or a raw pane you didn't touch is left
+  byte for byte as it was — a save is never a reformat of the whole file.
+- **A first save with no custom config** creates `~/.aerospace-edge.toml`, seeded from the
+  bundled default config the window opened on.
+- **Degrades safely when it can't edit normally:** an unparseable config opens as a single
+  raw editor over the whole file with the parse error shown (a save re-reads the file, so
+  the form returns once it parses), and if several config files exist at once the window
+  refuses to write anything rather than guess which one you meant.
+
 ## v1.13 (2026-08-28)
 
 Menu-bar menu reorganised. With 35 configured workspaces and ~10 in use, the old menu listed all 35 at

@@ -82,7 +82,9 @@ if test "$expected_layout" != "$(find .release/AeroSpace-edge.app)"; then
 fi
 
 check-universal-binary() {
-    if ! file "$1" | grep --fixed-string -q "Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit executable x86_64] [arm64"; then
+    local architectures
+    architectures="$(lipo -archs "$1")"
+    if [[ " $architectures " != *" arm64 "* || " $architectures " != *" x86_64 "* ]]; then
         echo "$1 is not a universal binary"
         exit 1
     fi
@@ -97,33 +99,33 @@ check-contains-hash() {
 }
 
 check-universal-binary .release/AeroSpace-edge.app/Contents/MacOS/AeroSpace-edge
-check-universal-binary .release/aerospace
+check-universal-binary .release/aerospace-edge
 
 check-contains-hash .release/AeroSpace-edge.app/Contents/MacOS/AeroSpace-edge
-check-contains-hash .release/aerospace
+check-contains-hash .release/aerospace-edge
 
 codesign -v .release/AeroSpace-edge.app
-codesign -v .release/aerospace
+codesign -v .release/aerospace-edge
 
 ############
 ### PACK ###
 ############
 
-mkdir -p ".release/AeroSpace-v$build_version/manpage" && cp .man/*.1 ".release/AeroSpace-v$build_version/manpage"
-cp -r ./legal ".release/AeroSpace-v$build_version/legal"
-cp -r .shell-completion ".release/AeroSpace-v$build_version/shell-completion"
+mkdir -p ".release/AeroSpace-edge-v$build_version/manpage" && cp .man/*.1 ".release/AeroSpace-edge-v$build_version/manpage"
+cp -r ./legal ".release/AeroSpace-edge-v$build_version/legal"
+cp -r .shell-completion ".release/AeroSpace-edge-v$build_version/shell-completion"
 cd .release
-    mkdir -p "AeroSpace-v$build_version/bin" && cp -r aerospace "AeroSpace-v$build_version/bin"
-    cp -r AeroSpace.app "AeroSpace-v$build_version"
-    zip -r "AeroSpace-v$build_version.zip" "AeroSpace-v$build_version"
+    mkdir -p "AeroSpace-edge-v$build_version/bin" && cp -r aerospace-edge "AeroSpace-edge-v$build_version/bin"
+    cp -r AeroSpace-edge.app "AeroSpace-edge-v$build_version"
+    zip -r "AeroSpace-edge-v$build_version.zip" "AeroSpace-edge-v$build_version"
 cd -
 
 #################
 ### Brew Cask ###
 #################
-for cask_name in aerospace aerospace-dev; do
+for cask_name in aerospace-edge aerospace-edge-dev; do
     ./script/build-brew-cask.sh \
         --cask-name "$cask_name" \
-        --zip-uri ".release/AeroSpace-v$build_version.zip" \
+        --zip-uri ".release/AeroSpace-edge-v$build_version.zip" \
         --build-version "$build_version"
 done

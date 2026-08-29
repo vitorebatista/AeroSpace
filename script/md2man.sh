@@ -8,11 +8,11 @@ out_dir="${2:-.man}"
 name=$(basename "$file" .md)
 purpose=$(sed -n 's/^description: //p' "$file" | head -1)
 
-# docs-md/aerospace.md is the top-level aerospace(1) page, not a subcommand.
+# docs-md/aerospace.md is the top-level aerospace-edge(1) page, not a subcommand.
 if test "$name" = aerospace; then
-    page="aerospace"
+    page="aerospace-edge"
 else
-    page="aerospace-${name}"
+    page="aerospace-edge-${name}"
 fi
 
 mkdir -p "$out_dir"
@@ -45,4 +45,4 @@ mkdir -p "$out_dir"
     echo "Copyright (C) 2023 Nikita Bobko. Free use of this software is granted under the terms of the MIT License."
 } | pandoc -f markdown -t man -s -o "$out_dir/${page}.1"
 
-echo "wrote $out_dir/aerospace-${name}.1"
+echo "wrote $out_dir/${page}.1"
