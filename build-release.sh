@@ -82,7 +82,9 @@ if test "$expected_layout" != "$(find .release/AeroSpace-edge.app)"; then
 fi
 
 check-universal-binary() {
-    if ! file "$1" | grep --fixed-string -q "Mach-O universal binary with 2 architectures: [x86_64:Mach-O 64-bit executable x86_64] [arm64"; then
+    local architectures
+    architectures="$(lipo -archs "$1")"
+    if [[ " $architectures " != *" arm64 "* || " $architectures " != *" x86_64 "* ]]; then
         echo "$1 is not a universal binary"
         exit 1
     fi
