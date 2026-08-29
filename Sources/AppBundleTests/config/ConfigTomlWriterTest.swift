@@ -403,7 +403,7 @@ final class ConfigTomlWriterTest: XCTestCase {
 
         let rendered = document.render()
         assertEquals(rendered.contains("'MY.PATH' = '/tools:${PATH}'"), true, additionalMsg: rendered)
-        assertEquals(SettingsModel.rawExecConfig(from: rendered).envVars, ["MY.PATH": "/tools:${PATH}"])
+        assertEquals(SettingsModel.rawExecConfig(from: rendered).overriddenVars, ["MY.PATH": "/tools:${PATH}"])
     }
 
     func testEditingCallbacksKeepsUnrelatedTopLevelText() {
