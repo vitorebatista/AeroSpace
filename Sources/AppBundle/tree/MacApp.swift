@@ -182,6 +182,9 @@ final class MacApp: AbstractApp {
             windows.threadGuarded.removeValue(forKey: previousFocusedWindowId)
             return (focusedWindow.windowId, previousFocusedWindowId)
         }
+        // `thread` is Optional, so `focused` is a double optional and the `?? nil` flattens it —
+        // it is not redundant. swiftlint's autocorrect also drops the space, producing `focusedelse`.
+        // swiftlint:disable:next redundant_nil_coalescing
         guard let (windowId, staleWindowId) = focused ?? nil else { return nil }
         if let staleWindowId {
             setFrameJobs.removeValue(forKey: staleWindowId)?.cancel()

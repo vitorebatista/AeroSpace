@@ -209,10 +209,11 @@ git checkout -B port/<slug> origin/main
 - **Window-classification tests are data-driven**: add an `axDumps/*.json5` fixture with the
   expected result inline (e.g. `"Aero.AxUiElementWindowType": "popup"`) rather than a synthetic mock.
 - **Generated files** (`cmdHelpGenerated.swift`, `subcommandDescriptionsGenerated.swift`) come from
-  `docs/aerospace-*.adoc`. Edit the `.adoc`, then `./script/generate-cmd-help.sh` (build-debug
-  regenerates `subcommandDescriptions`). Never hand-edit the generated `.swift`.
+  `docs-md/commands/*.md`. Edit the page's synopsis fence / `description:` frontmatter, then
+  `./script/generate-cmd-help.sh` (build-debug regenerates `subcommandDescriptions`). Never
+  hand-edit the generated `.swift`.
 - **Docs are part of the change** (see CLAUDE.md command checklist): new flag/command/config/format
-  var → update the relevant `.adoc` + `docs/guide.adoc`/`default-config.toml` + the `<event>`/rule in
+  var → update the relevant `.md` + `docs-md/guide.md`/`default-config.toml` + the `<event>`/rule in
   `grammar/commands-bnf-grammar.txt`.
 
 ### 4. Verify every branch (the bar)

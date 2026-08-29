@@ -1,0 +1,83 @@
+---
+title: config
+description: Query AeroSpace config options
+section: 1
+---
+
+# aerospace config
+
+Query AeroSpace config options
+
+## Synopsis
+
+```synopsis
+aerospace config [-h|--help] --get <name> [--json] [--keys]
+aerospace config [-h|--help] --major-keys
+aerospace config [-h|--help] --all-keys
+aerospace config [-h|--help] --config-path
+```
+
+## Description
+
+For now, only `mode.*` config options are supported
+
+Under the hood, the config is represented as recursive data structure of maps, arrays, strings, and integers.
+
+Printing without `--json` or `--keys` flag is supported only for scalar types (strings and integers) and array of scalar types. Printing other complicated objects requires `--json` or `--keys` flag.
+
+## Options
+
+`-h`, `--help`
+
+: Print help
+
+`--get <name>`
+
+: Get the value for a given key. You can inspect available keys with `--major-keys` or `--all-keys`
+
+`--major-keys`
+
+: Print major keys
+
+`--all-keys`
+
+: Print all available keys recursively
+
+`--json`
+
+: Print result in JSON format
+
+`--keys`
+
+: Print keys of the complicated object (map or array)
+
+`--config-path`
+
+: Print absolute path to the loaded config
+
+## Examples
+
+- List all binding modes:
+
+      $ aerospace config --get mode --keys
+      main
+      service
+
+- List all key bindings for 'main' binding mode:
+
+      $ aerospace config --get mode.main.binding --keys
+      alt-1
+      alt-2
+      ...
+
+- List all key bindings for 'main' binding mode in JSON format:
+
+      $ aerospace config --get mode.main.binding --json
+      {
+        "alt-w" : "workspace W",
+        "alt-y" : "workspace Y",
+        "alt-n" : "workspace N",
+        "alt-shift-e" : "move-node-to-workspace E",
+        "alt-shift-m" : "move-node-to-workspace M",
+        "alt-shift-t" : "move-node-to-workspace T",
+      ...

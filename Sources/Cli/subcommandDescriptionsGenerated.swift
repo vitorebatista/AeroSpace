@@ -1,4 +1,4 @@
-// FILE IS GENERATED FROM docs/aerospace-*.adoc files
+// FILE IS GENERATED FROM docs-md/commands/*.md files
 // TO REGENERATE THE FILE RUN generate.sh
 
 let subcommandDescriptions = [

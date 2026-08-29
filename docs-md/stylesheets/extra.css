@@ -1,0 +1,329 @@
+/* Palette lifted from the app icon (docs/assets/edge-appicon.svg):
+   cyan #22D3EE -> indigo #6366F1 -> purple #A855F7 */
+:root {
+  --edge-cyan: #22d3ee;
+  --edge-indigo: #6366f1;
+  --edge-purple: #a855f7;
+  --edge-gradient: linear-gradient(120deg, var(--edge-cyan) 0%, var(--edge-indigo) 52%, var(--edge-purple) 100%);
+}
+
+/* ---------------------------------------------------------------- palette */
+
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #4f46e5; /* indigo-600: 5.6:1 on white, unlike #6366F1 */
+  --md-primary-fg-color--light: var(--edge-indigo);
+  --md-primary-fg-color--dark: #4338ca;
+  --md-primary-bg-color: #ffffff;
+  --md-accent-fg-color: #7c3aed;
+  --md-typeset-a-color: #4f46e5;
+  --md-default-bg-color: #ffffff;
+  --md-code-bg-color: #f6f7fb;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-hue: 232; /* cool slate, matches the icon's blue end */
+  --md-primary-fg-color: #1a1c25;
+  --md-primary-bg-color: #f8fafc;
+  --md-accent-fg-color: var(--edge-cyan);
+  --md-typeset-a-color: #7dd3fc;
+  --md-default-bg-color: #14161d;
+  --md-default-fg-color--light: #c7cbd6;
+  --md-code-bg-color: #1b1e27;
+}
+
+/* ------------------------------------------------------------ page frame */
+
+/* Wider grid: the 3-column layout looks sparse at Material's default 61rem. */
+.md-grid {
+  max-width: 84rem;
+}
+
+/* The header *is* the icon gradient — the one place the brand runs at full strength. */
+.md-header,
+.md-header[data-md-state="shadow"] {
+  background: var(--edge-gradient);
+  box-shadow: 0 0 0.2rem rgba(0, 0, 0, 0.1), 0 0.2rem 0.4rem rgba(0, 0, 0, 0.08);
+}
+
+[data-md-color-scheme="slate"] .md-header {
+  /* Dimmed so it sits behind the content instead of glowing at night. */
+  background: linear-gradient(120deg, #0e7490 0%, #4338ca 52%, #7e22ce 100%);
+}
+
+.md-header__topic:first-child > .md-ellipsis {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.md-header__button.md-logo img {
+  height: 1.55rem;
+  width: 1.55rem;
+}
+
+/* Active nav item gets the gradient bar rather than a flat highlight. */
+.md-nav__link--active {
+  font-weight: 600;
+}
+
+.md-nav--secondary .md-nav__link--active::before {
+  content: "";
+  position: absolute;
+  left: -0.6rem;
+  top: 0.25em;
+  bottom: 0.25em;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--edge-gradient);
+}
+
+.md-nav--secondary .md-nav__link {
+  position: relative;
+}
+
+/* ---------------------------------------------------------------- typography */
+
+.md-typeset h1 {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--md-default-fg-color);
+}
+
+.md-typeset h2 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-top: 2.2em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* The lead paragraph under the H1 is the command's one-line purpose. */
+.md-typeset h1 + p {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--md-default-fg-color--light);
+}
+
+/* ---------------------------------------------------------------- synopsis */
+
+/* The synopsis is the densest thing on a CLI page — give it its own frame. */
+.md-typeset .language-synopsis {
+  border-left: 3px solid transparent;
+  border-image: var(--edge-gradient) 1;
+  border-radius: 0;
+}
+
+.md-typeset .language-synopsis code {
+  font-size: 0.76rem;
+  line-height: 1.65;
+}
+
+/* ----------------------------------------------------------------- options */
+
+/* Flags read as a reference table, not prose: mono term, indented body. */
+.md-typeset dl dt {
+  font-family: var(--md-code-font-family);
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-top: 1.25em;
+  color: var(--md-default-fg-color);
+}
+
+.md-typeset dl dt > code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+  font-weight: 600;
+  color: var(--md-primary-fg-color--light, var(--md-primary-fg-color));
+}
+
+[data-md-color-scheme="slate"] .md-typeset dl dt > code {
+  color: #a5b4fc;
+}
+
+.md-typeset dl dd {
+  margin-top: 0.35em;
+  margin-left: 1.1rem;
+  padding-left: 0.9rem;
+  border-left: 1px solid var(--md-default-fg-color--lightest);
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset dl dd > p:first-child {
+  margin-top: 0;
+}
+
+/* ------------------------------------------------------------------- home */
+
+.edge-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 1rem 0 2.5rem;
+}
+
+.edge-hero img {
+  width: 5.5rem;
+  height: 5.5rem;
+  flex: none;
+}
+
+.edge-hero h1 {
+  margin: 0 0 0.2em;
+  font-size: 2.4rem;
+  width: fit-content;
+  background: var(--edge-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* No anchor pilcrow on the hero title. */
+.edge-hero h1 .headerlink {
+  display: none;
+}
+
+.edge-hero p {
+  margin: 0;
+  font-size: 1.05rem;
+  color: var(--md-default-fg-color--light);
+}
+
+@media screen and (max-width: 44.9em) {
+  .edge-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+}
+
+.edge-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin: 0 0 2rem;
+}
+
+/* Material colours .md-button from --md-primary-fg-color, which we repoint at the
+   header background; set both button variants explicitly instead. */
+.md-typeset .edge-cta .md-button {
+  color: var(--md-typeset-a-color);
+  border-color: currentcolor;
+}
+
+.md-typeset .edge-cta .md-button:hover,
+.md-typeset .edge-cta .md-button:focus {
+  background: var(--edge-indigo);
+  border-color: var(--edge-indigo);
+  color: #fff;
+}
+
+.md-typeset .edge-cta .md-button--primary {
+  background: var(--edge-indigo);
+  border-color: var(--edge-indigo);
+  color: #fff;
+}
+
+.md-typeset .edge-cta .md-button--primary:hover,
+.md-typeset .edge-cta .md-button--primary:focus {
+  background: var(--edge-purple);
+  border-color: var(--edge-purple);
+  color: #fff;
+}
+
+/* Live project stats. Values come from shields.io rather than being typed here,
+   so they can't go stale. */
+.edge-badges {
+  margin: 2rem 0 1rem;
+  padding: 1.4rem 0 0;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-typeset .edge-badges p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin: 0;
+}
+
+.md-typeset .edge-badges img {
+  height: 1.6rem;
+  vertical-align: middle;
+}
+
+/* Feature grid */
+.edge-features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1.1rem;
+  margin: 1.5rem 0 2.5rem;
+}
+
+.edge-features > div {
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.5rem;
+  background: var(--md-code-bg-color);
+}
+
+.md-typeset .edge-features h3 {
+  margin: 0 0 0.5em;
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  border: none;
+  padding: 0;
+}
+
+.md-typeset .edge-features h3::before {
+  content: "";
+  display: block;
+  width: 1.9rem;
+  height: 3px;
+  margin-bottom: 0.7rem;
+  border-radius: 2px;
+  background: var(--edge-gradient);
+}
+
+.edge-features p {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.6;
+  color: var(--md-default-fg-color--light);
+}
+
+/* Command index cards */
+.edge-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.9rem;
+  margin: 1.2rem 0;
+}
+
+.edge-cards a {
+  display: block;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.4rem;
+  text-decoration: none !important;
+  transition: border-color 120ms, transform 120ms;
+}
+
+.edge-cards a:hover {
+  border-color: var(--edge-indigo);
+  transform: translateY(-1px);
+}
+
+.edge-cards code {
+  display: block;
+  margin-bottom: 0.35em;
+  background: transparent;
+  padding: 0;
+  font-weight: 600;
+  color: var(--md-typeset-a-color);
+}
+
+.edge-cards span {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}

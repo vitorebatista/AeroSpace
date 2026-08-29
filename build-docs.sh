@@ -1,52 +1,26 @@
 #!/bin/bash
 cd "$(dirname "$0")"
-source ./script/setup.sh
+set -euo pipefail
 
-./script/install-dep.sh --bundler
+# Site -> .site (Material for MkDocs), man pages -> .man (pandoc).
+# Both are built from docs-md/; there is no asciidoctor step any more.
 
-rm -rf .site && mkdir .site
-rm -rf .man && mkdir .man
+venv=.deps/docs-venv
+if ! test -d "$venv"; then
+    python3 -m venv "$venv"
+fi
+"$venv/bin/pip" install -q -r docs-md/requirements.txt
 
-cp-docs() {
-    cp -r ./docs/*.adoc "$1"
-    cp -r ./docs/assets "$1"
-    cp -r ./docs/util "$1"
-    cp -r ./docs/config-examples "$1"
-}
+rm -rf .site .man
 
-build-site() {
-    cp-docs ./.site
-    cp ./docs/index.html ./.site
+"$venv/bin/mkdocs" build --strict -d .site
 
-    cd .site
-        # Delete "aerospace " prefifx in synopsis
-        sed -E -i '' '/tag::synopsis/, /end::synopsis/ s/^(aerospace | {10})//' aerospace*
-        bundler exec asciidoctor ./guide.adoc ./commands.adoc ./goodies.adoc
-        cp goodies.html goodness.html # backwards compatibility
-        rm -rf ./*.adoc
-    cd - > /dev/null
+git rev-parse HEAD > .site/version.html
+if ! test -z "$(git status --porcelain)"; then
+    echo "git working directory is dirty" >> .site/version.html
+fi
 
-    git rev-parse HEAD > .site/version.html
-    if ! test -z "$(git status --porcelain)"; then
-        echo "git working directory is dirty" >> .site/version.html
-    fi
-}
-
-build-man() {
-    cp-docs .man
-    cd .man
-        bundler exec asciidoctor -b manpage aerospace*.adoc
-
-        # Comment by AI:
-        #   gman (the g Dai client) renders bare .~ and /~ as ligatures (~ becomes ˜).
-        #   We use groff's \[ti] escape (which produces a literal tilde) instead.
-        #   Note: escaping .~ in asciidoc via pass:[] doesn't work because asciidoctor
-        #   converts \\ to \(rs) before groff sees the input.
-        sed -E -i '' 's|\.~|\.\\[ti]|g; s|/~|/\\[ti]|g' aerospace-test.1
-
-        rm -rf -- *.adoc
-    cd - > /dev/null
-}
-
-build-site
-build-man
+for file in docs-md/aerospace.md docs-md/commands/*.md; do
+    ./script/md2man.sh "$file" .man > /dev/null
+done
+echo "built .site and $(ls .man | wc -l | tr -d ' ') man pages"
