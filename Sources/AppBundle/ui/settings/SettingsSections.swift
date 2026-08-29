@@ -40,11 +40,17 @@ struct GeneralSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup("Startup") {
-                Toggle("Start AeroSpace at login", isOn: tracked($draft.startAtLogin, onEdit))
-                Toggle("Reload the config automatically when the file changes", isOn: tracked($draft.autoReloadConfig, onEdit))
+                Toggle(isOn: tracked($draft.startAtLogin, onEdit)) {
+                    SettingHelpLabel(title: "Start AeroSpace at login", topic: .startAtLogin)
+                }
+                Toggle(isOn: tracked($draft.autoReloadConfig, onEdit)) {
+                    SettingHelpLabel(title: "Reload the config automatically when the file changes", topic: .autoReload)
+                }
             }
             SettingsGroup("macOS integration") {
-                Toggle("Automatically unhide macOS hidden apps", isOn: tracked($draft.automaticallyUnhideMacosHiddenApps, onEdit))
+                Toggle(isOn: tracked($draft.automaticallyUnhideMacosHiddenApps, onEdit)) {
+                    SettingHelpLabel(title: "Automatically unhide macOS hidden apps", topic: .unhideHiddenApps)
+                }
             }
             SettingsGroup(
                 "Config version",
@@ -56,9 +62,11 @@ struct GeneralSection: View {
                     switching up starts with whatever list it had derived.
                     """,
             ) {
-                Picker("Config version", selection: tracked($draft.configVersion, onEdit)) {
+                Picker(selection: tracked($draft.configVersion, onEdit)) {
                     Text("2 (current)").tag(2)
                     Text("1 (legacy)").tag(1)
+                } label: {
+                    SettingHelpLabel(title: "Config version", topic: .configVersion)
                 }
                 .pickerStyle(.radioGroup)
             }
@@ -74,23 +82,35 @@ struct LayoutSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup("Default container") {
-                Picker("Layout", selection: tracked($draft.defaultRootContainerLayout, onEdit)) {
+                Picker(selection: tracked($draft.defaultRootContainerLayout, onEdit)) {
                     Text("Tiles").tag(Layout.tiles)
                     Text("Accordion").tag(Layout.accordion)
+                } label: {
+                    SettingHelpLabel(title: "Layout", topic: .defaultLayout)
                 }
-                Picker("Orientation", selection: tracked($draft.defaultRootContainerOrientation, onEdit)) {
+                Picker(selection: tracked($draft.defaultRootContainerOrientation, onEdit)) {
                     Text("Auto").tag(DefaultContainerOrientation.auto)
                     Text("Horizontal").tag(DefaultContainerOrientation.horizontal)
                     Text("Vertical").tag(DefaultContainerOrientation.vertical)
+                } label: {
+                    SettingHelpLabel(title: "Orientation", topic: .defaultOrientation)
                 }
             }
             SettingsGroup("Normalization", footer: "Normalizations keep the window tree tidy. Turning them off gives you full manual control of the tree.") {
-                Toggle("Flatten containers", isOn: tracked($draft.enableNormalizationFlattenContainers, onEdit))
-                Toggle("Opposite orientation for nested containers", isOn: tracked($draft.enableNormalizationOppositeOrientationForNestedContainers, onEdit))
-                Toggle("Binary tree", isOn: tracked($draft.enableNormalizationBinaryTree, onEdit))
+                Toggle(isOn: tracked($draft.enableNormalizationFlattenContainers, onEdit)) {
+                    SettingHelpLabel(title: "Flatten containers", topic: .flattenContainers)
+                }
+                Toggle(isOn: tracked($draft.enableNormalizationOppositeOrientationForNestedContainers, onEdit)) {
+                    SettingHelpLabel(title: "Opposite orientation for nested containers", topic: .oppositeOrientation)
+                }
+                Toggle(isOn: tracked($draft.enableNormalizationBinaryTree, onEdit)) {
+                    SettingHelpLabel(title: "Binary tree", topic: .binaryTree)
+                }
             }
             SettingsGroup("Accordion") {
-                Stepper("Padding: \(draft.accordionPadding)", value: tracked($draft.accordionPadding, onEdit), in: 0 ... 200, step: 5)
+                Stepper(value: tracked($draft.accordionPadding, onEdit), in: 0 ... 200, step: 5) {
+                    SettingHelpLabel(title: "Padding: \(draft.accordionPadding)", topic: .accordionPadding)
+                }
             }
         }
     }
@@ -107,14 +127,18 @@ struct FocusSection: View {
                 "Focus follows app activation",
                 footer: "'Smart' switches the focused workspace on a cross-workspace app activation only when it looks user-initiated. This option is specific to AeroSpace-edge.",
             ) {
-                Picker("Behavior", selection: tracked($draft.focusFollowsAppActivation, onEdit)) {
+                Picker(selection: tracked($draft.focusFollowsAppActivation, onEdit)) {
                     Text("Always").tag(FocusFollowsAppActivation.always)
                     Text("Smart").tag(FocusFollowsAppActivation.smart)
+                } label: {
+                    SettingHelpLabel(title: "Behavior", topic: .focusActivation)
                 }
                 .pickerStyle(.radioGroup)
             }
             SettingsGroup("New windows") {
-                Toggle("Prevent flicker when a new window appears", isOn: tracked($draft.newWindowPreventFlicker, onEdit))
+                Toggle(isOn: tracked($draft.newWindowPreventFlicker, onEdit)) {
+                    SettingHelpLabel(title: "Prevent flicker when a new window appears", topic: .newWindowFlicker)
+                }
             }
         }
     }
@@ -128,14 +152,22 @@ struct WindowBorderSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup("Focused window border", footer: "This option group is specific to AeroSpace-edge.") {
-                Toggle("Draw a border around the focused window", isOn: tracked($draft.focusedWindowBorder, onEdit))
+                Toggle(isOn: tracked($draft.focusedWindowBorder, onEdit)) {
+                    SettingHelpLabel(title: "Draw a border around the focused window", topic: .focusedWindowBorder)
+                }
                 Group {
                     colorRow
-                    Stepper("Width: \(draft.focusedWindowBorderWidth)", value: tracked($draft.focusedWindowBorderWidth, onEdit), in: 0 ... 40)
-                    Stepper("Corner radius: \(draft.focusedWindowBorderRadius)", value: tracked($draft.focusedWindowBorderRadius, onEdit), in: 0 ... 60)
-                    Stepper("Inset: \(draft.focusedWindowBorderInset)", value: tracked($draft.focusedWindowBorderInset, onEdit), in: -40 ... 40)
+                    Stepper(value: tracked($draft.focusedWindowBorderWidth, onEdit), in: 0 ... 40) {
+                        SettingHelpLabel(title: "Width: \(draft.focusedWindowBorderWidth)", topic: .borderWidth)
+                    }
+                    Stepper(value: tracked($draft.focusedWindowBorderRadius, onEdit), in: 0 ... 60) {
+                        SettingHelpLabel(title: "Corner radius: \(draft.focusedWindowBorderRadius)", topic: .borderRadius)
+                    }
+                    Stepper(value: tracked($draft.focusedWindowBorderInset, onEdit), in: -40 ... 40) {
+                        SettingHelpLabel(title: "Inset: \(draft.focusedWindowBorderInset)", topic: .borderInset)
+                    }
                     HStack {
-                        Text("Opacity: \(draft.focusedWindowBorderOpacity)%")
+                        SettingHelpLabel(title: "Opacity: \(draft.focusedWindowBorderOpacity)%", topic: .borderOpacity)
                         Slider(value: Binding(
                             get: { Double(draft.focusedWindowBorderOpacity) },
                             set: { draft.focusedWindowBorderOpacity = Int($0.rounded()); onEdit() },
@@ -153,11 +185,14 @@ struct WindowBorderSection: View {
     private var colorRow: some View {
         HStack {
             if let color = Color(aeroSpaceHex: draft.focusedWindowBorderColor) {
-                ColorPicker("Color", selection: Binding(
+                ColorPicker(selection: Binding(
                     get: { color },
                     set: { draft.focusedWindowBorderColor = $0.aeroSpaceHex; onEdit() },
-                ))
+                )) {
+                    SettingHelpLabel(title: "Color", topic: .borderColor)
+                }
             } else {
+                SettingHelpLabel(title: "Color", topic: .borderColor)
                 TextField("Color (0xAARRGGBB)", text: tracked($draft.focusedWindowBorderColor, onEdit))
             }
             Text(draft.focusedWindowBorderColor).font(.caption.monospaced()).foregroundStyle(.secondary)

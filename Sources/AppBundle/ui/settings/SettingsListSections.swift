@@ -219,7 +219,8 @@ private struct GapRow: View {
         let value = draft.gaps[keyPath: path]
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text(label).frame(width: 90, alignment: .leading)
+                SettingHelpLabel(title: label, topic: gapTopic)
+                    .frame(width: 110, alignment: .leading)
                 switch value {
                     case .constant(let int):
                         Stepper("\(int)", value: Binding(
@@ -236,7 +237,7 @@ private struct GapRow: View {
                             },
                         ), in: 0 ... 400, step: 2)
                 }
-                Toggle("Per monitor", isOn: Binding(
+                Toggle(isOn: Binding(
                     get: { if case .perMonitor = value { true } else { false } },
                     set: { isPerMonitor in
                         let result = togglePerMonitorGaps(
@@ -248,7 +249,9 @@ private struct GapRow: View {
                         lastKnownRules = result.rememberedRules
                         onEdit()
                     },
-                ))
+                )) {
+                    SettingHelpLabel(title: "Per monitor", topic: .perMonitorGaps)
+                }
                 .toggleStyle(.checkbox)
             }
             if case .perMonitor = value {
@@ -268,7 +271,7 @@ private struct GapRow: View {
                     valueFor: parsePerMonitorGapRows,
                     onEdit: onEdit,
                 )
-                .padding(.leading, 98)
+                .padding(.leading, 118)
             }
         }
         .onChange(of: loadGeneration) { _ in
@@ -278,6 +281,10 @@ private struct GapRow: View {
             // resurrecting rules the user just discarded.
             lastKnownRules = []
         }
+    }
+
+    private var gapTopic: SettingHelpTopic {
+        path == \Gaps.inner.horizontal || path == \Gaps.inner.vertical ? .innerGaps : .outerGaps
     }
 }
 
@@ -291,12 +298,14 @@ struct WorkspacesSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup("Persistent workspaces", footer: "These always exist, in this order, even when empty.") {
+                SettingHelpLabel(title: "Workspace list", topic: .persistentWorkspaces)
                 PersistentWorkspacesEditor(draft: $draft, onEdit: onEdit)
             }
             SettingsGroup(
                 "Force a workspace onto a monitor",
                 footer: "A monitor is 'main', 'secondary', a 1-based number, or a regex matched against the monitor name. Separate several with a comma to give a priority order.",
             ) {
+                SettingHelpLabel(title: "Workspace and monitor priority", topic: .workspaceMonitorAssignment)
                 SyncedKeyValueRows(
                     keyPlaceholder: "workspace",
                     valuePlaceholder: "main, secondary, 2, regex",
@@ -417,10 +426,12 @@ struct KeyMappingSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup("Preset", footer: "The keyboard layout your key notations are written for.") {
-                Picker("Preset", selection: tracked($draft.keyMappingPreset, onEdit)) {
+                Picker(selection: tracked($draft.keyMappingPreset, onEdit)) {
                     ForEach(KeyMapping.Preset.allCases, id: \.rawValue) { preset in
                         Text(preset.rawValue.capitalized).tag(preset)
                     }
+                } label: {
+                    SettingHelpLabel(title: "Preset", topic: .keyMappingPreset)
                 }
                 .pickerStyle(.radioGroup)
             }
@@ -428,6 +439,7 @@ struct KeyMappingSection: View {
                 "Notation overrides",
                 footer: "Left: your own notation — no spaces, no dashes. Right: a key code AeroSpace knows, such as 'quote' or 'semicolon'.",
             ) {
+                SettingHelpLabel(title: "Custom notation mapping", topic: .keyNotationOverrides)
                 SyncedKeyValueRows(
                     keyPlaceholder: "notation",
                     valuePlaceholder: "key code",
@@ -452,12 +464,15 @@ struct ExecSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup("Environment", footer: "Applies to every 'exec-and-forget' command.") {
-                Toggle("Inherit environment variables from the launching process", isOn: tracked($draft.inheritEnvVars, onEdit))
+                Toggle(isOn: tracked($draft.inheritEnvVars, onEdit)) {
+                    SettingHelpLabel(title: "Inherit environment variables from the launching process", topic: .inheritEnvVars)
+                }
             }
             SettingsGroup(
                 "Overrides",
                 footer: "Use $VAR to interpolate the inherited value. 'PWD' can't be changed and will be rejected on save.",
             ) {
+                SettingHelpLabel(title: "Environment variable overrides", topic: .envVarOverrides)
                 SyncedKeyValueRows(
                     keyPlaceholder: "NAME",
                     valuePlaceholder: "value",

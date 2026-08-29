@@ -104,6 +104,11 @@ and command callbacks use AeroSpace's command DSL, so they are edited as TOML te
 own sections with parse feedback as you type. That feedback checks each pane as a fragment;
 Save validates the whole file and can still reject a pane that looked valid in isolation.
 
+Every structured option has an info button. Hover it for a short tooltip, or click it for
+the practical effect, the TOML key being changed, and — for spatial settings such as
+layouts, gaps, focus, borders and monitor assignment — a small vector diagram of the
+result.
+
 Only regions you change are written. Untouched keys, tables, and raw panes remain byte for
 byte unchanged, so saving does not reformat the whole file.
 
