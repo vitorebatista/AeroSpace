@@ -1,7 +1,7 @@
 # Settings navigation, config migration, and documentation design
 
 Date: 2026-08-29
-Status: Approved in chat; awaiting review of this written specification
+Status: Approved
 
 ## Objective
 

@@ -75,6 +75,45 @@ struct GeneralSection: View {
 }
 
 @MainActor
+struct ApplicationSection: View {
+    @ObservedObject var viewModel: TrayMenuModel
+
+    private var shortIdentification: String {
+        "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitShortHash)"
+    }
+
+    private var identification: String {
+        "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitHash)"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SettingsGroup("Configuration file") {
+                openConfigButton()
+                reloadConfigButton()
+            }
+            SettingsGroup(
+                "Menu bar appearance",
+                footer: "Experimental styles require macOS 14 or later and have no stability guarantees.",
+            ) {
+                let color = AppearanceTheme.current == .dark ? Color.white : Color.black
+                ForEach(MenuBarStyle.allCases) { style in
+                    MenuBarStyleButton(style: style, color: color).environmentObject(viewModel)
+                }
+            }
+            SettingsGroup("Updates") {
+                Button("Check Now") { Task { await runCheckForUpdatesFlow() } }
+                HStack {
+                    Text(shortIdentification).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Copy Version Info") { identification.copyToClipboard() }
+                }
+            }
+        }
+    }
+}
+
+@MainActor
 struct LayoutSection: View {
     @Binding var draft: ConfigTomlWriter.ConfigDraft
     let onEdit: () -> Void

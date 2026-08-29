@@ -4,10 +4,10 @@ import SwiftUI
 public let settingsWindowId = "\(aeroSpaceAppName).settings"
 
 @MainActor
-public func getSettingsWindow(model: SettingsModel) -> some Scene {
+public func getSettingsWindow(model: SettingsModel, viewModel: TrayMenuModel) -> some Scene {
     // SwiftUI.Window because AeroSpace already has a class called Window
     SwiftUI.Window("\(aeroSpaceAppName) Settings", id: settingsWindowId) {
-        SettingsView(model: model)
+        SettingsView(model: model, viewModel: viewModel)
             .onAppear {
                 // Without this an accessory-mode app's window can't receive keyboard input
                 NSApp.setActivationPolicy(.accessory)
@@ -29,6 +29,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
     case keybindings = "Keybindings"
     case windowRules = "Window Rules"
     case callbacks = "Callbacks"
+    case application = "Application"
 
     var id: String { rawValue }
 
@@ -45,6 +46,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
             case .keybindings: "command"
             case .windowRules: "macwindow.badge.plus"
             case .callbacks: "arrow.triangle.branch"
+            case .application: "gearshape.2"
         }
     }
 }
@@ -52,10 +54,14 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
 @MainActor
 struct SettingsView: View {
     @StateObject private var model: SettingsModel
+    @ObservedObject var viewModel: TrayMenuModel
     @State private var selection: SettingsCategory = .general
     @State private var showOverwriteAlert = false
 
-    init(model: SettingsModel) { self._model = .init(wrappedValue: model) }
+    init(model: SettingsModel, viewModel: TrayMenuModel) {
+        self._model = .init(wrappedValue: model)
+        self.viewModel = viewModel
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -141,6 +147,8 @@ struct SettingsView: View {
                     text: draft.rawCallbacks,
                     onEdit: markDirty,
                 )
+            case .application:
+                ApplicationSection(viewModel: viewModel)
         }
     }
 

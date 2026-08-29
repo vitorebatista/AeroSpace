@@ -3,6 +3,14 @@ import XCTest
 
 @MainActor
 final class MenuBarTest: XCTestCase {
+    func testPrimaryMenuContainsOnlyEnableSettingsAndQuit() {
+        assertEquals(menuBarPrimaryActions, [.toggleEnabled, .settings, .quit])
+    }
+
+    func testApplicationToolsHaveASettingsSidebarDestination() {
+        XCTAssertTrue(SettingsCategory.allCases.contains(.application))
+    }
+
     private func ws(
         _ name: String,
         isFocused: Bool = false,

@@ -2,11 +2,20 @@ import Common
 import Foundation
 import SwiftUI
 
+enum MenuBarPrimaryAction: String, Identifiable {
+    case toggleEnabled
+    case settings
+    case quit
+
+    var id: String { rawValue }
+}
+
+let menuBarPrimaryActions: [MenuBarPrimaryAction] = [.toggleEnabled, .settings, .quit]
+
 @MainActor
 public func menuBar(viewModel: TrayMenuModel, openSettings: @escaping () -> Void) -> some Scene { // todo should it be converted to "SwiftUI struct"?
     MenuBarExtra {
         let shortIdentification = "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitShortHash)"
-        let identification      = "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitHash)"
         Text(shortIdentification)
         Divider()
         if let token: RunSessionGuard = .isServerEnabled {
@@ -31,35 +40,9 @@ public func menuBar(viewModel: TrayMenuModel, openSettings: @escaping () -> Void
             }
             Divider()
         }
-        Menu {
-            Button(viewModel.isEnabled ? "Disable" : "Enable") {
-                Task {
-                    try await runLightSession(.menuBarButton, .forceRun) { () throws in
-                        _ = try await EnableCommand(args: EnableCmdArgs(rawArgs: [], targetState: .toggle))
-                            .run(.defaultEnv, .emptyStdin)
-                    }
-                }
-            }.keyboardShortcut("E", modifiers: .command)
-            openConfigButton()
-            reloadConfigButton()
-            settingsWindowButton(openSettings: openSettings)
-            getExperimentalUISettingsMenu(viewModel: viewModel)
-            Menu {
-                Button("Check Now") { Task { await runCheckForUpdatesFlow() } }
-                Divider()
-                Text(shortIdentification)
-                Button("Copy Version Info") { identification.copyToClipboard() }
-                    .keyboardShortcut("C", modifiers: .command)
-            } label: {
-                Text("Check for Updates")
-            }
-        } label: {
-            Text("Settings")
+        ForEach(menuBarPrimaryActions) { action in
+            primaryMenuButton(action, viewModel: viewModel, openSettings: openSettings)
         }
-        Button("Quit \(aeroSpaceAppName)") {
-            terminationHandler.beforeTermination()
-            terminateApp()
-        }.keyboardShortcut("Q", modifiers: .command)
     } label: {
         if viewModel.isEnabled {
             MenuBarLabel().environmentObject(viewModel)
@@ -68,6 +51,32 @@ public func menuBar(viewModel: TrayMenuModel, openSettings: @escaping () -> Void
                 .resizable()
                 .aspectRatio(contentMode: .fit)
         }
+    }
+}
+
+@MainActor @ViewBuilder
+private func primaryMenuButton(
+    _ action: MenuBarPrimaryAction,
+    viewModel: TrayMenuModel,
+    openSettings: @escaping () -> Void,
+) -> some View {
+    switch action {
+        case .toggleEnabled:
+            Button(viewModel.isEnabled ? "Disable" : "Enable") {
+                Task {
+                    try await runLightSession(.menuBarButton, .forceRun) { () throws in
+                        _ = try await EnableCommand(args: EnableCmdArgs(rawArgs: [], targetState: .toggle))
+                            .run(.defaultEnv, .emptyStdin)
+                    }
+                }
+            }.keyboardShortcut("E", modifiers: .command)
+        case .settings:
+            settingsWindowButton(openSettings: openSettings)
+        case .quit:
+            Button("Quit \(aeroSpaceAppName)") {
+                terminationHandler.beforeTermination()
+                terminateApp()
+            }.keyboardShortcut("Q", modifiers: .command)
     }
 }
 
