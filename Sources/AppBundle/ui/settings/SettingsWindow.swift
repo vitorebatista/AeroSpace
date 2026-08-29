@@ -120,7 +120,7 @@ struct SettingsView: View {
                 SettingsRawSection(
                     title: "Keybindings",
                     help: "Binding modes and their key bindings, as TOML. Each binding maps a key combination to one or more AeroSpace commands.",
-                    docsHint: "Tables: [mode.<name>.binding]. Example: alt-h = 'focus left'",
+                    docsHint: "Tables: [mode.<name>.binding]. Example: alt-h = 'focus left'. Quote a binding key with TOML punctuation: 'alt-custom.key' = 'focus left'.",
                     text: draft.rawKeybindings,
                     preamble: keybindingsPreamble(preset: model.draft.keyMappingPreset, notationOverrides: model.draft.keyNotationToKeyCode),
                     onEdit: markDirty,
