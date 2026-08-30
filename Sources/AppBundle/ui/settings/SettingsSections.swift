@@ -70,7 +70,7 @@ struct GeneralSection: View {
                 }
                 .pickerStyle(.radioGroup)
                 if migrationPending {
-                    Text(SettingsMigrationCopy.pending)
+                    Text(SettingsMigrationCopy.configVersionHelp(migrationPending: true))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

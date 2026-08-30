@@ -48,7 +48,7 @@ final class SettingsHelpTest: XCTestCase {
     }
 
     func testConfigVersionHelpExplainsMigrationAndRecoveryBeforeSaving() {
-        let details = SettingHelpTopic.configVersion.content.details
+        let details = SettingsMigrationCopy.pending
 
         for expected in [
             "Version 1",
@@ -60,5 +60,17 @@ final class SettingsHelpTest: XCTestCase {
         ] {
             XCTAssertTrue(details.contains(expected), "Missing migration guidance: \(expected)")
         }
+    }
+
+    func testConfigVersionHelpDescribesMigrationConditionallyWhenNoneIsPending() {
+        let details = SettingsMigrationCopy.configVersionHelp(migrationPending: false)
+        let pendingDetails = SettingsMigrationCopy.configVersionHelp(migrationPending: true)
+
+        XCTAssertEqual(SettingHelpTopic.configVersion.content.details, details)
+        XCTAssertEqual(pendingDetails, SettingsMigrationCopy.pending)
+        XCTAssertNotEqual(details, pendingDetails)
+        XCTAssertFalse(details.contains("This is a migration"))
+        XCTAssertFalse(details.contains("No files change until Save"))
+        XCTAssertTrue(details.contains("If you change a loaded Version 1 config to Version 2"))
     }
 }
