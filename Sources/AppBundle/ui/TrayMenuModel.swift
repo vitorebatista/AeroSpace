@@ -25,7 +25,7 @@ public final class TrayMenuModel: ObservableObject {
             return ($0.activeWorkspace == focus.workspace && sortedMonitors.count > 1 ? "*" : "") + activeWorkspaceName
         }
         .joined(separator: " │ ")
-    TrayMenuModel.shared.workspaces = Workspace.all.map {
+    let live: [WorkspaceViewModel] = Workspace.all.map {
         let apps = $0.allLeafWindowsRecursive.map { $0.app.name?.takeIf { !$0.isEmpty } }.filterNotNil().toSet()
         let dash = " - "
         let suffix = switch true {
@@ -43,6 +43,24 @@ public final class TrayMenuModel: ObservableObject {
             hasFullscreenWindows: hasFullscreenWindows,
         )
     }
+    // Workspaces the config knows about but that don't exist yet. `Workspace.all` only holds
+    // live ones (visible, non-empty, or persistent), so on `config-version = 2` — where the
+    // persistent list is explicit rather than derived from bindings — a workspace you have a
+    // binding for is missing from the menu until the first time you visit it. Focusing one
+    // creates it, exactly as the binding would.
+    let liveNames = live.map(\.name).toSet()
+    TrayMenuModel.shared.workspaces = live + workspaceNamesMentionedIn(config)
+        .filter { !liveNames.contains($0) }
+        .map {
+            WorkspaceViewModel(
+                name: $0,
+                suffix: "",
+                isFocused: false,
+                isEffectivelyEmpty: true,
+                isVisible: false,
+                hasFullscreenWindows: false,
+            )
+        }
     var items = sortedMonitors.map {
         let hasFullscreenWindows = $0.activeWorkspace.allLeafWindowsRecursive.contains { $0.isFullscreen }
         return TrayItem(

@@ -608,4 +608,22 @@ final class ConfigTest: XCTestCase {
         assertEquals(colemakConfig.keyMapping, KeyMapping(preset: .colemak, rawKeyNotationToKeyCode: [:]))
         assertEquals(colemakConfig.keyMapping.resolve()["f"], .e)
     }
+
+    /// On config-version 2 the persistent list is explicit, so a workspace that only appears
+    /// in a binding never becomes persistent — but the menu bar still has to offer it.
+    func testWorkspaceNamesMentionedInBindingsOnConfigVersion2() {
+        let (config, errors) = parseConfig(
+            """
+            config-version = 2
+            persistent-workspaces = ['1']
+
+            [mode.main.binding]
+            alt-d = 'workspace D'
+            alt-shift-e = 'move-node-to-workspace E'
+            """,
+        )
+        assertEquals(errors, [])
+        assertEquals(config.persistentWorkspaces, ["1"])
+        assertEquals(workspaceNamesMentionedIn(config).sorted(), ["D", "E"])
+    }
 }
