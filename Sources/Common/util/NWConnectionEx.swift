@@ -47,7 +47,7 @@ extension NWConnection {
                     Client SOCKET_PROTOCOL_VERSION: \(SOCKET_PROTOCOL_VERSION)
                     Server SOCKET_PROTOCOL_VERSION: \(serverVersion)
 
-                    The client and server versions are incompatible. (Potential fix: restart AeroSpace)
+                    The client and server versions are incompatible. (Potential fix: restart \(aeroSpaceAppName))
                     """
                 return ((), .customError(msg))
             case .success:

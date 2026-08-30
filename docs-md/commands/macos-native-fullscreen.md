@@ -4,16 +4,16 @@ description: Toggle macOS fullscreen for the focused window
 section: 1
 ---
 
-# aerospace macos-native-fullscreen
+# aerospace-edge macos-native-fullscreen
 
 Toggle macOS fullscreen for the focused window
 
 ## Synopsis
 
 ```synopsis
-aerospace macos-native-fullscreen [-h|--help] [--window-id <window-id>]
-aerospace macos-native-fullscreen [-h|--help] [--window-id <window-id>] [--fail-if-noop] on
-aerospace macos-native-fullscreen [-h|--help] [--window-id <window-id>] [--fail-if-noop] off
+aerospace-edge macos-native-fullscreen [-h|--help] [--window-id <window-id>]
+aerospace-edge macos-native-fullscreen [-h|--help] [--window-id <window-id>] [--fail-if-noop] on
+aerospace-edge macos-native-fullscreen [-h|--help] [--window-id <window-id>] [--fail-if-noop] off
 ```
 
 ## Description

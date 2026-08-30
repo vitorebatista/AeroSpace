@@ -4,14 +4,14 @@ description: Print a list of modes currently specified in the configuration
 section: 1
 ---
 
-# aerospace list-modes
+# aerospace-edge list-modes
 
 Print a list of modes currently specified in the configuration
 
 ## Synopsis
 
 ```synopsis
-aerospace list-modes [-h|--help] [--current] [--count] [--json]
+aerospace-edge list-modes [-h|--help] [--current] [--count] [--json]
 ```
 
 ## Description

@@ -4,17 +4,17 @@ description: Condition evaluation utility
 section: 1
 ---
 
-# aerospace test
+# aerospace-edge test
 
 Condition evaluation utility
 
 ## Synopsis
 
 ```synopsis
-aerospace test [-h|--help] <lhs> .= <rhs>
-aerospace test [-h|--help] <lhs> /= <rhs>
-aerospace test [-h|--help] <lhs> .~ <rhs>
-aerospace test [-h|--help] <lhs> /~ <rhs>
+aerospace-edge test [-h|--help] <lhs> .= <rhs>
+aerospace-edge test [-h|--help] <lhs> /= <rhs>
+aerospace-edge test [-h|--help] <lhs> .~ <rhs>
+aerospace-edge test [-h|--help] <lhs> /~ <rhs>
 ```
 
 ## Description
@@ -43,9 +43,9 @@ The choice of symbols is dictated by the shell expansion rules that "helpfully" 
 
 ## Examples
 
-Test if the application ID equals to Chrome: `aerospace test %{app-bundle-id} .= com.google.Chrome`
+Test if the application ID equals to Chrome: `aerospace-edge test %{app-bundle-id} .= com.google.Chrome`
 
-Test if the application name contains "chrome" (case insensitive): `aerospace test %{app-name} .~ chrome`
+Test if the application name contains "chrome" (case insensitive): `aerospace-edge test %{app-name} .~ chrome`
 
 ## Arguments
 
@@ -69,7 +69,7 @@ Test if the application name contains "chrome" (case insensitive): `aerospace te
 
 %{window-is-fullscreen}
 
-: Boolean. Is window in fullscreen by `aerospace fullscreen` command
+: Boolean. Is window in fullscreen by `aerospace-edge fullscreen` command
 
 %{window-layout}
 

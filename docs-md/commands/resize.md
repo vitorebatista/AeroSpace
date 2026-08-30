@@ -4,14 +4,14 @@ description: Resize the focused window
 section: 1
 ---
 
-# aerospace resize
+# aerospace-edge resize
 
 Resize the focused window
 
 ## Synopsis
 
 ```synopsis
-aerospace resize [-h|--help] [--window-id <window-id>] (smart|smart-opposite|width|height) [+|-]<number>
+aerospace-edge resize [-h|--help] [--window-id <window-id>] (smart|smart-opposite|width|height) [+|-]<number>
 ```
 
 ## Description

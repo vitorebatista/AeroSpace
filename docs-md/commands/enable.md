@@ -4,16 +4,16 @@ description: Temporarily disable window management
 section: 1
 ---
 
-# aerospace enable
+# aerospace-edge enable
 
 Temporarily disable window management
 
 ## Synopsis
 
 ```synopsis
-aerospace enable [-h|--help] toggle
-aerospace enable [-h|--help] on [--fail-if-noop]
-aerospace enable [-h|--help] off [--fail-if-noop]
+aerospace-edge enable [-h|--help] toggle
+aerospace-edge enable [-h|--help] on [--fail-if-noop]
+aerospace-edge enable [-h|--help] off [--fail-if-noop]
 ```
 
 ## Description

@@ -4,16 +4,16 @@ description: Manipulate volume
 section: 1
 ---
 
-# aerospace volume
+# aerospace-edge volume
 
 Manipulate volume
 
 ## Synopsis
 
 ```synopsis
-aerospace volume [-h|--help] (up|down) [--no-gui]
-aerospace volume [-h|--help] (mute-toggle|mute-off|mute-on) [--no-gui]
-aerospace volume [-h|--help] set <number> [--no-gui]
+aerospace-edge volume [-h|--help] (up|down) [--no-gui]
+aerospace-edge volume [-h|--help] (mute-toggle|mute-off|mute-on) [--no-gui]
+aerospace-edge volume [-h|--help] set <number> [--no-gui]
 ```
 
 ## Description

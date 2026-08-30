@@ -4,14 +4,14 @@ description: Change layout of the focused window or workspace root to the given 
 section: 1
 ---
 
-# aerospace layout
+# aerospace-edge layout
 
 Change layout of the focused window or workspace root to the given layout
 
 ## Synopsis
 
 ```synopsis
-aerospace layout [-h|--help] [--window-id <window-id>|--root]
+aerospace-edge layout [-h|--help] [--window-id <window-id>|--root]
                  (h_tiles|v_tiles|h_accordion|v_accordion|tiles|accordion|horizontal|vertical|tiling|floating|sticky)...
 ```
 
@@ -52,19 +52,19 @@ If several arguments are supplied then finds the first argument that doesn’t d
 ## Examples
 
 - Toggle between `floating` and `tiling` layouts (order of args doesn’t matter):  
-  `aerospace layout floating tiling`
+  `aerospace-edge layout floating tiling`
 
 - Toggle orientation (order of args doesn’t matter):  
-  `aerospace layout horizontal vertical`
+  `aerospace-edge layout horizontal vertical`
 
 - Toggle between `tiles` and `accordion` layouts (order of args doesn’t matter):  
-  `aerospace layout tiles accordion`
+  `aerospace-edge layout tiles accordion`
 
 - Switch to `tiles` layout. Toggle the layout orientation if already in `tiles` layout:  
-  `aerospace layout tiles horizontal vertical`
+  `aerospace-edge layout tiles horizontal vertical`
 
 - Toggle the workspace’s root layout between `tiles` and `accordion` without disturbing nested sub-containers:  
-  `aerospace layout --root tiles accordion`
+  `aerospace-edge layout --root tiles accordion`
 
 - Toggle "sticky" mode of the focused floating window (show it on all workspaces of its monitor):  
-  `aerospace layout sticky`
+  `aerospace-edge layout sticky`

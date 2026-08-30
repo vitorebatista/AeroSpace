@@ -112,7 +112,7 @@ Do you like the project? Does AeroSpace finally fix your problems with windows m
 
 ## Share your workflow and tips
 
-Submit your tips to [the Goodies page](https://nikitabobko.github.io/AeroSpace/goodies). The source code of the page can be found in `./docs` directory
+Submit your tips to [the Goodies page](https://vitorebatista.github.io/AeroSpace-edge/goodies/). The source code of the page can be found in `./docs-md` directory
 
 ## Support the project financially
 

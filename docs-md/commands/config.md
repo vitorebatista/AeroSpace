@@ -4,17 +4,17 @@ description: Query AeroSpace config options
 section: 1
 ---
 
-# aerospace config
+# aerospace-edge config
 
 Query AeroSpace config options
 
 ## Synopsis
 
 ```synopsis
-aerospace config [-h|--help] --get <name> [--json] [--keys]
-aerospace config [-h|--help] --major-keys
-aerospace config [-h|--help] --all-keys
-aerospace config [-h|--help] --config-path
+aerospace-edge config [-h|--help] --get <name> [--json] [--keys]
+aerospace-edge config [-h|--help] --major-keys
+aerospace-edge config [-h|--help] --all-keys
+aerospace-edge config [-h|--help] --config-path
 ```
 
 ## Description
@@ -59,20 +59,20 @@ Printing without `--json` or `--keys` flag is supported only for scalar types (s
 
 - List all binding modes:
 
-      $ aerospace config --get mode --keys
+      $ aerospace-edge config --get mode --keys
       main
       service
 
 - List all key bindings for 'main' binding mode:
 
-      $ aerospace config --get mode.main.binding --keys
+      $ aerospace-edge config --get mode.main.binding --keys
       alt-1
       alt-2
       ...
 
 - List all key bindings for 'main' binding mode in JSON format:
 
-      $ aerospace config --get mode.main.binding --json
+      $ aerospace-edge config --get mode.main.binding --json
       {
         "alt-w" : "workspace W",
         "alt-y" : "workspace Y",

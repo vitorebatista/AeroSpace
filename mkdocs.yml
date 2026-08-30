@@ -61,7 +61,7 @@ nav:
   - Guide: guide.md
   - Goodies: goodies.md
   - Commands:
-      - aerospace.md
+      - aerospace-edge.md
       - commands/balance-sizes.md
       - commands/close-all-windows-but-current.md
       - commands/close.md

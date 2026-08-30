@@ -4,17 +4,17 @@ description: Move the focused window to the specified workspace
 section: 1
 ---
 
-# aerospace move-node-to-workspace
+# aerospace-edge move-node-to-workspace
 
 Move the focused window to the specified workspace
 
 ## Synopsis
 
 ```synopsis
-aerospace move-node-to-workspace [-h|--help] [--focus-follows-window] [--wrap-around]
+aerospace-edge move-node-to-workspace [-h|--help] [--focus-follows-window] [--wrap-around]
                                  [--stdin|--no-stdin]
                                  (next|prev)
-aerospace move-node-to-workspace [-h|--help] [--focus-follows-window] [--fail-if-noop]
+aerospace-edge move-node-to-workspace [-h|--help] [--focus-follows-window] [--fail-if-noop]
                                  [--window-id <window-id>] <workspace-name>
 ```
 
