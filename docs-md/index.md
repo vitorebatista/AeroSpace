@@ -86,12 +86,22 @@ One TOML file, comments and all. No GUI, no hidden state — diff it, version it
 </div>
 
 <div markdown>
+### Shortcuts, Spotlight and Focus
+Commands are exposed as native App Intents. Drive workspaces from Shortcuts, run a command from
+Spotlight, or attach a workspace to a macOS Focus mode.
+[App Intents →](guide.md#shortcuts-spotlight-and-focus-filters)
+</div>
+
+<div markdown>
 ### Installs next to anything
 Own bundle id, app name, socket, CLI and Accessibility grant. It never overwrites an existing
 AeroSpace, and it reads your existing `~/.aerospace.toml` so a side-by-side comparison is fair.
 </div>
 
 </div>
+
+Wondering how this stacks up against yabai, Amethyst or the tiling built into macOS?
+[Read the comparison →](comparison.md)
 
 ## What's already fixed here
 
