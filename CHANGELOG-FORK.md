@@ -25,7 +25,7 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
-## Unreleased
+## v1.15 (2026-08-30)
 
 **Settings is now the single application and configuration surface.** The menu-bar menu
 has direct Enable/Disable, **Settings…**, and Quit actions instead of a nested Settings
@@ -75,6 +75,16 @@ wasn't reaching for. No upstream equivalent for any of them.
 
 **Docs.** New [comparison page](./docs-md/comparison.md) and README matrix covering AeroSpace-edge
 against upstream AeroSpace, yabai, Amethyst, Rectangle and the tiling built into macOS.
+
+**The fork now calls itself `aerospace-edge` consistently.** The binary and app were already
+named that, but the docs, the completion grammar and a few runtime strings still said
+`aerospace` / `AeroSpace.app`. Command pages, examples and doc-site links now spell the CLI
+`aerospace-edge`; `grammar/commands-bnf-grammar.txt` declared the wrong command name, so the
+generated bash/fish/zsh completions were registered for `aerospace` rather than
+`aerospace-edge`. Runtime strings updated too: the crash-report URL/title/filename, the
+`enable on` and `enable-normalization` hints, the version-mismatch hint and the env-vars
+message. The `~/.aerospace.toml` fallback tier is deliberately unchanged, so an existing
+upstream config keeps working.
 
 **Two crash fixes and window-placement memory.** Fork-original; no upstream equivalent.
 

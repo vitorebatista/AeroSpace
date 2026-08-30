@@ -30,7 +30,18 @@ Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for A
   skipped: `c548c7f8` (`Monitor` → `MonitorInfo` rename, part of the "track upstream main" milestone)
   and `ae2aa7aa` (upstream-only PR-labelling CI) — and 17 new open PRs, of which it ported #2244,
   #2232, #2211, #2228 and #2225 as fork PRs #55–#59.
-- **Released:** `v1.13` (cut 2026-08-28) — fork-original: menu-bar menu reorganised (in-use workspaces
+- **Released:** `v1.15` (cut 2026-08-30) — fork-original, no backports. Merges fork PRs #62
+  (Settings becomes the single application/configuration surface: direct menu items, Application
+  destination, transactional config-version 1→2 migration with a byte-identical backup, and a
+  Settings docs section with a page per destination), #65 (native macOS integration: App Intents
+  for Shortcuts/Spotlight/Focus filters, layout reacts to display changes, per-app AX messaging
+  timeout, `activate(from:)` focus on macOS 14+), #64 (segfault during display reconfiguration,
+  Settings-window `SIGTRAP` on NSString-backed config text, window placement remembered across
+  restarts) and #63 (`aerospace` → `aerospace-edge` across docs, completion grammar and runtime
+  strings — the completions were registered for the wrong command name).
+  Previous: `v1.14` (cut 2026-08-29) — fork-original: the Settings window (source-preserving GUI
+  editor for the active config; validate-before-write, only edited regions rewritten). No backports.
+  Previous: `v1.13` (cut 2026-08-28) — fork-original: menu-bar menu reorganised (in-use workspaces
   only + "New" submenu, "Settings" submenu, Sponsor removed, version copy moved under Check for Updates).
   No backports.
   Previous: `v1.12` (cut 2026-08-27) — fork-original feature: "Check for Updates…" in the menu bar
