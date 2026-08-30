@@ -4,14 +4,14 @@ description: Print the list of running applications that appears in the Dock and
 section: 1
 ---
 
-# aerospace list-apps
+# aerospace-edge list-apps
 
 Print the list of running applications that appears in the Dock and may have a user interface
 
 ## Synopsis
 
 ```synopsis
-aerospace list-apps [-h|--help] [--macos-native-hidden [no]] [--format <output-format>] [--count] [--json]
+aerospace-edge list-apps [-h|--help] [--macos-native-hidden [no]] [--format <output-format>] [--count] [--json]
 ```
 
 ## Description

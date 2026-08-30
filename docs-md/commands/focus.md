@@ -4,21 +4,21 @@ description: Set focus to a window.
 section: 1
 ---
 
-# aerospace focus
+# aerospace-edge focus
 
 Set focus to a window.
 
 ## Synopsis
 
 ```synopsis
-aerospace focus [-h|--help] [--ignore-floating] [--wrap-around]
+aerospace-edge focus [-h|--help] [--ignore-floating] [--wrap-around]
                 [--boundaries <boundary>] [--boundaries-action <action>]
                 (left|down|up|right)
-aerospace focus [-h|--help] [--ignore-floating] [--wrap-around]
+aerospace-edge focus [-h|--help] [--ignore-floating] [--wrap-around]
                 [--boundaries <boundary>] [--boundaries-action <action>]
                 (dfs-next|dfs-prev)
-aerospace focus [-h|--help] --window-id <window-id>
-aerospace focus [-h|--help] --dfs-index <dfs-index>
+aerospace-edge focus [-h|--help] --window-id <window-id>
+aerospace-edge focus [-h|--help] --dfs-index <dfs-index>
 ```
 
 ## Description

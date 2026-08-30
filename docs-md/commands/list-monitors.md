@@ -4,14 +4,14 @@ description: Print monitors that satisfy conditions
 section: 1
 ---
 
-# aerospace list-monitors
+# aerospace-edge list-monitors
 
 Print monitors that satisfy conditions
 
 ## Synopsis
 
 ```synopsis
-aerospace list-monitors [-h|--help] [--focused [no]] [--mouse [no]] [--format <output-format>] [--count] [--json]
+aerospace-edge list-monitors [-h|--help] [--focused [no]] [--mouse [no]] [--format <output-format>] [--count] [--json]
 ```
 
 ## Description

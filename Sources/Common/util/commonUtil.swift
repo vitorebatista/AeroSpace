@@ -24,7 +24,7 @@ public func dieT<T>(
     let message =
         """
         Please report to:
-            https://github.com/nikitabobko/AeroSpace/discussions/categories/potential-bugs
+            https://github.com/vitorebatista/AeroSpace-edge/discussions/categories/potential-bugs
             Please describe what you did to trigger this error
 
         Message: \(_message)
@@ -48,9 +48,9 @@ public func dieT<T>(
     if !isUnitTest && isServer {
         showMessageInGui(
             filenameIfConsoleApp: recursionDetectorDuringTermination
-                ? "aerospace-runtime-error-recursion.txt"
-                : "aerospace-runtime-error.txt",
-            title: "AeroSpace Runtime Error",
+                ? "aerospace-edge-runtime-error-recursion.txt"
+                : "aerospace-edge-runtime-error.txt",
+            title: "\(aeroSpaceAppName) Runtime Error",
             message: message,
         )
     }

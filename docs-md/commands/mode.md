@@ -4,14 +4,14 @@ description: Activate the specified binding mode
 section: 1
 ---
 
-# aerospace mode
+# aerospace-edge mode
 
 Activate the specified binding mode
 
 ## Synopsis
 
 ```synopsis
-aerospace mode [-h|--help] <binding-mode>
+aerospace-edge mode [-h|--help] <binding-mode>
 ```
 
 ## Description

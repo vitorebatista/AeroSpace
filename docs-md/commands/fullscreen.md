@@ -4,16 +4,16 @@ description: Toggle the fullscreen mode for the focused window
 section: 1
 ---
 
-# aerospace fullscreen
+# aerospace-edge fullscreen
 
 Toggle the fullscreen mode for the focused window
 
 ## Synopsis
 
 ```synopsis
-aerospace fullscreen [-h|--help]     [--window-id <window-id>] [--no-outer-gaps]
-aerospace fullscreen [-h|--help] on  [--window-id <window-id>] [--no-outer-gaps] [--fail-if-noop]
-aerospace fullscreen [-h|--help] off [--window-id <window-id>] [--fail-if-noop]
+aerospace-edge fullscreen [-h|--help]     [--window-id <window-id>] [--no-outer-gaps]
+aerospace-edge fullscreen [-h|--help] on  [--window-id <window-id>] [--no-outer-gaps] [--fail-if-noop]
+aerospace-edge fullscreen [-h|--help] off [--window-id <window-id>] [--fail-if-noop]
 ```
 
 ## Description

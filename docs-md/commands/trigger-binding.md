@@ -4,20 +4,20 @@ description: Trigger AeroSpace binding as if it was pressed by user
 section: 1
 ---
 
-# aerospace trigger-binding
+# aerospace-edge trigger-binding
 
 Trigger AeroSpace binding as if it was pressed by user
 
 ## Synopsis
 
 ```synopsis
-aerospace trigger-binding [-h|--help] <binding> --mode <mode-id>
+aerospace-edge trigger-binding [-h|--help] <binding> --mode <mode-id>
 ```
 
 ## Description
 
 You can use aerospace-config command to inspect available bindings:  
-`aerospace config --get mode.main.binding --keys`
+`aerospace-edge config --get mode.main.binding --keys`
 
 ## Options
 
@@ -38,7 +38,7 @@ You can use aerospace-config command to inspect available bindings:
 ## Examples
 
 - Run alphabetically first binding from config (useless and synthetic example):  
-  `aerospace trigger-binding --mode main "$(aerospace config --get mode.main.binding --keys | head -1)"`
+  `aerospace-edge trigger-binding --mode main "$(aerospace-edge config --get mode.main.binding --keys | head -1)"`
 
 - Trigger `alt-tab` binding:  
-  `aerospace trigger-binding --mode main alt-tab`
+  `aerospace-edge trigger-binding --mode main alt-tab`

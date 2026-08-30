@@ -4,14 +4,14 @@ description: Switch between the focused workspace and previously focused workspa
 section: 1
 ---
 
-# aerospace workspace-back-and-forth
+# aerospace-edge workspace-back-and-forth
 
 Switch between the focused workspace and previously focused workspace back and forth
 
 ## Synopsis
 
 ```synopsis
-aerospace workspace-back-and-forth [-h|--help]
+aerospace-edge workspace-back-and-forth [-h|--help]
 ```
 
 ## Description

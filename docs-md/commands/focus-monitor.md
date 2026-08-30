@@ -4,16 +4,16 @@ description: Focus monitor by relative direction, by order, or by pattern
 section: 1
 ---
 
-# aerospace focus-monitor
+# aerospace-edge focus-monitor
 
 Focus monitor by relative direction, by order, or by pattern
 
 ## Synopsis
 
 ```synopsis
-aerospace focus-monitor [-h|--help] [--wrap-around] (left|down|up|right)
-aerospace focus-monitor [-h|--help] [--wrap-around] (next|prev)
-aerospace focus-monitor [-h|--help] <monitor-pattern>...
+aerospace-edge focus-monitor [-h|--help] [--wrap-around] (left|down|up|right)
+aerospace-edge focus-monitor [-h|--help] [--wrap-around] (next|prev)
+aerospace-edge focus-monitor [-h|--help] <monitor-pattern>...
 ```
 
 ## Description

@@ -4,14 +4,14 @@ description: Move the focused window in the given direction
 section: 1
 ---
 
-# aerospace move
+# aerospace-edge move
 
 Move the focused window in the given direction
 
 ## Synopsis
 
 ```synopsis
-aerospace move [-h|--help] [--window-id <window-id>] [--boundaries <boundary>] [--boundaries-action <boundary-action>] (left|down|up|right)
+aerospace-edge move [-h|--help] [--window-id <window-id>] [--boundaries <boundary>] [--boundaries-action <boundary-action>] (left|down|up|right)
 ```
 
 ## Description

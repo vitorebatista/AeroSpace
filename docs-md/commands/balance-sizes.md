@@ -4,14 +4,14 @@ description: Balance sizes of all windows in the current workspace
 section: 1
 ---
 
-# aerospace balance-sizes
+# aerospace-edge balance-sizes
 
 Balance sizes of all windows in the current workspace
 
 ## Synopsis
 
 ```synopsis
-aerospace balance-sizes [-h|--help] [--workspace <workspace>]
+aerospace-edge balance-sizes [-h|--help] [--workspace <workspace>]
 ```
 
 ## Description
