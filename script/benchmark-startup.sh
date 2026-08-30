@@ -2,12 +2,13 @@
 set -euo pipefail
 
 usage() {
-    echo "Usage: benchmark-startup.sh --executable PATH --output-dir PATH [--runs N]"
+    echo "Usage: benchmark-startup.sh --executable PATH --output-dir PATH [--runs N] [--revision LABEL]"
 }
 
 executable=""
 output_dir=""
 runs=7
+revision=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -24,6 +25,11 @@ while [[ $# -gt 0 ]]; do
         --runs)
             if (( $# < 2 )); then usage >&2; exit 2; fi
             runs="$2"
+            shift 2
+            ;;
+        --revision)
+            if (( $# < 2 )); then usage >&2; exit 2; fi
+            revision="$2"
             shift 2
             ;;
         --help|-h)
@@ -49,7 +55,9 @@ fi
 
 mkdir -p "$output_dir"
 project_root="$(cd "$(dirname "$0")/.." && pwd -P)"
-revision="$(git -C "$project_root" rev-parse --short HEAD)"
+if [[ -z "$revision" ]]; then
+    revision="$(git -C "$project_root" rev-parse --short HEAD)"
+fi
 results="$output_dir/results.csv"
 printf 'revision,run,traced_launch_seconds,direct_real_seconds,direct_user_seconds,direct_system_seconds,direct_max_rss_bytes,trace_file\n' > "$results"
 

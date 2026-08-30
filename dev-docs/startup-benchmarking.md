@@ -26,6 +26,7 @@ connected displays, normal running applications, and sample count are used.
 ./script/benchmark-startup.sh \
   --executable ./.debug/AeroSpaceApp \
   --output-dir .benchmarks/<revision> \
+  --revision <revision> \
   --runs 7
 ```
 
