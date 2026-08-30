@@ -25,6 +25,25 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
+## Unreleased
+
+**Settings is now the single application and configuration surface.** The menu-bar menu
+has direct Enable/Disable, **Settings…**, and Quit actions instead of a nested Settings
+submenu. A new Application destination contains config-file actions, menu-bar appearance,
+update checking, and version information; these actions do not dirty the config draft.
+
+- Changing a loaded effective-version-1 config to version 2 is now an explicit,
+  transactional migration. AeroSpace-edge materializes the persistent workspace order
+  that v1 derived from binding source order and monitor assignments, validates the complete
+  candidate, and asks for confirmation before writing.
+- A successful migration first creates a byte-identical
+  `<filename>.backup-v1-YYYYMMDD-HHmmss` beside the resolved target. Backup collisions never
+  overwrite an existing file, symlinks remain intact, permissions are preserved, failures
+  leave or restore the original bytes, and Settings displays/reveals the exact backup path.
+- The new dedicated Settings guide documents all twelve destinations, structured option
+  types and parser fallbacks, source-preservation boundaries, raw fragment validation,
+  first-save/ambiguous/symlink/external-edit behavior, and migration recovery.
+
 ## v1.14 (2026-08-28)
 
 **Settings window.** AeroSpace-edge can now edit its own config from a GUI, reachable from
