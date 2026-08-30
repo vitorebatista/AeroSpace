@@ -4,7 +4,6 @@ struct ConfigMigrationCandidate: Equatable {
     let text: String
     let fromVersion: Int
     let toVersion: Int
-    let semanticChanges: [String]
     let persistentWorkspaces: [String]
 }
 
@@ -98,7 +97,6 @@ enum ConfigMigrator {
                 text: candidateText,
                 fromVersion: from,
                 toVersion: to,
-                semanticChanges: [],
                 persistentWorkspaces: Array(persistentWorkspaces),
             ),
         )
