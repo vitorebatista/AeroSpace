@@ -7,6 +7,7 @@ import XCTest
 final class SettingsModelTest: XCTestCase {
     private enum ExpectedFailure: Error {
         case backup
+        case permissions
         case write
         case reload
     }
@@ -149,7 +150,7 @@ final class SettingsModelTest: XCTestCase {
         XCTAssertEqual(try directoryEntries(in: directory), originalDirectoryEntries)
     }
 
-    func testBackupFailureDoesNotWriteAndLeavesDirectoryUnchanged() async throws {
+    func testBackupCreatorFailureBeforeWritingLeavesTargetAndDirectoryUnchanged() async throws {
         let directory = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let target = directory.appending(path: "config.toml")
@@ -159,7 +160,7 @@ final class SettingsModelTest: XCTestCase {
         let model = makeModel(
             target: target,
             backupCreator: { _, _ in throw ExpectedFailure.backup },
-            atomicWriter: { data, url in try data.write(to: url, options: .atomic) },
+            atomicWriter: { data, url, _ in try data.write(to: url, options: .atomic) },
         )
         model.load()
         model.draft.configVersion = 2
@@ -179,7 +180,7 @@ final class SettingsModelTest: XCTestCase {
         try original.write(to: target)
         let model = makeModel(
             target: target,
-            atomicWriter: { _, url in
+            atomicWriter: { _, url, _ in
                 try Data("corrupted".utf8).write(to: url, options: .atomic)
                 throw ExpectedFailure.write
             },
@@ -244,13 +245,17 @@ final class SettingsModelTest: XCTestCase {
         XCTAssertEqual(backupUrl.resolvingSymlinksInPath(), backups.first?.resolvingSymlinksInPath())
     }
 
-    func testReloadFailureKeepsMigratedFileAndReportsBackupPath() async throws {
+    func testReloadFailureSynchronizesMigratedBaselineBeforeRetry() async throws {
         let directory = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let target = directory.appending(path: "config.toml")
         let original = Data(v1Config.utf8)
         try original.write(to: target)
-        let model = makeModel(target: target, reloadAfterSave: { throw ExpectedFailure.reload })
+        var reloadAttempts = 0
+        let model = makeModel(target: target, reloadAfterSave: {
+            reloadAttempts += 1
+            if reloadAttempts == 1 { throw ExpectedFailure.reload }
+        })
         model.load()
         model.draft.configVersion = 2
 
@@ -261,6 +266,58 @@ final class SettingsModelTest: XCTestCase {
         XCTAssertTrue(message.contains(backup.resolvingSymlinksInPath().path))
         XCTAssertNotEqual(try Data(contentsOf: target), original)
         XCTAssertEqual(try Data(contentsOf: backup), original)
+        XCTAssertFalse(model.requiresVersionMigration)
+
+        await model.save()
+
+        XCTAssertEqual(model.status, .saved)
+        XCTAssertEqual(reloadAttempts, 2)
+        XCTAssertEqual(try backupUrls(in: directory), [backup])
+    }
+
+    func testCandidatePermissionFailureLeavesOriginalBytesAndModeUntouched() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let target = directory.appending(path: "config.toml")
+        let original = Data(v1Config.utf8)
+        try original.write(to: target)
+        try FileManager.default.setAttributes([.posixPermissions: 0o640], ofItemAtPath: target.path)
+
+        XCTAssertThrowsError(
+            try SettingsModel.writeCandidateAtomically(
+                Data("candidate".utf8),
+                to: target,
+                permissions: 0o640,
+                applyPermissions: { _, _ in throw ExpectedFailure.permissions },
+            ),
+        )
+
+        XCTAssertEqual(try Data(contentsOf: target), original)
+        XCTAssertEqual(try permissions(of: target), 0o640)
+    }
+
+    func testCandidateWriteFailureLeavesOriginalBytesAndModeUntouched() throws {
+        let directory = try makeTemporaryDirectory()
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path)
+            try? FileManager.default.removeItem(at: directory)
+        }
+        let target = directory.appending(path: "config.toml")
+        let original = Data(v1Config.utf8)
+        try original.write(to: target)
+        try FileManager.default.setAttributes([.posixPermissions: 0o640], ofItemAtPath: target.path)
+        try FileManager.default.setAttributes([.posixPermissions: 0o500], ofItemAtPath: directory.path)
+
+        XCTAssertThrowsError(
+            try SettingsModel.writeCandidateAtomically(
+                Data("candidate".utf8),
+                to: target,
+                permissions: 0o640,
+            ),
+        )
+
+        XCTAssertEqual(try Data(contentsOf: target), original)
+        XCTAssertEqual(try permissions(of: target), 0o640)
     }
 
     private var v1Config: String {
@@ -280,9 +337,7 @@ final class SettingsModelTest: XCTestCase {
         backupCreator: @escaping (URL, Int) throws -> ConfigMigrationBackup = {
             try ConfigMigrationBackup.create(forResolvedTarget: $0, fromVersion: $1)
         },
-        atomicWriter: @escaping (Data, URL) throws -> Void = {
-            try $0.write(to: $1, options: .atomic)
-        },
+        atomicWriter: ((Data, URL, Int?) throws -> Void)? = nil,
         reloadAfterSave: @escaping () async throws -> Void = {},
     ) -> SettingsModel {
         SettingsModel(

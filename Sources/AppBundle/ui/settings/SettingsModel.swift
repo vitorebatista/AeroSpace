@@ -19,6 +19,13 @@ enum SettingsStatus: Equatable {
     case saved
 }
 
+private struct SettingsCandidateWriteError: LocalizedError {
+    let underlying: any Error
+    let targetMayHaveChanged: Bool
+
+    var errorDescription: String? { underlying.localizedDescription }
+}
+
 @MainActor
 public final class SettingsModel: ObservableObject {
     // `public` because `AeroSpaceApp` (a separate SPM target) holds `.shared` as a
@@ -56,7 +63,7 @@ public final class SettingsModel: ObservableObject {
     private let bundledDefaultConfigUrl: URL
     private let fileManager: FileManager
     private let backupCreator: (URL, Int) throws -> ConfigMigrationBackup
-    private let atomicWriter: (Data, URL) throws -> Void
+    private let atomicWriter: (Data, URL, Int?) throws -> Void
     private let reloadAfterSave: () async throws -> Void
 
     init(
@@ -66,9 +73,7 @@ public final class SettingsModel: ObservableObject {
         backupCreator: @escaping (URL, Int) throws -> ConfigMigrationBackup = {
             try ConfigMigrationBackup.create(forResolvedTarget: $0, fromVersion: $1)
         },
-        atomicWriter: @escaping (Data, URL) throws -> Void = {
-            try $0.write(to: $1, options: .atomic)
-        },
+        atomicWriter: ((Data, URL, Int?) throws -> Void)? = nil,
         reloadAfterSave: @escaping () async throws -> Void = {
             try await SettingsModel.reloadCurrentConfig()
         },
@@ -77,7 +82,9 @@ public final class SettingsModel: ObservableObject {
         self.bundledDefaultConfigUrl = bundledDefaultConfigUrl
         self.fileManager = fileManager
         self.backupCreator = backupCreator
-        self.atomicWriter = atomicWriter
+        self.atomicWriter = atomicWriter ?? {
+            try Self.writeCandidateAtomically($0, to: $1, permissions: $2, fileManager: fileManager)
+        }
         self.reloadAfterSave = reloadAfterSave
     }
 
@@ -235,19 +242,6 @@ public final class SettingsModel: ObservableObject {
                 break
         }
 
-        let targetExisted = fileManager.fileExists(atPath: writeUrl.path)
-        let originalData: Data?
-        let originalPermissions: NSNumber?
-        do {
-            originalData = targetExisted ? try Data(contentsOf: writeUrl) : nil
-            originalPermissions = targetExisted
-                ? try fileManager.attributesOfItem(atPath: writeUrl.path)[.posixPermissions] as? NSNumber
-                : nil
-        } catch {
-            status = .error("Can't read \(targetUrl.path) before saving: \(error.localizedDescription)")
-            return
-        }
-
         let backup: ConfigMigrationBackup?
         if let migration {
             do {
@@ -260,12 +254,32 @@ public final class SettingsModel: ObservableObject {
             backup = nil
         }
 
+        let targetExisted = fileManager.fileExists(atPath: writeUrl.path)
+        let originalData: Data?
+        let originalPermissions: Int?
         do {
-            try atomicWriter(Data(candidate.utf8), writeUrl)
-            if let originalPermissions {
-                try fileManager.setAttributes([.posixPermissions: originalPermissions], ofItemAtPath: writeUrl.path)
+            if let backup {
+                originalData = nil
+                originalPermissions = try Self.permissions(of: backup.url, fileManager: fileManager)
+            } else if targetExisted {
+                originalData = try Data(contentsOf: writeUrl)
+                originalPermissions = try Self.permissions(of: writeUrl, fileManager: fileManager)
+            } else {
+                originalData = nil
+                originalPermissions = nil
             }
         } catch {
+            status = .error("Can't read \(targetUrl.path) before saving: \(error.localizedDescription)")
+            return
+        }
+
+        do {
+            try atomicWriter(Data(candidate.utf8), writeUrl, originalPermissions)
+        } catch {
+            if let writeError = error as? SettingsCandidateWriteError, !writeError.targetMayHaveChanged {
+                status = .error("Can't write \(targetUrl.path): \(writeError.localizedDescription)")
+                return
+            }
             do {
                 try restoreOriginalTarget(
                     at: writeUrl,
@@ -288,6 +302,7 @@ public final class SettingsModel: ObservableObject {
             try await reloadAfterSave()
         } catch {
             let backupMessage = backup.map { " Backup: \($0.url.path)." } ?? ""
+            load() // The disk write succeeded; retries must use its v2 document as baseline.
             status = .error("Saved, but reloading the config failed:\(backupMessage) \(error.localizedDescription)")
             return
         }
@@ -300,7 +315,7 @@ public final class SettingsModel: ObservableObject {
         at writeUrl: URL,
         targetExisted: Bool,
         originalData: Data?,
-        originalPermissions: NSNumber?,
+        originalPermissions: Int?,
         backup: ConfigMigrationBackup?,
     ) throws {
         guard targetExisted else {
@@ -311,10 +326,57 @@ public final class SettingsModel: ObservableObject {
         }
 
         let data = try backup.map { try Data(contentsOf: $0.url) } ?? originalData.orDie()
-        try data.write(to: writeUrl, options: .atomic)
-        if let originalPermissions {
-            try fileManager.setAttributes([.posixPermissions: originalPermissions], ofItemAtPath: writeUrl.path)
+        try Self.writeCandidateAtomically(
+            data,
+            to: writeUrl,
+            permissions: originalPermissions,
+            fileManager: fileManager,
+        )
+    }
+
+    static func writeCandidateAtomically(
+        _ data: Data,
+        to target: URL,
+        permissions: Int?,
+        fileManager: FileManager = .default,
+        applyPermissions: ((Int, URL) throws -> Void)? = nil,
+    ) throws {
+        let stagingUrl = target.deletingLastPathComponent()
+            .appending(path: ".\(target.lastPathComponent).aerospace-settings-\(UUID().uuidString).tmp")
+        defer { try? fileManager.removeItem(at: stagingUrl) }
+
+        do {
+            try data.write(to: stagingUrl, options: .withoutOverwriting)
+            if let permissions {
+                if let applyPermissions {
+                    try applyPermissions(permissions, stagingUrl)
+                } else {
+                    try fileManager.setAttributes([.posixPermissions: permissions], ofItemAtPath: stagingUrl.path)
+                }
+            }
+        } catch {
+            throw SettingsCandidateWriteError(underlying: error, targetMayHaveChanged: false)
         }
+
+        do {
+            if fileManager.fileExists(atPath: target.path) {
+                _ = try fileManager.replaceItemAt(
+                    target,
+                    withItemAt: stagingUrl,
+                    backupItemName: nil,
+                    options: .usingNewMetadataOnly,
+                )
+            } else {
+                try fileManager.moveItem(at: stagingUrl, to: target)
+            }
+        } catch {
+            throw SettingsCandidateWriteError(underlying: error, targetMayHaveChanged: true)
+        }
+    }
+
+    private static func permissions(of url: URL, fileManager: FileManager) throws -> Int? {
+        let value = try fileManager.attributesOfItem(atPath: url.path)[.posixPermissions] as? NSNumber
+        return value?.intValue
     }
 
     private static func reloadCurrentConfig() async throws {
