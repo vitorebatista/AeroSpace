@@ -14,6 +14,14 @@ configuration, and local UNIX-socket paths for issues exposed by the change.
 It does not change the command protocol, configuration format, or unrelated
 window-management behavior.
 
+AeroSpace already uses Swift 6.3. The investigation will nevertheless assess
+Swift-specific improvements that can be demonstrated in the benchmark, notably
+unnecessary main-actor serialization, task creation, collection allocation, and
+copying in the launch path. A Swift toolchain upgrade or language-version
+migration is not assumed to improve runtime performance; it is in scope only
+when it retains macOS 13 compatibility, builds cleanly under the project's
+strict-concurrency and memory-safety settings, and shows a reproducible gain.
+
 ## Observed Launch Flow
 
 `initAppBundle()` loads configuration, starts the server and global observers,
@@ -56,6 +64,11 @@ experience.
 
 - Use Swift 6.3 strict concurrency and preserve main-actor ownership of app
   state.
+- Prefer a simpler Swift concurrency or collection implementation only when
+  profiling demonstrates less launch CPU, elapsed time, or peak RSS; do not
+  trade correctness for parallelism.
+- Do not change the pinned Swift toolchain unless compatibility and the same
+  before/after benchmark demonstrate a material benefit.
 - Do not hand-edit generated files or introduce runtime dependencies.
 - Do not make the startup socket accept commands before the first discovery
   phase has completed.
