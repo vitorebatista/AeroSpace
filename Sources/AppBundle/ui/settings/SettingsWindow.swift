@@ -30,6 +30,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
     case keybindings = "Keybindings"
     case windowRules = "Window Rules"
     case callbacks = "Callbacks"
+    case menuBar = "Menu Bar"
     case application = "Application"
 
     var id: String { rawValue }
@@ -47,6 +48,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
             case .keybindings: "command"
             case .windowRules: "macwindow.badge.plus"
             case .callbacks: "arrow.triangle.branch"
+            case .menuBar: "menubar.rectangle"
             case .application: "gearshape.2"
         }
     }
@@ -97,8 +99,7 @@ struct SettingsView: View {
             Label("This config doesn't parse, so only raw editing is available.", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.yellow)
             Text(parseError).font(.caption.monospaced()).textSelection(.enabled)
-            TextEditor(text: Binding(get: { model.wholeFileText }, set: { guard !model.isSaving else { return }; model.wholeFileText = $0; markDirty() }))
-                .font(.system(size: 12).monospaced())
+            TomlTextEditor(text: Binding(get: { model.wholeFileText }, set: { guard !model.isSaving else { return }; model.wholeFileText = $0; markDirty() }))
                 .disabled(model.isSaving)
         }
         .padding()
@@ -151,8 +152,10 @@ struct SettingsView: View {
                     text: draft.rawCallbacks,
                     onEdit: markDirty,
                 )
+            case .menuBar:
+                MenuBarSection(viewModel: viewModel)
             case .application:
-                ApplicationSection(viewModel: viewModel)
+                ApplicationSection()
         }
     }
 
@@ -189,6 +192,8 @@ struct SettingsView: View {
                 }
             }
             HStack {
+                Button("Check for Updates…") { Task { await runCheckForUpdatesFlow() } }
+                    .disabled(model.isSaving)
                 if model.willCreateConfig {
                     Text("Saving will create ~/\(configDotfileName)").font(.caption).foregroundStyle(.secondary)
                 } else if case .saved = model.status {

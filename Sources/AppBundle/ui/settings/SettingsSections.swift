@@ -79,10 +79,30 @@ struct GeneralSection: View {
     }
 }
 
+/// Menu-bar appearance. Its own destination rather than a group inside Application: it is
+/// the one thing here the user looks at all day, and it has nothing to do with the
+/// config-file and diagnostics plumbing Application collects.
 @MainActor
-struct ApplicationSection: View {
+struct MenuBarSection: View {
     @ObservedObject var viewModel: TrayMenuModel
 
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SettingsGroup(
+                "Menu bar appearance",
+                footer: "Experimental styles require macOS 14 or later and have no stability guarantees.",
+            ) {
+                let color = AppearanceTheme.current == .dark ? Color.white : Color.black
+                ForEach(MenuBarStyle.allCases) { style in
+                    MenuBarStyleButton(style: style, color: color).environmentObject(viewModel)
+                }
+            }
+        }
+    }
+}
+
+@MainActor
+struct ApplicationSection: View {
     private var shortIdentification: String {
         "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitShortHash)"
     }
@@ -98,16 +118,14 @@ struct ApplicationSection: View {
                 reloadConfigButton()
             }
             SettingsGroup(
-                "Menu bar appearance",
-                footer: "Experimental styles require macOS 14 or later and have no stability guarantees.",
+                "Diagnostics",
+                footer: "Crash reports macOS wrote for \(aeroSpaceAppName). Attach the newest one to a bug report — it names the code that crashed, which is what a fix starts from.",
             ) {
-                let color = AppearanceTheme.current == .dark ? Color.white : Color.black
-                ForEach(MenuBarStyle.allCases) { style in
-                    MenuBarStyleButton(style: style, color: color).environmentObject(viewModel)
-                }
+                Button("Show Crash Reports") { revealCrashReports() }
             }
-            SettingsGroup("Updates") {
-                Button("Check Now") { Task { await runCheckForUpdatesFlow() } }
+            // "Check for Updates…" lives in the window footer, not here: it applies to every
+            // category and was too easy to miss buried in this one.
+            SettingsGroup("Version") {
                 HStack {
                     Text(shortIdentification).foregroundStyle(.secondary)
                     Spacer()
@@ -115,6 +133,23 @@ struct ApplicationSection: View {
                 }
             }
         }
+    }
+}
+
+/// Selects this app's crash reports in Finder, so the user can drag one into a bug report.
+/// macOS writes them per-user as `<executable>-<timestamp>.ips`; nothing here is written by
+/// AeroSpace-edge itself. With no crash reports (the happy case) it just opens the folder
+/// rather than doing nothing visible.
+@MainActor
+func revealCrashReports() {
+    let directory = FileManager.default.homeDirectoryForCurrentUser
+        .appending(path: "Library/Logs/DiagnosticReports")
+    let reports = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil))?
+        .filter { $0.lastPathComponent.hasPrefix(aeroSpaceAppName) } ?? []
+    if reports.isEmpty {
+        NSWorkspace.shared.open(directory)
+    } else {
+        NSWorkspace.shared.activateFileViewerSelecting(reports)
     }
 }
 
