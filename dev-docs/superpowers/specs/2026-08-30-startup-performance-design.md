@@ -2,97 +2,106 @@
 
 ## Goal
 
-Reduce CPU work and elapsed time during a quit-and-relaunch of AeroSpace on a
-three-display macOS desktop, without changing window placement correctness or
-the behavior of `after-startup-command`.
+Reduce the work AeroSpace does during a quit-and-relaunch on a three-display
+macOS desktop, without changing window placement, the order in which windows are
+bound into the tree, or the behavior of `after-startup-command`.
 
 ## Scope
 
-The investigation is limited to the app's launch sequence and the work it
-causes immediately afterwards. It includes a focused review of the launch,
-configuration, and local UNIX-socket paths for issues exposed by the change.
-It does not change the command protocol, configuration format, or unrelated
-window-management behavior.
+The launch sequence and the work it causes immediately afterwards. Not in scope:
+the command protocol, the configuration format, the pinned Swift toolchain, or
+unrelated window-management behavior.
 
-AeroSpace already uses Swift 6.3. The investigation will nevertheless assess
-Swift-specific improvements that can be demonstrated in the benchmark, notably
-unnecessary main-actor serialization, task creation, collection allocation, and
-copying in the launch path. A Swift toolchain upgrade or language-version
-migration is not assumed to improve runtime performance; it is in scope only
-when it retains macOS 13 compatibility, builds cleanly under the project's
-strict-concurrency and memory-safety settings, and shows a reproducible gain.
+## Where the time goes
 
-## Observed Launch Flow
+Startup cost is Accessibility round-trips. Each one is a synchronous IPC call
+into another process, capped at `axMessagingTimeoutSeconds` (1.5 s), and the main
+actor `await`s them one at a time. CPU and resident memory are close to
+irrelevant next to how many of these calls happen and how many of them overlap.
 
-`initAppBundle()` loads configuration, starts the server and global observers,
-discovers windows through a non-cancellable heavy refresh, restores the saved
-layout, and then runs a light startup session. A light session always schedules
-a cancellable heavy refresh after its body completes. At startup this creates a
-second, immediate full Accessibility scan after the first one has already
-enumerated live windows. The second scan can contend with normal applications
-while macOS is still settling three displays.
+At startup every window is new, so the discovery path pays in full:
 
-## Chosen Design
+- `refresh()` registers windows one at a time. Each new window costs an
+  `getAxRect` and a `getAxUiElementWindowType`, plus a title read per matching
+  `on-window-detected` callback. Every app already owns a dedicated AX thread,
+  so those reads *could* overlap across apps; the serial `await` loop prevented
+  it.
+- `layoutWorkspaces()` parks the windows of every non-visible workspace in a
+  corner. `hideInCorner` first calls `saveFloatingPositionIfNeeded`, which reads
+  the window's rect over AX — for a tiling window, to compute a value that
+  `unhideFromCorner` then discards unread, because tiling windows are put back by
+  `layoutRecursive`.
+- `getWindowLevel(for:)` re-enumerates the entire window list on every cache
+  miss, and `CGWindowListCopyWindowInfo` is asked for on-screen windows only, so
+  minimized windows, hidden apps and windows on other Spaces miss permanently —
+  one full enumeration each, all of them returning nothing.
 
-1. Add stable launch signposts for the important startup stages:
-   configuration load, initial window discovery, persisted-layout restoration,
-   and startup finalization.
-2. Add a checked-in benchmark guide and script that runs repeated cold
-   relaunches, collects `xctrace` App Launch timing plus direct-process CPU
-   and maximum resident memory, and writes a timestamped, machine-readable result
-   outside the repository.
-3. Change the startup finalization path so it does not automatically request
-   the redundant full refresh. The finalization still performs its existing
-   layout and `after-startup-command`; subsequent AX and workspace
-   notifications continue to request refreshes normally.
-4. Extract the scheduling decision into a small, unit-tested helper so the
-   special startup behavior is explicit and cannot silently regress.
-5. Run the benchmark before and after the change on the requested three-display
-   environment and publish the raw commands, sample count, machine/display
-   configuration, median, and individual samples in the PR description.
+## Chosen design
 
-## Alternatives Rejected
+1. **Split the discovery path into a concurrent read phase and a serial mutate
+   phase.** `MacWindow.prefetchAxSnapshots` issues the two per-window AX reads
+   for every not-yet-registered window at once; the existing registration loop
+   then binds windows into the tree in exactly the same order as before, taking
+   its data from the prefetched snapshots. Tree mutation and `on-window-detected`
+   callbacks stay strictly serial and strictly ordered.
+2. **Skip the rect read when parking a tiling window**, storing only the sentinel
+   that marks it hidden — the same thing `preventNewWindowFlickerIfNeeded`
+   already does. Floating windows keep the read; they are the ones that use the
+   saved position.
+3. **Enumerate the window-level cache at most once per refresh session**,
+   invalidated at the top of both session entry points (deliberately not inside
+   `refreshModel()`, which runs *after* `getNativeFocusedWindow()` has already
+   registered the focused window).
+4. **Signpost only what isn't already signposted.** `startup.config` and
+   `startup.restorePersistedLayout`; the two refresh session functions emit their
+   own intervals keyed on `#function`.
 
-**Increase AX parallelism.** Per-app AX work is already dispatched through
-dedicated run loops. More concurrency would raise CPU contention and risks
-violating Accessibility API assumptions before measurements show it is needed.
+## Alternatives rejected
 
-**Defer saved-layout restoration.** This may reduce perceived startup time but
-would visibly move windows after the app appears, which is a worse relaunch
-experience.
+**Parallelize the registration loop itself.** Running `getOrRegister` for
+different apps concurrently would interleave tree mutation and, worse, interleave
+one window's `on-window-detected` command sequence with another window's binding.
+Placement would become nondeterministic. The read/mutate split above gets the
+same overlap without that exposure.
 
-## Correctness and Safety Constraints
+**Skip the follow-up refresh after the startup light session.** Tried and
+reverted. `runLightSession` cancels whatever refresh is pending when it starts,
+and during startup that is routinely a real one: `restorePersistedLayout()` awaits
+for a long time, and every app that finishes launching in that window schedules a
+refresh which the session then throws away. The trailing
+`scheduleCancellableCompleteRefreshSession` is what re-runs it; without it those
+windows stay unregistered until some later unrelated event. It also showed no
+measurable benefit.
 
-- Use Swift 6.3 strict concurrency and preserve main-actor ownership of app
-  state.
-- Prefer a simpler Swift concurrency or collection implementation only when
-  profiling demonstrates less launch CPU, elapsed time, or resident memory; do not
-  trade correctness for parallelism.
-- Do not change the pinned Swift toolchain unless compatibility and the same
-  before/after benchmark demonstrate a material benefit.
-- Do not hand-edit generated files or introduce runtime dependencies.
-- Do not make the startup socket accept commands before the first discovery
-  phase has completed.
-- The instrumentation must not log window titles, configuration contents,
-  socket payloads, or other user data.
-- Benchmark artifacts are untracked and contain only aggregate process metrics.
-- Preserve automatic refreshes caused by Accessibility, workspace, display, and
-  `after-startup-command` side effects; removing the unconditional startup
-  refresh must be the only behavior change.
+**Defer saved-layout restoration.** Would improve perceived startup by visibly
+moving windows after the app appears. Worse relaunch experience.
 
-## Testing and Verification
+## Correctness and safety constraints
 
-Unit tests will prove the scheduling decision for `.startup` and a non-startup
-event. The normal project debug build with warnings treated as errors and the
-full Swift test suite must pass. Manual benchmark comparison requires at least
-seven cold relaunch samples per revision, with the same user configuration,
-three connected displays, and the same active applications. If median launch
-time, direct-process CPU, or maximum resident memory regresses, the change will not be
-proposed as an optimization.
+- Swift 6.3 strict concurrency; app state stays main-actor owned.
+- Window placement and binding order must be byte-for-byte what they were. Any
+  concurrency added must be over reads only.
+- Never make the startup socket accept commands before the first discovery phase
+  completes.
+- Instrumentation must not log window titles, configuration contents, or socket
+  payloads.
+- Benchmark artifacts stay untracked.
+
+## Testing and verification
+
+The debug build with `-Xswiftc -warnings-as-errors`, the full Swift suite, and
+`lint.sh` must pass. None of these changes is unit-testable: all three are pure
+Accessibility-API runtime behavior, and the test harness uses `TestWindow`, not
+`MacWindow`. Per the repo checklist that is stated rather than papered over with
+a test that restates the implementation.
+
+Measurement is by Points of Interest signposts on the three-display machine —
+see `dev-docs/startup-benchmarking.md`. Readiness/CPU/RSS sampling cannot see
+this change: socket readiness happens before layout settles, and the CPU sample's
+run-to-run spread on an unchanged build is larger than any plausible effect.
 
 ## Deliverables
 
-- Small, individually committed implementation and test changes.
-- A benchmark tool and usage documentation.
-- A committed before/after benchmark report once the measurements are captured.
-- A draft GitHub PR from `codex/startup-performance-benchmark` into `main`.
+- Implementation changes, individually committed.
+- Benchmarking guidance describing the procedures that actually attribute time.
+- A committed baseline record in `dev-docs/benchmarks/`.

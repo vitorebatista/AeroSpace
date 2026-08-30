@@ -1,27 +1,13 @@
-# Startup Performance Benchmark — 2026-08-30
+# Startup Performance — 2026-08-30
 
-## Scope
+## What was measured
 
-This manual local comparison used the exact parent of the performance change
-(d69af2b2) and the optimized debug build. Both used the same MacBook Pro,
-macOS 26.5.1, Swift 6.3.3, AeroSpace configuration, and one native plus two
-external displays. Each sample launched the debug app, polled the local
-list-monitors command every 100 ms until it responded, sampled that PID's CPU
-and RSS, then stopped only that debug PID.
+A manual local comparison on one MacBook Pro, macOS 26.5.1, Swift 6.3.3, one
+native plus two external displays, same AeroSpace config throughout. Each sample
+launched the debug app, polled `list-monitors` every 100 ms until it responded,
+sampled that PID's CPU and RSS, and then stopped only that PID.
 
-Socket readiness happens before the removed follow-up refresh, so this
-measurement does not claim to quantify later layout-settle latency. It measures
-early availability and startup resource use.
-
-## Results
-
-| Metric | Baseline median | Optimized median | Change |
-| --- | ---: | ---: | ---: |
-| Ready poll | 3 (≤0.3s) | 3 (≤0.3s) | no measurable change |
-| CPU sample | 29.1% | 28.9% | -0.7% |
-| RSS sample | 84,496 KiB | 84,448 KiB | -0.1% |
-
-### Baseline samples
+### Baseline samples (unchanged build)
 
 | Run | Ready poll | CPU | RSS KiB |
 | --- | ---: | ---: | ---: |
@@ -33,30 +19,50 @@ early availability and startup resource use.
 | 6 | 3 | 28.9% | 84,400 |
 | 7 | 3 | 29.7% | 84,320 |
 
-### Optimized samples
+Median: ready poll 3 (≤0.3 s), CPU 29.1%, RSS 84,496 KiB.
 
-| Run | Ready poll | CPU | RSS KiB |
-| --- | ---: | ---: | ---: |
-| 1 | 3 | 31.6% | 84,448 |
-| 2 | 3 | 25.9% | 85,488 |
-| 3 | 3 | 28.9% | 84,528 |
-| 4 | 2 | 30.6% | 84,304 |
-| 5 | 3 | 27.3% | 84,368 |
-| 6 | 3 | 28.9% | 87,264 |
-| 7 | 3 | 26.8% | 84,432 |
+## What this metric can and cannot show
 
-## Additional diagnostic
+The CPU column spans 24.6%–42.2% across seven runs of the *same* build. Any
+change smaller than that spread is unreadable here. More importantly, socket
+readiness happens before window layout settles, so this measurement is blind to
+the refresh path — which is where all the cost being removed below lives.
 
-An Activity Monitor trace of the baseline recorded a 22.7% CPU interval and
-28.33 MiB physical footprint during startup. The trace is excluded from Git.
-Its fixed 15-second time limit terminates the target, so it is diagnostic only,
-not part of the comparison above.
+An earlier revision of this branch reported a -0.7% CPU / -0.1% RSS "improvement"
+against this baseline. That is noise, and the change it was measuring has since
+been reverted (see below). Nothing in this document should be read as a measured
+gain.
 
-## Conclusion
+## The changes on this branch, and what each removes
 
-The early-ready metrics are effectively unchanged, as expected. The code change
-removes the subsequent, redundant complete Accessibility refresh and therefore
-reduces work after readiness without adding concurrency or changing placement
-behavior. No Swift toolchain upgrade was attempted: the project is already on
-Swift 6.3.3 and the measured change did not justify a compatibility-risking
-migration.
+Counted in blocking Accessibility round-trips, which is the unit that actually
+governs startup cost. `W` = windows discovered at startup, `A` = apps owning
+them, `H` = tiled windows sitting on non-visible workspaces, `M` = windows
+absent from the on-screen window list (minimized, hidden apps, other Spaces).
+
+| Change | Before | After |
+| --- | --- | --- |
+| Concurrent AX prefetch in `refresh()` | `W` registrations serialized on the main actor, 2 AX reads each | same reads, overlapped across `A` apps' AX threads |
+| Skip the rect read when parking a tiling window | `H` blocking `getAxRect` calls whose result is discarded unread | 0 |
+| Bound the window-level cache | up to `1 + M` full `CGWindowListCopyWindowInfo` enumerations per session | 1 |
+
+The first is the significant one: at startup every window is new, so the whole of
+`W` pays. The second also applies on every workspace switch, not only at startup.
+The third bounds a case that degrades with minimized windows and hidden apps.
+
+### Reverted from the earlier revision
+
+Skipping the follow-up `scheduleCancellableCompleteRefreshSession` after the
+startup light session. `runLightSession` cancels whatever refresh is pending when
+it starts, and during startup that is routinely a real one — `restorePersistedLayout()`
+awaits for a long time and every app finishing its launch in that window schedules
+a refresh. The trailing schedule is what re-runs it. Dropping it left those windows
+unregistered until some later unrelated event. It also had no measurable benefit to
+weigh against that.
+
+## Still to do
+
+Re-measure on the three-display machine with the Points of Interest signposts
+(`dev-docs/startup-benchmarking.md` → "Phase attribution"), which is the only
+procedure that can see the refresh path at all. The readiness numbers above are
+kept as a baseline record, not as a comparison.
