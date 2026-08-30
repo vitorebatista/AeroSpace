@@ -3,6 +3,9 @@ import Common
 import Foundation
 
 @MainActor public func initAppBundle() {
+    // Synchronously, before the scene builds: the status item reads its stored position the moment
+    // `MenuBarExtra` creates it, and nothing can move it afterwards.
+    applyMenuBarItemPosition()
     Task {
         initTerminationHandler()
         unsafe _isCli = false

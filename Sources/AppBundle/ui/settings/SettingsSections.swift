@@ -79,10 +79,72 @@ struct GeneralSection: View {
     }
 }
 
+/// Menu-bar appearance. Its own destination rather than a group inside Application: it is
+/// the one thing here the user looks at all day, and it has nothing to do with the
+/// config-file and diagnostics plumbing Application collects.
 @MainActor
-struct ApplicationSection: View {
+struct MenuBarSection: View {
     @ObservedObject var viewModel: TrayMenuModel
 
+    /// What the item that's on screen right now is actually using, which is only the same as the
+    /// setting once the app has been restarted with it.
+    private var livePosition: Int { UserDefaults.standard.integer(forKey: statusItemPositionKey) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SettingsGroup(
+                "Menu bar appearance",
+                footer: "Experimental styles require macOS 14 or later and have no stability guarantees.",
+            ) {
+                SettingHelpLabel(title: "Style", topic: .menuBarStyle)
+                let color = AppearanceTheme.current == .dark ? Color.white : Color.black
+                ForEach(MenuBarStyle.allCases) { style in
+                    MenuBarStyleButton(style: style, color: color).environmentObject(viewModel)
+                }
+            }
+            SettingsGroup(
+                "Position",
+                footer: """
+                    Points from the right edge of the menu bar; bigger moves the item further left. \
+                    0 leaves the position to macOS. Applied at startup: while the app runs the \
+                    position belongs to macOS, so ⌘-dragging the item still wins until the next launch.
+                    """,
+            ) {
+                HStack {
+                    SettingHelpLabel(title: "Distance from the right edge", topic: .menuBarItemPosition)
+                    Spacer()
+                    TextField(
+                        "",
+                        value: Binding(
+                            get: { viewModel.experimentalUISettings.menuBarItemPosition },
+                            set: { viewModel.experimentalUISettings.menuBarItemPosition = $0 },
+                        ),
+                        format: .number,
+                    )
+                    .frame(width: 70)
+                    .multilineTextAlignment(.trailing)
+                    .help(SettingHelpTopic.menuBarItemPosition.content.tooltip)
+                    Button("Relaunch to Apply") {
+                        applyMenuBarItemPosition()
+                        relaunchAfterExit()
+                        terminateApp()
+                    }
+                    .disabled(viewModel.experimentalUISettings.menuBarItemPosition == livePosition)
+                }
+                if let warning = menuBarPositionWarning(
+                    viewModel.experimentalUISettings.menuBarItemPosition,
+                    screenWidth: NSScreen.main?.frame.width,
+                ) {
+                    Label(warning, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+            }
+        }
+    }
+}
+
+@MainActor
+struct ApplicationSection: View {
     private var shortIdentification: String {
         "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitShortHash)"
     }
@@ -94,27 +156,55 @@ struct ApplicationSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup("Configuration file") {
-                openConfigButton()
-                reloadConfigButton()
-            }
-            SettingsGroup(
-                "Menu bar appearance",
-                footer: "Experimental styles require macOS 14 or later and have no stability guarantees.",
-            ) {
-                let color = AppearanceTheme.current == .dark ? Color.white : Color.black
-                ForEach(MenuBarStyle.allCases) { style in
-                    MenuBarStyleButton(style: style, color: color).environmentObject(viewModel)
+                HStack {
+                    SettingHelpLabel(title: "Open config in editor", topic: .openConfig)
+                    Spacer()
+                    openConfigButton()
+                }
+                HStack {
+                    SettingHelpLabel(title: "Reload config", topic: .reloadConfig)
+                    Spacer()
+                    reloadConfigButton()
                 }
             }
-            SettingsGroup("Updates") {
-                Button("Check Now") { Task { await runCheckForUpdatesFlow() } }
+            SettingsGroup(
+                "Diagnostics",
+                footer: "Crash reports macOS wrote for \(aeroSpaceAppName). Attach the newest one to a bug report — it names the code that crashed, which is what a fix starts from.",
+            ) {
                 HStack {
-                    Text(shortIdentification).foregroundStyle(.secondary)
+                    SettingHelpLabel(title: "Crash reports", topic: .crashReports)
+                    Spacer()
+                    Button("Show Crash Reports") { revealCrashReports() }
+                }
+            }
+            // "Check for Updates…" lives in the window footer, not here: it applies to every
+            // category and was too easy to miss buried in this one.
+            SettingsGroup("Version") {
+                HStack {
+                    SettingHelpLabel(title: shortIdentification, topic: .versionInfo)
+                        .foregroundStyle(.secondary)
                     Spacer()
                     Button("Copy Version Info") { identification.copyToClipboard() }
                 }
             }
         }
+    }
+}
+
+/// Selects this app's crash reports in Finder, so the user can drag one into a bug report.
+/// macOS writes them per-user as `<executable>-<timestamp>.ips`; nothing here is written by
+/// AeroSpace-edge itself. With no crash reports (the happy case) it just opens the folder
+/// rather than doing nothing visible.
+@MainActor
+func revealCrashReports() {
+    let directory = FileManager.default.homeDirectoryForCurrentUser
+        .appending(path: "Library/Logs/DiagnosticReports")
+    let reports = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil))?
+        .filter { $0.lastPathComponent.hasPrefix(aeroSpaceAppName) } ?? []
+    if reports.isEmpty {
+        NSWorkspace.shared.open(directory)
+    } else {
+        NSWorkspace.shared.activateFileViewerSelecting(reports)
     }
 }
 

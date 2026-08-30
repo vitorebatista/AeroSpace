@@ -32,6 +32,16 @@ struct SettingHelpContent: Equatable {
     let details: String
     let tomlKeys: [String]
     let visual: SettingHelpVisual?
+    /// Concrete values, for the controls where the user has to type something structured. A
+    /// description of a format is not a format: seeing one correct line is what makes the shape
+    /// obvious. Empty for controls that are just a switch or a picker.
+    let examples: [String]
+
+    /// What the hover tooltip says. The examples travel with it — the tooltip is what a user sees
+    /// before deciding whether the popover is worth opening.
+    var tooltip: String {
+        examples.isEmpty ? summary : summary + "\n\nExamples:\n" + examples.joined(separator: "\n")
+    }
 }
 
 enum SettingHelpTopic: String, CaseIterable {
@@ -62,6 +72,12 @@ enum SettingHelpTopic: String, CaseIterable {
     case keyNotationOverrides
     case inheritEnvVars
     case envVarOverrides
+    case menuBarStyle
+    case menuBarItemPosition
+    case openConfig
+    case reloadConfig
+    case crashReports
+    case versionInfo
 
     var content: SettingHelpContent {
         switch self {
@@ -92,7 +108,16 @@ enum SettingHelpTopic: String, CaseIterable {
             case .focusedWindowBorder:
                 help("Draw an overlay around the focused window.", "The border follows focus and uses the colour, width, opacity, radius and inset below. It is an AeroSpace-edge feature and does not change the window itself.", borderKeys, .border)
             case .borderColor:
-                help("Set the focused border colour.", "The value is stored as 0xAARRGGBB: alpha, red, green and blue. The colour picker preserves that exact config representation.", ["focused-window-border-color"], .border)
+                help(
+                    "Set the focused border colour.",
+                    "The value is stored as 0xAARRGGBB: alpha, red, green and blue. The colour picker preserves that exact config representation.",
+                    ["focused-window-border-color"],
+                    .border,
+                    examples: [
+                        "0xFFFF7F00  opaque orange",
+                        "0x80FFFFFF  white at 50% alpha",
+                    ],
+                )
             case .borderWidth:
                 help("Set the border stroke thickness in points.", "Higher values make focus easier to spot but cover more pixels near the window edge.", ["focused-window-border-width"], .border)
             case .borderRadius:
@@ -106,19 +131,97 @@ enum SettingHelpTopic: String, CaseIterable {
             case .outerGaps:
                 help("Set spacing between tiles and each screen edge.", "Left, right, top and bottom are independent, making room for docks, menu bars or a preferred visual margin.", ["gaps.outer.left", "gaps.outer.right", "gaps.outer.top", "gaps.outer.bottom"], .outerGaps)
             case .perMonitorGaps:
-                help("Override this gap on selected monitors.", "Match main, secondary, a 1-based monitor number or a monitor-name regex. Rules are checked in order; the default value applies when none match.", ["gaps"], .monitors)
+                help(
+                    "Override this gap on selected monitors.",
+                    "Match main, secondary, a 1-based monitor number or a monitor-name regex. Rules are checked in order; the default value applies when none match.",
+                    ["gaps"],
+                    .monitors,
+                    examples: [
+                        "main = 12          the built-in display",
+                        "2 = 0              the second monitor, no gap",
+                        "'^LG' = 8          every monitor whose name starts with LG",
+                    ],
+                )
             case .persistentWorkspaces:
-                help("Keep named workspaces available even when empty.", "The order here is also their stable ordering in menus and navigation. This option requires config version 2.", ["persistent-workspaces"])
+                help(
+                    "Keep named workspaces available even when empty.",
+                    "The order here is also their stable ordering in menus and navigation. This option requires config version 2.",
+                    ["persistent-workspaces"],
+                    examples: [
+                        "1, 2, 3            numbered workspaces",
+                        "mail, web, chat    named workspaces, kept in this order",
+                    ],
+                )
             case .workspaceMonitorAssignment:
-                help("Force a workspace onto a preferred monitor.", "List monitor descriptions in priority order. AeroSpace uses the first available match and moves the workspace when monitor availability changes.", ["workspace-to-monitor-force-assignment"], .monitors)
+                help(
+                    "Force a workspace onto a preferred monitor.",
+                    "List monitor descriptions in priority order. AeroSpace uses the first available match and moves the workspace when monitor availability changes.",
+                    ["workspace-to-monitor-force-assignment"],
+                    .monitors,
+                    examples: [
+                        "1 -> secondary            workspace 1 on the external display",
+                        "mail -> main              workspace 'mail' on the built-in one",
+                        "web -> '^DELL', main      first match wins, main as fallback",
+                    ],
+                )
             case .keyMappingPreset:
                 help("Interpret key notation using your keyboard layout.", "Choose the layout used when resolving binding names. It changes which physical keys the same notation refers to; it does not rewrite your bindings.", ["key-mapping.preset"])
             case .keyNotationOverrides:
-                help("Define or remap individual key names.", "The left side is the notation used in bindings; the right side is an AeroSpace key-code name. Overrides win over the selected preset.", ["key-mapping.key-notation-to-key-code"])
+                help(
+                    "Define or remap individual key names.",
+                    "The left side is the notation used in bindings; the right side is an AeroSpace key-code name. Overrides win over the selected preset.",
+                    ["key-mapping.key-notation-to-key-code"],
+                    examples: [
+                        "zz -> semicolon     then 'alt-zz' binds the ; key",
+                        "ö -> leftSquareBracket",
+                    ],
+                )
             case .inheritEnvVars:
                 help("Pass the launching process environment to commands.", "When disabled, exec-and-forget starts with only the explicit overrides below plus AeroSpace-provided variables. This can remove PATH and other shell-dependent values.", ["exec.inherit-env-vars"])
+            case .menuBarStyle:
+                appPref(
+                    "Choose how workspaces are drawn in the menu bar.",
+                    "Monospaced font keeps the item from shifting as you switch workspaces. The experimental styles require macOS 14 or later and carry no stability guarantee.",
+                )
+            case .menuBarItemPosition:
+                appPref(
+                    "Pin where the menu-bar item sits.",
+                    "macOS stores a status item's position per app and restores it on every launch, so an item that once landed behind the notch stays there. A value here is re-applied at startup — nothing can move the item once it exists, which is why the change only shows after Relaunch to Apply. While the app runs the position belongs to macOS, so ⌘-dragging the item wins until the next launch.",
+                    examples: [
+                        "0    let macOS place it (default)",
+                        "400  left of the Control Center icons on a 1512-point-wide display",
+                    ],
+                )
+            case .openConfig:
+                appPref(
+                    "Open the config AeroSpace-edge actually loaded.",
+                    "This is the resolved file, not a guess. With no custom config yet, the bundled default is copied to ~/.aerospace-edge.toml first and that copy is opened.",
+                )
+            case .reloadConfig:
+                appPref(
+                    "Re-read the config and refresh window management.",
+                    "Identical to the reload-config command. Use it after editing the file in another editor; Save in this window already reloads for you.",
+                )
+            case .crashReports:
+                appPref(
+                    "Show the crash reports macOS wrote for this app.",
+                    "Selects ~/Library/Logs/DiagnosticReports/AeroSpace-edge-*.ips in Finder, or opens the folder when there are none. macOS writes these, not AeroSpace-edge; attach the newest one to a bug report, since it names the code that crashed.",
+                )
+            case .versionInfo:
+                appPref(
+                    "Copy the exact build you are running.",
+                    "App name, version and the full git hash — the thing to paste into a bug report so a fix lands against the right code. The line beside the button shows the short form.",
+                )
             case .envVarOverrides:
-                help("Add or replace environment variables for commands.", "Overrides apply to every exec-and-forget command. Use $VAR to include an inherited value; PWD is managed by AeroSpace and cannot be overridden.", ["exec.env-vars"])
+                help(
+                    "Add or replace environment variables for commands.",
+                    "Overrides apply to every exec-and-forget command. Use $VAR to include an inherited value; PWD is managed by AeroSpace and cannot be overridden.",
+                    ["exec.env-vars"],
+                    examples: [
+                        "PATH -> /opt/homebrew/bin:$PATH",
+                        "EDITOR -> nvim",
+                    ],
+                )
         }
     }
 
@@ -133,13 +236,20 @@ enum SettingHelpTopic: String, CaseIterable {
         ]
     }
 
+    /// A control that is not a config key: app preferences and immediate actions. They still get
+    /// the same popover, minus the TOML block.
+    private func appPref(_ summary: String, _ details: String, examples: [String] = []) -> SettingHelpContent {
+        SettingHelpContent(summary: summary, details: details, tomlKeys: [], visual: nil, examples: examples)
+    }
+
     private func help(
         _ summary: String,
         _ details: String,
         _ tomlKeys: [String],
         _ visual: SettingHelpVisual? = nil,
+        examples: [String] = [],
     ) -> SettingHelpContent {
-        SettingHelpContent(summary: summary, details: details, tomlKeys: tomlKeys, visual: visual)
+        SettingHelpContent(summary: summary, details: details, tomlKeys: tomlKeys, visual: visual, examples: examples)
     }
 }
 
@@ -158,13 +268,13 @@ struct SettingHelpLabel: View {
                     .imageScale(.small)
             }
             .buttonStyle(.plain)
-            .help(topic.content.summary)
+            .help(topic.content.tooltip)
             .accessibilityLabel("About \(title)")
             .popover(isPresented: $isPresented, arrowEdge: .trailing) {
                 SettingHelpPopover(title: title, content: topic.content)
             }
         }
-        .help(topic.content.summary)
+        .help(topic.content.tooltip)
     }
 }
 
@@ -183,12 +293,28 @@ private struct SettingHelpPopover: View {
             }
             Text(content.summary).fontWeight(.medium)
             Text(content.details).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            if !content.examples.isEmpty {
+                Divider()
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Examples").font(.caption).foregroundStyle(.secondary)
+                    ForEach(content.examples, id: \.self) { example in
+                        Text(example).font(.caption.monospaced()).textSelection(.enabled)
+                    }
+                }
+            }
             Divider()
             VStack(alignment: .leading, spacing: 3) {
-                Text(content.tomlKeys.count == 1 ? "TOML key" : "TOML keys")
-                    .font(.caption).foregroundStyle(.secondary)
-                ForEach(content.tomlKeys, id: \.self) { key in
-                    Text(key).font(.caption.monospaced()).textSelection(.enabled)
+                // No TOML key means this isn't a config option at all — an app preference or an
+                // immediate action. Saying so is the point: it explains why Save stays disabled.
+                if content.tomlKeys.isEmpty {
+                    Text("Not a config option — it never touches your TOML.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text(content.tomlKeys.count == 1 ? "TOML key" : "TOML keys")
+                        .font(.caption).foregroundStyle(.secondary)
+                    ForEach(content.tomlKeys, id: \.self) { key in
+                        Text(key).font(.caption.monospaced()).textSelection(.enabled)
+                    }
                 }
             }
         }

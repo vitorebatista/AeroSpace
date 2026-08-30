@@ -14,10 +14,13 @@ import Foundation
 /// carries an app-bundle-id + title for each window so those cases can still be matched by name.
 private struct PersistedLayout: Codable {
     /// Bumped when the shape below changes, so an old file is discarded rather than misread.
-    static let currentVersion = 1
+    static let currentVersion = 2
     var version: Int = currentVersion
     let world: FrozenWorld
     let identities: [WindowIdentity]
+    /// The workspace that had focus when this was written. Restoring windows without it drops you
+    /// on whichever workspace happened to sort first, which is never where you left off.
+    let focusedWorkspace: String?
 }
 
 private struct WindowIdentity: Codable {
@@ -63,7 +66,7 @@ private let persistDebounce: Duration = .seconds(2)
         guard let title = try? await window.title else { continue }
         identities.append(WindowIdentity(windowId: id, appBundleId: bundleId, title: title))
     }
-    let payload = PersistedLayout(world: world, identities: identities)
+    let payload = PersistedLayout(world: world, identities: identities, focusedWorkspace: focus.workspace.name)
     // Best effort throughout: a state file that can't be written must never take the WM down.
     do {
         try FileManager.default.createDirectory(
@@ -83,8 +86,24 @@ private let persistDebounce: Duration = .seconds(2)
     else { return }
 
     let mapping = await resolveWindows(persisted)
-    guard !mapping.isEmpty else { return }
-    try await applyFrozenWorld(persisted.world) { mapping[$0.id] }
+    // Focus is restored even when no window matched: the windows may all be gone, but "the
+    // workspace I was on" is still meaningful and is the part a restart most visibly loses.
+    if !mapping.isEmpty {
+        try await applyFrozenWorld(persisted.world) { mapping[$0.id] }
+    }
+    if let name = workspaceToFocusAtStartup(persisted: persisted.focusedWorkspace, existing: Workspace.all.map(\.name)) {
+        _ = Workspace.get(byName: name).focusWorkspace()
+    }
+}
+
+/// The workspace to land on at startup, or nil to keep whatever startup already focused.
+///
+/// A persisted name that no longer exists is ignored rather than recreated: the config may have
+/// dropped that workspace between runs, and materializing it would resurrect it as a side effect
+/// of a restart.
+func workspaceToFocusAtStartup(persisted: String?, existing: [String]) -> String? {
+    guard let persisted, existing.contains(persisted) else { return nil }
+    return persisted
 }
 
 /// Maps each persisted window id onto a live window: same id first, then app-bundle-id + title among

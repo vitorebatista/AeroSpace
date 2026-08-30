@@ -2,13 +2,71 @@
 import XCTest
 
 final class SettingsHelpTest: XCTestCase {
+    /// The controls that are deliberately not config options: app preferences and immediate
+    /// actions. Everything else must name the TOML key it writes.
+    private static let appPreferenceTopics: Set<SettingHelpTopic> = [
+        .menuBarStyle, .menuBarItemPosition, .openConfig, .reloadConfig, .crashReports, .versionInfo,
+    ]
+
+    func testAppPreferencesAreExactlyTheTopicsWithoutTomlKeys() {
+        let withoutKeys = Set(SettingHelpTopic.allCases.filter { $0.content.tomlKeys.isEmpty })
+        assertEquals(withoutKeys.sorted { $0.rawValue < $1.rawValue }, Self.appPreferenceTopics.sorted { $0.rawValue < $1.rawValue })
+    }
+
     func testEveryTopicProvidesUsefulUserFacingHelp() {
         for topic in SettingHelpTopic.allCases {
             let content = topic.content
             XCTAssertFalse(content.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, "Missing summary for \(topic)")
             XCTAssertFalse(content.details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, "Missing details for \(topic)")
-            XCTAssertFalse(content.tomlKeys.isEmpty, "Missing TOML key for \(topic)")
             XCTAssertTrue(content.tomlKeys.allSatisfy { !$0.isEmpty }, "Empty TOML key for \(topic)")
+            XCTAssertTrue(
+                !content.tomlKeys.isEmpty || Self.appPreferenceTopics.contains(topic),
+                "Missing TOML key for \(topic) — add it, or list the topic as an app preference",
+            )
+        }
+    }
+
+    /// Anything the user has to type a *structure* into, rather than pick or toggle, has to show
+    /// what that structure looks like.
+    func testFreeFormControlsShowExamples() {
+        let topics: [SettingHelpTopic] = [
+            .keyNotationOverrides,
+            .envVarOverrides,
+            .persistentWorkspaces,
+            .workspaceMonitorAssignment,
+            .perMonitorGaps,
+            .borderColor,
+        ]
+        for topic in topics {
+            XCTAssertFalse(topic.content.examples.isEmpty, "Missing examples for \(topic)")
+            XCTAssertTrue(
+                topic.content.examples.allSatisfy { !$0.trimmingCharacters(in: .whitespaces).isEmpty },
+                "Empty example for \(topic)",
+            )
+        }
+    }
+
+    func testTheTooltipCarriesTheExamples() {
+        let content = SettingHelpTopic.envVarOverrides.content
+        XCTAssertTrue(content.tooltip.contains(content.summary))
+        for example in content.examples {
+            XCTAssertTrue(content.tooltip.contains(example), "Tooltip drops example: \(example)")
+        }
+        // A plain switch has nothing to show, and its tooltip stays the bare summary.
+        assertEquals(SettingHelpTopic.startAtLogin.content.tooltip, SettingHelpTopic.startAtLogin.content.summary)
+    }
+
+    /// The link in each destination has to land on a page that exists — the docs are a separate
+    /// tree, so a renamed page would otherwise 404 silently.
+    @MainActor
+    func testEveryDestinationLinksToAPageThatExists() {
+        for category in SettingsCategory.allCases {
+            let page = category.docsUrl.lastPathComponent
+            let file = projectRoot.appending(component: "docs-md/settings/\(page).md")
+            XCTAssertTrue(
+                FileManager.default.fileExists(atPath: file.path),
+                "\(category) links to a missing docs page: \(file.path)",
+            )
         }
     }
 

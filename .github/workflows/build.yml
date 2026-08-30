@@ -54,7 +54,9 @@ jobs:
       - run: swiftly init --skip-install --assume-yes --verbose && swiftly install
       - name: './build-release.sh'
         run: |
-          # "-" means "Sign to run locally". There is no aerospace-codesign-certificate on GH Actions
+          # "-" means "Sign to run locally". There is no aerospace-codesign-certificate on GH Actions.
+          # CI-only: published releases must be signed with the certificate, or macOS drops the
+          # Accessibility grant on every upgrade (dev-docs/fork-maintenance.md).
           ./build-release.sh --codesign-identity -
           ./install-from-sources.sh --dont-rebuild
       - name: cat ./.release/xcodebuild.log

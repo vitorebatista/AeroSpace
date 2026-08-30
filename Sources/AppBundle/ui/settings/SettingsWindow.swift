@@ -30,9 +30,31 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
     case keybindings = "Keybindings"
     case windowRules = "Window Rules"
     case callbacks = "Callbacks"
+    case menuBar = "Menu Bar"
     case application = "Application"
 
     var id: String { rawValue }
+
+    /// The page in the Settings section of the site that documents this destination. The section
+    /// is written to mirror the sidebar one-to-one, so the mapping is just the file name.
+    var docsUrl: URL {
+        let page = switch self {
+            case .general: "general"
+            case .layout: "layout"
+            case .gaps: "gaps"
+            case .focus: "focus"
+            case .windowBorder: "window-border"
+            case .workspaces: "workspaces"
+            case .keyMapping: "key-mapping"
+            case .exec: "exec"
+            case .keybindings: "keybindings"
+            case .windowRules: "window-rules"
+            case .callbacks: "callbacks"
+            case .menuBar: "menu-bar"
+            case .application: "application"
+        }
+        return URL(string: "https://vitorebatista.github.io/AeroSpace-edge/settings/\(page)/")!
+    }
 
     var systemImage: String {
         switch self {
@@ -47,6 +69,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
             case .keybindings: "command"
             case .windowRules: "macwindow.badge.plus"
             case .callbacks: "arrow.triangle.branch"
+            case .menuBar: "menubar.rectangle"
             case .application: "gearshape.2"
         }
     }
@@ -81,7 +104,13 @@ struct SettingsView: View {
                         }
                         .navigationSplitViewColumnWidth(min: 190, ideal: 210)
                     } detail: {
-                        ScrollView { section(for: selection).padding() }
+                        ScrollView {
+                            VStack(alignment: .leading, spacing: 12) {
+                                docsLink(for: selection)
+                                section(for: selection)
+                            }
+                            .padding()
+                        }
                     }
                     .disabled(model.isSaving)
             }
@@ -97,8 +126,7 @@ struct SettingsView: View {
             Label("This config doesn't parse, so only raw editing is available.", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.yellow)
             Text(parseError).font(.caption.monospaced()).textSelection(.enabled)
-            TextEditor(text: Binding(get: { model.wholeFileText }, set: { guard !model.isSaving else { return }; model.wholeFileText = $0; markDirty() }))
-                .font(.system(size: 12).monospaced())
+            TomlTextEditor(text: Binding(get: { model.wholeFileText }, set: { guard !model.isSaving else { return }; model.wholeFileText = $0; markDirty() }))
                 .disabled(model.isSaving)
         }
         .padding()
@@ -113,6 +141,19 @@ struct SettingsView: View {
     /// rather than invisible.
     private var draft: Binding<ConfigTomlWriter.ConfigDraft> {
         Binding(get: { model.draft }, set: { if !model.isSaving { model.draft = $0 } })
+    }
+
+    /// Every destination links to its own page. The popovers explain one control at a time; the
+    /// page is where the whole destination, its TOML keys and the surrounding behavior live.
+    private func docsLink(for category: SettingsCategory) -> some View {
+        HStack {
+            Spacer()
+            Link(destination: category.docsUrl) {
+                Label("\(category.rawValue) documentation", systemImage: "book")
+                    .font(.caption)
+            }
+            .help("Open the \(category.rawValue) documentation page in your browser")
+        }
     }
 
     @ViewBuilder
@@ -130,7 +171,14 @@ struct SettingsView: View {
                 SettingsRawSection(
                     title: "Keybindings",
                     help: "Binding modes and their key bindings, as TOML. Each binding maps a key combination to one or more AeroSpace commands.",
-                    docsHint: "Tables: [mode.<name>.binding]. Example: alt-h = 'focus left'. Quote a binding key with TOML punctuation: 'alt-custom.key' = 'focus left'.",
+                    docsHint: """
+                        Tables: [mode.<name>.binding]. Example:
+                        [mode.main.binding]
+                        alt-h = 'focus left'
+                        alt-shift-1 = 'move-node-to-workspace 1'
+                        alt-r = ['mode resize']          # a list runs commands in order
+                        'alt-custom.key' = 'focus left'  # quote a key with TOML punctuation
+                        """,
                     text: draft.rawKeybindings,
                     preamble: keybindingsPreamble(preset: model.draft.keyMappingPreset, notationOverrides: model.draft.keyNotationToKeyCode),
                     onEdit: markDirty,
@@ -139,7 +187,13 @@ struct SettingsView: View {
                 SettingsRawSection(
                     title: "Window rules",
                     help: "Rules run when a window is first detected. Matchers: app-id, app-id-regex-substring, app-name-regex-substring, window-title-regex-substring, workspace, during-aerospace-startup.",
-                    docsHint: "Tables: [[on-window-detected]] with an 'if' matcher and a mandatory 'run'.",
+                    docsHint: """
+                        Tables: [[on-window-detected]] with an 'if' matcher and a mandatory 'run'. Example:
+                        [[on-window-detected]]
+                        if.app-id = 'com.apple.systempreferences'
+                        if.window-title-regex-substring = 'Settings'
+                        run = ['layout floating']
+                        """,
                     text: draft.rawWindowRules,
                     onEdit: markDirty,
                 )
@@ -147,12 +201,18 @@ struct SettingsView: View {
                 SettingsRawSection(
                     title: "Callbacks",
                     help: "Commands AeroSpace runs on lifecycle events.",
-                    docsHint: "Keys: " + ConfigTomlWriter.callbackKeys.joined(separator: ", "),
+                    docsHint: """
+                        Keys: \(ConfigTomlWriter.callbackKeys.joined(separator: ", ")). Example:
+                        after-startup-command = 'exec-and-forget sketchybar'
+                        on-focus-changed = ['move-mouse window-lazy-center']
+                        """,
                     text: draft.rawCallbacks,
                     onEdit: markDirty,
                 )
+            case .menuBar:
+                MenuBarSection(viewModel: viewModel)
             case .application:
-                ApplicationSection(viewModel: viewModel)
+                ApplicationSection()
         }
     }
 
@@ -189,6 +249,8 @@ struct SettingsView: View {
                 }
             }
             HStack {
+                Button("Check for Updates…") { Task { await runCheckForUpdatesFlow() } }
+                    .disabled(model.isSaving)
                 if model.willCreateConfig {
                     Text("Saving will create ~/\(configDotfileName)").font(.caption).foregroundStyle(.secondary)
                 } else if case .saved = model.status {

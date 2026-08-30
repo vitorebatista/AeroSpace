@@ -43,8 +43,7 @@ struct SettingsRawSection: View {
             SettingsGroup(title, footer: help) {
                 Text(docsHint).font(.caption).foregroundStyle(.secondary)
             }
-            TextEditor(text: Binding(get: { text }, set: { text = $0; onEdit() }))
-                .font(.system(size: 12).monospaced())
+            TomlTextEditor(text: Binding(get: { text }, set: { text = $0; onEdit() }))
                 .frame(minHeight: 300)
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color(.separatorColor)))
             switch parseStatus {

@@ -6,8 +6,8 @@ AeroSpace-edge already loads at startup, in place.
 
 The window has two kinds of control:
 
-- **Application controls** (the *Application* destination) act immediately and never touch
-  your TOML.
+- **Application controls** (the *Menu Bar* and *Application* destinations) act immediately and
+  never touch your TOML.
 - **Configuration controls** (everything else) build a *draft*. Nothing is written until you
   press **Save**.
 
@@ -27,7 +27,8 @@ order, so "where do I change this?" has a one-line answer everywhere.
 | [Keybindings](keybindings.md) | Raw `[mode.*.binding]` TOML |
 | [Window Rules](window-rules.md) | Raw `[[on-window-detected]]` TOML |
 | [Callbacks](callbacks.md) | Raw lifecycle callback TOML |
-| [Application](application.md) | Config-file actions, menu-bar appearance, updates (no TOML) |
+| [Menu Bar](menu-bar.md) | How workspaces are drawn in the menu-bar item (no TOML) |
+| [Application](application.md) | Config-file actions, crash reports, version info (no TOML) |
 
 !!! note "About the screenshots"
 
@@ -37,6 +38,15 @@ order, so "where do I change this?" has a one-line answer everywhere.
 ## How a Save works
 
 ![A Settings edit going from draft, to a rendered candidate, to validation, to an atomic write](../assets/settings/anim-save-flow.svg)
+
+**Check for Updates…** sits in the window footer, so it is reachable from every destination.
+It acts immediately and never touches your TOML.
+
+The raw TOML editors — Keybindings, Window Rules, Callbacks, and the whole-file editor shown
+when a config doesn't parse — colour comments, strings, numbers, booleans, table headers and
+keys, following VS Code's light and dark palettes. The colouring is derived from the text, not
+from a parse, so a half-typed or invalid document still reads as TOML; **Save** remains the
+only thing that validates.
 
 Editing any control enables **Save** and **Revert**. Reopening an already-visible window
 does not reload it and discard your draft; **Revert** reloads from disk. While a Save or a

@@ -38,6 +38,12 @@ If you only plan to build the debug version of AeroSpace, you can run it from th
     -   Identity Type: `Self-Signed Root`
     -   Certificate Type: `Code Signing`
 
+Or skip the clicks: `./script/create-codesign-certificate.sh` creates and imports the same
+certificate (it asks for your login password to store the trust setting) and writes a `.p12`
+backup to `~/.aerospace-codesign`. Keep that backup: the identity must stay the same across
+releases or macOS drops every user's Accessibility grant on upgrade — see the "Signing identity"
+section of [fork-maintenance.md](./fork-maintenance.md).
+
 ## 3. Entry point scripts
 
 **Debug build**

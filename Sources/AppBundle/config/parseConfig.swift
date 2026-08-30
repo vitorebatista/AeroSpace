@@ -256,14 +256,7 @@ func tomlAnyToParsedConfigRecursive(any: Any, _ backtrace: ConfigBacktrace) -> P
         if rawTable.keys.contains(persistentWorkspacesKey) {
             errors += [.semantic(.rootKey(persistentWorkspacesKey), "This config option is only available since 'config-version = 2'")]
         }
-        config.persistentWorkspaces = (config.modes.values.lazy
-            .flatMap { (mode: Mode) -> [HotkeyBinding] in Array(mode.bindings.values) }
-            .flatMap { (binding: HotkeyBinding) -> [String] in
-                binding.commands.filterIsInstance(of: WorkspaceCommand.self).compactMap { $0.args.target.val.workspaceNameOrNil()?.raw } +
-                    binding.commands.filterIsInstance(of: MoveNodeToWorkspaceCommand.self).compactMap { $0.args.target.val.workspaceNameOrNil()?.raw }
-            }
-            + (config.workspaceToMonitorForceAssignment).keys)
-            .toOrderedSet()
+        config.persistentWorkspaces = workspaceNamesMentionedIn(config)
     }
 
     if config.enableNormalizationFlattenContainers {
@@ -285,6 +278,24 @@ func tomlAnyToParsedConfigRecursive(any: Any, _ backtrace: ConfigBacktrace) -> P
         }
     }
     return (config, errors)
+}
+
+/// Every workspace name the config mentions: the ones bindings switch to or move a window
+/// to, plus the ones pinned to a monitor.
+///
+/// `config-version = 1` takes this as its persistent workspace list. Version 2 doesn't —
+/// its list is explicit — but the menu bar still uses this to offer workspaces under
+/// "New": a workspace you have a binding for should be reachable from the menu before you
+/// have ever visited it, and on version 2 it doesn't exist as an object until then.
+func workspaceNamesMentionedIn(_ config: Config) -> OrderedSet<String> {
+    (config.modes.values.lazy
+        .flatMap { (mode: Mode) -> [HotkeyBinding] in Array(mode.bindings.values) }
+        .flatMap { (binding: HotkeyBinding) -> [String] in
+            binding.commands.filterIsInstance(of: WorkspaceCommand.self).compactMap { $0.args.target.val.workspaceNameOrNil()?.raw } +
+                binding.commands.filterIsInstance(of: MoveNodeToWorkspaceCommand.self).compactMap { $0.args.target.val.workspaceNameOrNil()?.raw }
+        }
+        + config.workspaceToMonitorForceAssignment.keys)
+        .toOrderedSet()
 }
 
 func parseIndentForNestedContainersWithTheSameOrientation(_ _: Json, _ backtrace: ConfigBacktrace) -> ParsedConfig<Void> {

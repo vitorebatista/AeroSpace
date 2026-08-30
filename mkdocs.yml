@@ -72,6 +72,7 @@ nav:
       - settings/keybindings.md
       - settings/window-rules.md
       - settings/callbacks.md
+      - settings/menu-bar.md
       - settings/application.md
       - settings/migration.md
   - Comparison: comparison.md

@@ -67,11 +67,12 @@ Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for A
   cross-workspace focus stealing by self-activating apps; no upstream equivalent).
   **`smart` has a known regression** (moved windows reappear on the current workspace) —
   see CHANGELOG-FORK.md 1.7 "KNOWN ISSUE" for details/fix direction before touching it.
-- **Ad-hoc signing gotcha (hit on 1.7 install):** every fork release re-signs ad-hoc, so
-  macOS invalidates the Accessibility grant on upgrade; the app then resets its own TCC entry
-  and exits at startup (`checkAccessibilityPermissions`). After replacing the app the user must
-  re-grant: System Settings → Privacy & Security → Accessibility (add via + if missing), then
-  relaunch. Expect this on every `-fork.N` upgrade.
+- **Signing gotcha (hit on 1.7 install, fixed by signing with a certificate):** releases used to be
+  signed ad-hoc, which invalidates the Accessibility grant on every upgrade; the app then resets its
+  own TCC entry and exits at startup (`checkAccessibilityPermissions`), and the user must re-grant:
+  System Settings → Privacy & Security → Accessibility (add via + if missing), then relaunch. Releases
+  now sign with the stable `aerospace-codesign-certificate` so the grant carries over — see
+  "Signing identity: never release ad-hoc" below.
   Previous: `v1.6` (46 backports total; fork PRs #50–#52, 2026-07-18).
   See [`CHANGELOG-FORK.md`](../CHANGELOG-FORK.md).
 - **2026-07-23 sync check:** no new upstream-`main` commits (still `d56e1637`); 48 open PRs.
@@ -273,7 +274,7 @@ and add a `mise` shim so the docs step's rubygems plugin finds it:
 ```bash
 printf "exec '/opt/homebrew/bin/mise' \"\$@\"\n" > .deps/bin/mise && chmod +x .deps/bin/mise
 NUKE_PATH=1 PATH="$PWD/.deps/bin:/opt/homebrew/bin:/bin:/usr/bin" \
-  ./build-release.sh --build-version "1.N" --codesign-identity -
+  ./build-release.sh --build-version "1.N" --codesign-identity aerospace-codesign-certificate
 ```
 
 **B. Lean build (recommended — app + CLI, no man pages/completions).** Put the steps in a script and
@@ -281,7 +282,7 @@ run it with `zsh script.sh`, because the interactive shell hook rewrites `rm`/`l
 `rm -rf` into GNU-flagged `rm` that fails on macOS); running inside a script file bypasses the rewrite.
 The script (see git history of `/tmp/lean-release2.sh` pattern) does, with
 `NUKE_PATH=1 PATH="$PWD/.deps/bin:/opt/homebrew/bin:/bin:/usr/bin"`:
-1. `./generate.sh --ignore-shell-parser --ignore-cmd-help --build-version "1.N" --codesign-identity - --generate-git-hash`
+1. `./generate.sh --ignore-shell-parser --ignore-cmd-help --build-version "1.N" --codesign-identity aerospace-codesign-certificate --generate-git-hash`
 2. `swift build -c release --arch arm64 --arch x86_64 --product aerospace-edge -Xswiftc -warnings-as-errors`
 3. `xcrun xcodebuild clean build -scheme AeroSpace -destination "generic/platform=macOS" -configuration Release -derivedDataPath .xcode-build`
 4. `git checkout .` (restores generated files + `project.pbxproj` that xcodegen/version-stamping dirtied)
@@ -289,12 +290,28 @@ The script (see git history of `/tmp/lean-release2.sh` pattern) does, with
    > Commit your work *before* running a release build. (Bit us on 1.10: the source half of the
    > rename was wiped and only the docs got committed.)
 5. assemble `.release/AeroSpace-edge-v<ver>/` = `AeroSpace-edge.app` (from
-   `.xcode-build/Build/Products/Release/`) + `bin/aerospace-edge` (`codesign -s - --force`) +
+   `.xcode-build/Build/Products/Release/`) + `bin/aerospace-edge` (`codesign -s aerospace-codesign-certificate --force`) +
    `legal/`, then `zip -qr`.
-- The app is codesigned ad-hoc by xcodebuild (`--codesign-identity -`); both binaries come out universal.
+- The app is codesigned by xcodebuild with the self-signed `aerospace-codesign-certificate`
+  (see below); both binaries come out universal.
 - **Verify** baked-in version WITHOUT running the CLI (it can hang in non-interactive shells):
   `plutil -extract CFBundleShortVersionString raw .release/AeroSpace-edge.app/Contents/Info.plist` and
   `strings .release/aerospace-edge | grep <ver>`.
+
+### Signing identity: never release ad-hoc
+
+Release builds **must** use the self-signed `aerospace-codesign-certificate`
+(`dev-docs/development.md` step 2 creates it), not `--codesign-identity -`. An ad-hoc signature has no
+certificate, so its designated requirement is the literal binary hash
+(`# designated => cdhash H"..."`), which changes with every build — macOS TCC then treats each update
+as a different app and drops the user's Accessibility grant. Signing with the certificate gives a
+stable requirement (`identifier "vitorebatista.aerospace-edge" and certificate leaf = H"..."`), so
+the permission survives updates. Check with `codesign -d --verbose=4 -r- <app>`.
+
+Back up the certificate + private key (export as `.p12` from Keychain Access). Losing it, or signing
+with a different one, costs users one more re-grant. The first release after switching from ad-hoc
+also re-prompts once; users can clear the stale entry with
+`tccutil reset Accessibility vitorebatista.aerospace-edge`.
 
 ## Creating the GitHub release
 ```bash

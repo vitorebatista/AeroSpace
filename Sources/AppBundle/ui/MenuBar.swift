@@ -15,9 +15,7 @@ let menuBarPrimaryActions: [MenuBarPrimaryAction] = [.toggleEnabled, .settings, 
 @MainActor
 public func menuBar(viewModel: TrayMenuModel, openSettings: @escaping () -> Void) -> some Scene { // todo should it be converted to "SwiftUI struct"?
     MenuBarExtra {
-        let shortIdentification = "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitShortHash)"
-        Text(shortIdentification)
-        Divider()
+        // No version line here: it lives in Settings → Application → Version, where it's copyable.
         if let token: RunSessionGuard = .isServerEnabled {
             // Persistent workspaces first (in config order), then the rest alphabetically.
             let sorted = sortWorkspacesForMenuBar(viewModel.workspaces, persistentWorkspaces: config.persistentWorkspaces)
