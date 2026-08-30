@@ -222,8 +222,14 @@ func tomlAnyToParsedConfigRecursive(any: Any, _ backtrace: ConfigBacktrace) -> P
 
 @MainActor private func _parseConfig(_ rawToml: String) -> (config: Config, errors: [ConfigParseError]) { // todo change return value to Result
     let rawTable: Json.JsonDict
+    // TOMLDecoder unpacks every scalar via `source.utf8.withContiguousStorageIfAvailable { ... }!`,
+    // which returns nil - and therefore traps - for a String that isn't natively stored. Text coming
+    // back from AppKit/SwiftUI (the Settings panes' editors) is NSString-backed, so parsing it
+    // crashed the app with SIGTRAP. Config read off disk is native, which is why only the UI hit it.
+    var toml = rawToml
+    toml.makeContiguousUTF8()
     do {
-        let dict: [String: Any] = try .init(try TOMLTable(source: rawToml))
+        let dict: [String: Any] = try .init(try TOMLTable(source: toml))
         switch tomlAnyToParsedConfigRecursive(any: dict, .emptyRoot) {
             case .success(.dict(let dict)): rawTable = dict
             case .success: return (defaultConfig, [.syntax("Config parsing error: the top level type must be a TOML Table")])
