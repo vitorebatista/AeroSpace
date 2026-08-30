@@ -91,7 +91,7 @@ Per the runbook: branch off `origin/main` (`port/<slug>`), apply the change
 generated files from `docs-md/`), **translate every doc hunk through the path map above**, satisfy the
 **doc checklist** (`docs-md/commands/<command>.md` synopsis+body, `docs-md/guide.md`/
 `docs/config-examples/default-config.toml`, `grammar/commands-bnf-grammar.txt`), then verify with
-`./build-debug.sh -Xswiftc -warnings-as-errors` **and** `./swift-test.sh` before opening one PR per
+`./script/build-debug.sh -Xswiftc -warnings-as-errors` **and** `./script/swift-test.sh` before opening one PR per
 fix with `gh pr create --repo vitorebatista/AeroSpace-edge --base main`.
 
 Porting does heavy Swift builds, so run port agents **serially in the shared working copy** (warm
@@ -106,7 +106,7 @@ for a dropped closing brace. Finish with one integrated `build-debug` + `swift-t
 no-conflict-markers check before `git push origin main`. See the runbook for the exact recipe.
 
 ### Phase 5 — Release (only if the user asks)
-Use the runbook's **lean release build** (the official `build-release.sh` fails in this environment on
+Use the runbook's **lean release build** (the official `script/build-release.sh` fails in this environment on
 docs/shell-completion tooling). Bump the version (`1.MINOR[.PATCH]` — minor when the release carries backports), build the
 universal app + CLI, then
 `gh release create v<ver> --repo vitorebatista/AeroSpace-edge --target main --prerelease <zip>`.

@@ -1,5 +1,5 @@
 // FILE IS GENERATED FROM docs-md/commands/*.md files
-// TO REGENERATE THE FILE RUN generate.sh
+// TO REGENERATE THE FILE RUN script/generate.sh
 
 let balance_sizes_help_generated = """
     USAGE: balance-sizes [-h|--help] [--workspace <workspace>]

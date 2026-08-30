@@ -8,4 +8,4 @@ rm -rf ~/Library/Developer/Xcode/DerivedData/AeroSpace-*
 rm -rf ./.xcode-build
 
 rm -rf AeroSpace.xcodeproj
-./generate.sh
+./script/generate.sh

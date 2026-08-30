@@ -1,5 +1,5 @@
 #!/bin/bash
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 source ./script/setup.sh
 
 build_version="0.0.0-SNAPSHOT"
@@ -16,12 +16,12 @@ done
 ### BUILD ###
 #############
 
-./build-docs.sh
-./build-shell-completion.sh
+./script/build-docs.sh
+./script/build-shell-completion.sh
 
-./generate.sh
+./script/generate.sh
 ./script/check-uncommitted-files.sh
-./generate.sh --build-version "$build_version" --codesign-identity "$codesign_identity" --generate-git-hash
+./script/generate.sh --build-version "$build_version" --codesign-identity "$codesign_identity" --generate-git-hash
 
 swift build -c release --arch arm64 --arch x86_64 --product aerospace-edge -Xswiftc -warnings-as-errors # CLI
 

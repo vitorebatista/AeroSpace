@@ -132,7 +132,7 @@ And one option with no upstream equivalent, written here:
 ## How it stays trustworthy while moving fast
 
 - **Every change is its own reviewed pull request** — never a bulk merge.
-- **Nothing lands untested.** `build-debug.sh -Xswiftc -warnings-as-errors` and `swift-test.sh`
+- **Nothing lands untested.** `script/build-debug.sh -Xswiftc -warnings-as-errors` and `script/swift-test.sh`
   both pass before a branch merges.
 - **Refactors and breaking config changes stay out.** Moving fast on fixes and slow on churn is
   what keeps a fork from rotting.

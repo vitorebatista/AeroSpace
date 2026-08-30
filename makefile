@@ -7,16 +7,16 @@
 	lint.sh
 
 build-debug.sh:
-	./build-debug.sh
+	./script/build-debug.sh
 
 test.sh:
-	./test.sh
+	./script/test.sh
 
 swift-test.sh:
-	./swift-test.sh
+	./script/swift-test.sh
 
 format.sh:
-	./format.sh
+	./script/format.sh
 
 lint.sh:
-	./lint.sh
+	./script/lint.sh

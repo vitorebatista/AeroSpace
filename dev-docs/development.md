@@ -22,7 +22,7 @@ If you struggle to build AeroSpace locally, you can also refer to [builds in Git
     -   `brew install bash fish`
 4.  If you want to build the docs site or man pages, install `pandoc` and Python >= 3.10.
     -   `brew install pandoc`
-    -   `./build-docs.sh` creates its own venv from `docs-md/requirements.txt`
+    -   `./script/build-docs.sh` creates its own venv from `docs-md/requirements.txt`
 5.  Install optional `xcbeautify` to make Xcode build logs readable. `brew install xcbeautify`
 
 ## 2. Create codesign certificate
@@ -47,20 +47,20 @@ section of [fork-maintenance.md](./fork-maintenance.md).
 ## 3. Entry point scripts
 
 **Debug build**
--   `build-debug.sh` - Build debug build to `.debug` dir by using SPM. (Xcode is not involved)
--   `test.sh` - Run tests.
--   `swiftformat.sh` - Format the code.
--   `run-debug.sh` - Run the AeroSpace-edge debug build.
--   `run-cli.sh` - Run `aerospace-edge` in CLI. Arguments are forwarded to the `aerospace-edge` binary.
--   `build-docs.sh` - Build the site and man pages to `.site` and `.man` dirs respectively.
--   `build-shell-completion.sh` - Build shell completion to `.shell-completion`.
+-   `script/build-debug.sh` - Build debug build to `.debug` dir by using SPM. (Xcode is not involved)
+-   `script/test.sh` - Run tests.
+-   `script/format.sh` - Format the code.
+-   `script/run-debug.sh` - Run the AeroSpace-edge debug build.
+-   `script/run-cli.sh` - Run `aerospace-edge` in CLI. Arguments are forwarded to the `aerospace-edge` binary.
+-   `script/build-docs.sh` - Build the site and man pages to `.site` and `.man` dirs respectively.
+-   `script/build-shell-completion.sh` - Build shell completion to `.shell-completion`.
     You can test that the completion works properly by sourcing the file `source ./.shell-completion/zsh/_aerospace-edge`
--   `generate.sh` - Regenerate generated project files. `AeroSpace.xcodeproj` is generated, and some of the source files
+-   `script/generate.sh` - Regenerate generated project files. `AeroSpace.xcodeproj` is generated, and some of the source files
     (the source files have `Generated` suffix in their names).
 
 **Release build**
--   `build-release.sh` - Build release build to `.release` dir by using Xcode.
--   `install-from-sources.sh` - Build a release from sources and install it as the `aerospace-edge-dev` brew cask.
+-   `script/build-release.sh` - Build release build to `.release` dir by using Xcode.
+-   `script/install-from-sources.sh` - Build a release from sources and install it as the `aerospace-edge-dev` brew cask.
     This script is "work in progress".
     Use it on your own risk.
 

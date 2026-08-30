@@ -33,26 +33,26 @@ local build setup (Xcode, swiftly, codesign certificate, etc.).
 Always run scripts from the repo root. They `source ./script/setup.sh`, which uses
 `swiftly` to pin the Swift toolchain to `.swift-version`.
 
-- **Debug build (compile check):** `./build-debug.sh -Xswiftc -warnings-as-errors`
+- **Debug build (compile check):** `./script/build-debug.sh -Xswiftc -warnings-as-errors`
   Builds the app + the `AppBundleTests` target via SPM into `.debug/`. The
   `-Xswiftc -warnings-as-errors` flag is the project's bar — **warnings are errors**.
-- **Run tests:** `./swift-test.sh`
+- **Run tests:** `./script/swift-test.sh`
   Runs `swift test`. Rely on the **exit code** and the `✅ Swift tests have passed
   successfully` line. The script filters XCTest's per-case output, so a
   `Test run with 0 tests in 0 suites passed` line (from the Swift Testing framework) is
   normal and does NOT mean tests didn't run. To confirm a specific new test executes:
   `swift test --filter <TestName>`.
-- **Full check (what CI runs):** `./test.sh` — debug build (warnings-as-errors) + tests +
-  `aerospace-edge -h/--help/--version` smoke checks + lint + `generate.sh` + a clean-tree check.
-- **Format:** `./format.sh` (swiftformat). **Lint:** `./lint.sh`.
-- **Release build:** `./build-release.sh --build-version <ver> --codesign-identity aerospace-codesign-certificate`
+- **Full check (what CI runs):** `./script/test.sh` — debug build (warnings-as-errors) + tests +
+  `aerospace-edge -h/--help/--version` smoke checks + lint + `script/generate.sh` + a clean-tree check.
+- **Format:** `./script/format.sh` (swiftformat). **Lint:** `./script/lint.sh`.
+- **Release build:** `./script/build-release.sh --build-version <ver> --codesign-identity aerospace-codesign-certificate`
   (Xcode-based, outputs `.release/AeroSpace-edge-v<ver>.zip`). Do NOT use
   `script/publish-release.sh` in this fork — it pushes tags to the upstream repo.
   **Never release with `--codesign-identity -`.** Ad-hoc signatures have no certificate, so the
   designated requirement is the literal binary hash and macOS drops every user's Accessibility
   grant on each update. `script/create-codesign-certificate.sh` creates the certificate; see
   "Signing identity" in `dev-docs/fork-maintenance.md`. CI is the one exception (no keychain).
-- **Debug .app bundle** (to actually run the UI, not just compile): `build-debug.sh` produces an
+- **Debug .app bundle** (to actually run the UI, not just compile): `script/build-debug.sh` produces an
   SPM binary, not a bundle. For a runnable app, `xcodebuild -configuration Debug` produces
   `AeroSpace-edge-Debug.app` with bundle id `vitorebatista.aerospace-edge.debug` — a *separate*
   app from the release install, with its own Accessibility grant and its own menu-bar item, so it
@@ -60,8 +60,8 @@ Always run scripts from the repo root. They `source ./script/setup.sh`, which us
   (`.../Contents/MacOS/AeroSpace-edge-Debug`) if you want its `print` output: a bundle launched
   via `open` sends stdout and stderr to /dev/null.
 
-A change is only "done" when `./build-debug.sh -Xswiftc -warnings-as-errors` **and**
-`./swift-test.sh` both pass with a clean working tree afterward.
+A change is only "done" when `./script/build-debug.sh -Xswiftc -warnings-as-errors` **and**
+`./script/swift-test.sh` both pass with a clean working tree afterward.
 
 ## Generated files — never hand-edit
 
@@ -70,14 +70,14 @@ Some tracked source files are generated and have a `Generated` suffix:
 - `Sources/Common/cmdHelpGenerated.swift` — generated from the ` ```synopsis ` fenced block
   of `docs-md/commands/*.md` by `./script/generate-cmd-help.sh`.
 - `Sources/Cli/subcommandDescriptionsGenerated.swift` — generated from the `description:`
-  frontmatter key in `docs-md/commands/*.md` (regenerated automatically by `build-debug.sh`).
+  frontmatter key in `docs-md/commands/*.md` (regenerated automatically by `script/build-debug.sh`).
 - `Sources/Common/versionGenerated.swift`, `Sources/Common/gitHashGenerated.swift` — generated.
 - `ShellParserGenerated/` — generated from the ANTLR grammar (`grammar/ShellLexer.g4`,
   `grammar/ShellParser.g4`) via `./script/generate-shell-parser.sh` (needs antlr).
 
 To change command help text, edit the ` ```synopsis ` block in the command's `.md` page and
 run `./script/generate-cmd-help.sh` (pure bash/awk, no external deps) — do not edit the
-generated `.swift` by hand. `build-debug.sh` reproduces the generated files
+generated `.swift` by hand. `script/build-debug.sh` reproduces the generated files
 deterministically, so a correct edit leaves the tree clean.
 
 ## Code conventions
@@ -114,7 +114,7 @@ update the user-facing docs in the SAME change. From `dev-docs/architecture.md`:
 - [ ] `docs-md/guide.md` and/or `docs/config-examples/default-config.toml` for new config
       options or user-visible behavior.
 - [ ] `grammar/commands-bnf-grammar.txt` for shell completion.
-- [ ] Regenerate generated files (`./script/generate-cmd-help.sh`; `build-debug.sh` handles
+- [ ] Regenerate generated files (`./script/generate-cmd-help.sh`; `script/build-debug.sh` handles
       `subcommandDescriptionsGenerated.swift`).
 - [ ] Consider whether `--window-id` and/or `--workspace` flags make sense for the command.
 - [ ] Add/extend tests in `Sources/AppBundleTests` where the behavior is unit-testable; if

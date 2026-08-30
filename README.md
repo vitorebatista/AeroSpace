@@ -30,7 +30,7 @@ the work gets picked up, adapted, tested and shipped, in weeks rather than relea
 How it stays trustworthy while moving fast:
 
 - **Every change is its own reviewed pull request** — 59 of them so far — never a bulk merge.
-- **Nothing lands untested.** `./build-debug.sh -Xswiftc -warnings-as-errors` and `./swift-test.sh` both
+- **Nothing lands untested.** `./script/build-debug.sh -Xswiftc -warnings-as-errors` and `./script/swift-test.sh` both
   pass before a branch merges; warnings are errors, and the suite runs 227 tests.
 - **52 fixes and features** carried so far, each traceable to where it came from in
   [`CHANGELOG-FORK.md`](./CHANGELOG-FORK.md).
@@ -252,8 +252,8 @@ point, triages it, and backports what clears the bar:
   backports already carried.
 
 Each backport gets its own branch and pull request, is adapted to this tree's conventions where it
-differs from upstream, and has to pass `./build-debug.sh -Xswiftc -warnings-as-errors` **and**
-`./swift-test.sh` before merging. Nothing lands untested, and nothing lands as a bulk merge.
+differs from upstream, and has to pass `./script/build-debug.sh -Xswiftc -warnings-as-errors` **and**
+`./script/swift-test.sh` before merging. Nothing lands untested, and nothing lands as a bulk merge.
 
 The full state — sync point, everything already ported, everything deliberately skipped and why — is
 in [`dev-docs/fork-maintenance.md`](./dev-docs/fork-maintenance.md).
@@ -278,9 +278,9 @@ this fork is settled.
 ## Building from source
 
 ```bash
-./build-debug.sh -Xswiftc -warnings-as-errors   # warnings are errors
-./swift-test.sh                                  # XCTest suite
-./test.sh                                        # everything CI runs
+./script/build-debug.sh -Xswiftc -warnings-as-errors   # warnings are errors
+./script/swift-test.sh                                  # XCTest suite
+./script/test.sh                                        # everything CI runs
 ```
 
 Setup details are in [`dev-docs/development.md`](./dev-docs/development.md); the layout of the codebase

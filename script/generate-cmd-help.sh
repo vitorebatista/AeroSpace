@@ -14,7 +14,7 @@ triple_quote='"""'
 
 cat << EOF > "$out_file"
 // FILE IS GENERATED FROM docs-md/commands/*.md files
-// TO REGENERATE THE FILE RUN generate.sh
+// TO REGENERATE THE FILE RUN script/generate.sh
 
 EOF
 
