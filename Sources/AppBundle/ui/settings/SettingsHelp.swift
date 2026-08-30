@@ -72,6 +72,12 @@ enum SettingHelpTopic: String, CaseIterable {
     case keyNotationOverrides
     case inheritEnvVars
     case envVarOverrides
+    case menuBarStyle
+    case menuBarItemPosition
+    case openConfig
+    case reloadConfig
+    case crashReports
+    case versionInfo
 
     var content: SettingHelpContent {
         switch self {
@@ -172,6 +178,40 @@ enum SettingHelpTopic: String, CaseIterable {
                 )
             case .inheritEnvVars:
                 help("Pass the launching process environment to commands.", "When disabled, exec-and-forget starts with only the explicit overrides below plus AeroSpace-provided variables. This can remove PATH and other shell-dependent values.", ["exec.inherit-env-vars"])
+            case .menuBarStyle:
+                appPref(
+                    "Choose how workspaces are drawn in the menu bar.",
+                    "Monospaced font keeps the item from shifting as you switch workspaces. The experimental styles require macOS 14 or later and carry no stability guarantee.",
+                )
+            case .menuBarItemPosition:
+                appPref(
+                    "Pin where the menu-bar item sits.",
+                    "macOS stores a status item's position per app and restores it on every launch, so an item that once landed behind the notch stays there. A value here is re-applied at startup; while the app runs the position belongs to macOS, so ⌘-dragging the item wins until the next launch.",
+                    examples: [
+                        "0    let macOS place it (default)",
+                        "400  left of the Control Center icons on a 1512-point-wide display",
+                    ],
+                )
+            case .openConfig:
+                appPref(
+                    "Open the config AeroSpace-edge actually loaded.",
+                    "This is the resolved file, not a guess. With no custom config yet, the bundled default is copied to ~/.aerospace-edge.toml first and that copy is opened.",
+                )
+            case .reloadConfig:
+                appPref(
+                    "Re-read the config and refresh window management.",
+                    "Identical to the reload-config command. Use it after editing the file in another editor; Save in this window already reloads for you.",
+                )
+            case .crashReports:
+                appPref(
+                    "Show the crash reports macOS wrote for this app.",
+                    "Selects ~/Library/Logs/DiagnosticReports/AeroSpace-edge-*.ips in Finder, or opens the folder when there are none. macOS writes these, not AeroSpace-edge; attach the newest one to a bug report, since it names the code that crashed.",
+                )
+            case .versionInfo:
+                appPref(
+                    "Copy the exact build you are running.",
+                    "App name, version and the full git hash — the thing to paste into a bug report so a fix lands against the right code. The line beside the button shows the short form.",
+                )
             case .envVarOverrides:
                 help(
                     "Add or replace environment variables for commands.",
@@ -194,6 +234,12 @@ enum SettingHelpTopic: String, CaseIterable {
             "focused-window-border-radius",
             "focused-window-border-inset",
         ]
+    }
+
+    /// A control that is not a config key: app preferences and immediate actions. They still get
+    /// the same popover, minus the TOML block.
+    private func appPref(_ summary: String, _ details: String, examples: [String] = []) -> SettingHelpContent {
+        SettingHelpContent(summary: summary, details: details, tomlKeys: [], visual: nil, examples: examples)
     }
 
     private func help(
@@ -258,10 +304,17 @@ private struct SettingHelpPopover: View {
             }
             Divider()
             VStack(alignment: .leading, spacing: 3) {
-                Text(content.tomlKeys.count == 1 ? "TOML key" : "TOML keys")
-                    .font(.caption).foregroundStyle(.secondary)
-                ForEach(content.tomlKeys, id: \.self) { key in
-                    Text(key).font(.caption.monospaced()).textSelection(.enabled)
+                // No TOML key means this isn't a config option at all — an app preference or an
+                // immediate action. Saying so is the point: it explains why Save stays disabled.
+                if content.tomlKeys.isEmpty {
+                    Text("Not a config option — it never touches your TOML.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Text(content.tomlKeys.count == 1 ? "TOML key" : "TOML keys")
+                        .font(.caption).foregroundStyle(.secondary)
+                    ForEach(content.tomlKeys, id: \.self) { key in
+                        Text(key).font(.caption.monospaced()).textSelection(.enabled)
+                    }
                 }
             }
         }

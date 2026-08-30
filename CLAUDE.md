@@ -45,9 +45,20 @@ Always run scripts from the repo root. They `source ./script/setup.sh`, which us
 - **Full check (what CI runs):** `./test.sh` — debug build (warnings-as-errors) + tests +
   `aerospace-edge -h/--help/--version` smoke checks + lint + `generate.sh` + a clean-tree check.
 - **Format:** `./format.sh` (swiftformat). **Lint:** `./lint.sh`.
-- **Release build:** `./build-release.sh --build-version <ver> --codesign-identity -`
+- **Release build:** `./build-release.sh --build-version <ver> --codesign-identity aerospace-codesign-certificate`
   (Xcode-based, outputs `.release/AeroSpace-edge-v<ver>.zip`). Do NOT use
   `script/publish-release.sh` in this fork — it pushes tags to the upstream repo.
+  **Never release with `--codesign-identity -`.** Ad-hoc signatures have no certificate, so the
+  designated requirement is the literal binary hash and macOS drops every user's Accessibility
+  grant on each update. `script/create-codesign-certificate.sh` creates the certificate; see
+  "Signing identity" in `dev-docs/fork-maintenance.md`. CI is the one exception (no keychain).
+- **Debug .app bundle** (to actually run the UI, not just compile): `build-debug.sh` produces an
+  SPM binary, not a bundle. For a runnable app, `xcodebuild -configuration Debug` produces
+  `AeroSpace-edge-Debug.app` with bundle id `vitorebatista.aerospace-edge.debug` — a *separate*
+  app from the release install, with its own Accessibility grant and its own menu-bar item, so it
+  can be tested without uninstalling anything. Launch the executable inside the bundle directly
+  (`.../Contents/MacOS/AeroSpace-edge-Debug`) if you want its `print` output: a bundle launched
+  via `open` sends stdout and stderr to /dev/null.
 
 A change is only "done" when `./build-debug.sh -Xswiftc -warnings-as-errors` **and**
 `./swift-test.sh` both pass with a clean working tree afterward.
@@ -81,6 +92,14 @@ deterministically, so a correct edit leaves the tree clean.
   `"Aero.AxUiElementWindowType": "popup"`), and `AxWindowKindTest` iterates all of them.
   Prefer adding/adjusting an `axDumps` fixture over a synthetic mock when representing a
   real window kind — this is the maintainer-preferred convention.
+- **App Intents live in `Sources/AeroSpaceApp/`, not `AppBundle`.** Xcode's metadata processor
+  has to see them in the app target; across the package boundary extraction needs
+  `AppIntentsPackage` conformance and is markedly more fragile. Keep them thin shells over
+  `runAeroSpaceCommandFromAppIntent`.
+- **Raw TOML is edited through `TomlTextEditor`, not SwiftUI's `TextEditor`.** `TextEditor`
+  carries no per-range attributes on the macOS versions this app supports, so syntax colouring
+  needs the `NSTextView` wrapper. `tomlTokens` is a pure function — colouring never parses, never
+  rejects, and never blocks a save.
 - Keep changes atomic and scoped. Stick to existing structure; don't refactor unrelated
   code "along the way" (see `CONTRIBUTING.md`).
 
@@ -103,6 +122,44 @@ update the user-facing docs in the SAME change. From `dev-docs/architecture.md`:
 
 Keep doc wording consistent with the actual parser (e.g. if an option splits on commas, the
 docs must say "comma-separated", not "space-separated").
+
+## Settings window checklist
+
+The Settings window (`Sources/AppBundle/ui/settings/`) is a fork-original feature and its own
+documentation surface. When adding or changing a control:
+
+- [ ] Give it a `SettingHelpTopic` in `SettingsHelp.swift` and label it with `SettingHelpLabel`.
+      Every control gets one — `SettingsHelpTest` enforces summary, details and TOML keys.
+- [ ] Name the **TOML key(s)** the control writes. A control with no TOML key is an *app
+      preference* (menu-bar style/position) or an immediate action (open config, crash reports);
+      those are listed explicitly in `SettingsHelpTest.appPreferenceTopics`, and their popover
+      says "Not a config option". Anything else missing a key fails the test.
+- [ ] If the user has to type a **structure** (a mapping, a list, a colour, a monitor pattern),
+      fill `examples:` with concrete correct lines. They appear in the hover tooltip *and* the
+      popover. A description of a format is not a format.
+- [ ] A new sidebar destination needs: a `SettingsCategory` case, a `systemImage`, a branch in
+      `docsUrl`, a page at `docs-md/settings/<page>.md`, a `mkdocs.yml` nav entry, and a row in
+      the table in `docs-md/settings/index.md`. `SettingsHelpTest` asserts every `docsUrl` lands
+      on a file that exists.
+- [ ] Decide **config vs app preference** deliberately. The TOML travels between machines and is
+      shared; anything meaningful only on one screen or one machine (menu-bar item position) is an
+      app preference in `ExperimentalUISettings`, stored in `UserDefaults`, and must not dirty the
+      config draft.
+
+### Menu-bar item facts worth knowing
+
+- macOS persists a status item's position per app under `NSStatusItem Preferred Position Item-0`
+  in the app's own defaults domain (points from the right edge; bigger is further left), and
+  restores it at launch. A new bundle id on a full menu bar gets parked past the notch, where it
+  is invisible and undraggable. `applyMenuBarItemPosition()` rewrites that key in
+  `initAppBundle()` — **before** the scene builds, because nothing can move the item once
+  `MenuBarExtra` has created it.
+- `Item-0` is the autosave name SwiftUI generates for a single `MenuBarExtra`; there is no API to
+  ask for it. A second `MenuBarExtra` silently breaks the pinning.
+- The menu lists workspaces from `TrayMenuModel`, which merges live workspaces (`Workspace.all`)
+  with the names `workspaceNamesMentionedIn(config)` returns. `Workspace.all` holds only live
+  workspaces, so on `config-version = 2` a workspace that exists solely in a binding is not there
+  — that merge is what makes it reachable under "New".
 
 ## Fork workflow
 

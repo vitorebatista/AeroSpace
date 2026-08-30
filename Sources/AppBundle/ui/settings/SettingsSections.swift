@@ -92,6 +92,7 @@ struct MenuBarSection: View {
                 "Menu bar appearance",
                 footer: "Experimental styles require macOS 14 or later and have no stability guarantees.",
             ) {
+                SettingHelpLabel(title: "Style", topic: .menuBarStyle)
                 let color = AppearanceTheme.current == .dark ? Color.white : Color.black
                 ForEach(MenuBarStyle.allCases) { style in
                     MenuBarStyleButton(style: style, color: color).environmentObject(viewModel)
@@ -106,7 +107,7 @@ struct MenuBarSection: View {
                     """,
             ) {
                 HStack {
-                    Text("Distance from the right edge")
+                    SettingHelpLabel(title: "Distance from the right edge", topic: .menuBarItemPosition)
                     Spacer()
                     TextField(
                         "",
@@ -118,13 +119,7 @@ struct MenuBarSection: View {
                     )
                     .frame(width: 70)
                     .multilineTextAlignment(.trailing)
-                    .help("""
-                        Points from the right edge of the menu bar.
-
-                        Examples:
-                        0    let macOS place the item (default)
-                        400  left of the Control Center icons on a 1512-point-wide display
-                        """)
+                    .help(SettingHelpTopic.menuBarItemPosition.content.tooltip)
                 }
             }
         }
@@ -144,20 +139,33 @@ struct ApplicationSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup("Configuration file") {
-                openConfigButton()
-                reloadConfigButton()
+                HStack {
+                    SettingHelpLabel(title: "Open config in editor", topic: .openConfig)
+                    Spacer()
+                    openConfigButton()
+                }
+                HStack {
+                    SettingHelpLabel(title: "Reload config", topic: .reloadConfig)
+                    Spacer()
+                    reloadConfigButton()
+                }
             }
             SettingsGroup(
                 "Diagnostics",
                 footer: "Crash reports macOS wrote for \(aeroSpaceAppName). Attach the newest one to a bug report — it names the code that crashed, which is what a fix starts from.",
             ) {
-                Button("Show Crash Reports") { revealCrashReports() }
+                HStack {
+                    SettingHelpLabel(title: "Crash reports", topic: .crashReports)
+                    Spacer()
+                    Button("Show Crash Reports") { revealCrashReports() }
+                }
             }
             // "Check for Updates…" lives in the window footer, not here: it applies to every
             // category and was too easy to miss buried in this one.
             SettingsGroup("Version") {
                 HStack {
-                    Text(shortIdentification).foregroundStyle(.secondary)
+                    SettingHelpLabel(title: shortIdentification, topic: .versionInfo)
+                        .foregroundStyle(.secondary)
                     Spacer()
                     Button("Copy Version Info") { identification.copyToClipboard() }
                 }

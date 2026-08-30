@@ -2,13 +2,27 @@
 import XCTest
 
 final class SettingsHelpTest: XCTestCase {
+    /// The controls that are deliberately not config options: app preferences and immediate
+    /// actions. Everything else must name the TOML key it writes.
+    private static let appPreferenceTopics: Set<SettingHelpTopic> = [
+        .menuBarStyle, .menuBarItemPosition, .openConfig, .reloadConfig, .crashReports, .versionInfo,
+    ]
+
+    func testAppPreferencesAreExactlyTheTopicsWithoutTomlKeys() {
+        let withoutKeys = Set(SettingHelpTopic.allCases.filter { $0.content.tomlKeys.isEmpty })
+        assertEquals(withoutKeys.sorted { $0.rawValue < $1.rawValue }, Self.appPreferenceTopics.sorted { $0.rawValue < $1.rawValue })
+    }
+
     func testEveryTopicProvidesUsefulUserFacingHelp() {
         for topic in SettingHelpTopic.allCases {
             let content = topic.content
             XCTAssertFalse(content.summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, "Missing summary for \(topic)")
             XCTAssertFalse(content.details.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, "Missing details for \(topic)")
-            XCTAssertFalse(content.tomlKeys.isEmpty, "Missing TOML key for \(topic)")
             XCTAssertTrue(content.tomlKeys.allSatisfy { !$0.isEmpty }, "Empty TOML key for \(topic)")
+            XCTAssertTrue(
+                !content.tomlKeys.isEmpty || Self.appPreferenceTopics.contains(topic),
+                "Missing TOML key for \(topic) — add it, or list the topic as an app preference",
+            )
         }
     }
 
