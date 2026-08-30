@@ -13,7 +13,7 @@ enum ConfigTomlWriter {
     /// `execConfig` is the *expanded* environment (writing it back would bake the whole
     /// inherited process environment into the user's file), and the callbacks are
     /// `[any Command]`. Those live here as raw file-shaped values instead.
-    struct ConfigDraft: ConvenienceCopyable {
+    struct ConfigDraft: ConvenienceCopyable, Equatable {
         var startAtLogin: Bool
         var autoReloadConfig: Bool
         var automaticallyUnhideMacosHiddenApps: Bool
@@ -42,6 +42,37 @@ enum ConfigTomlWriter {
         var rawKeybindings: String
         var rawWindowRules: String
         var rawCallbacks: String
+
+        static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.startAtLogin == rhs.startAtLogin &&
+                lhs.autoReloadConfig == rhs.autoReloadConfig &&
+                lhs.automaticallyUnhideMacosHiddenApps == rhs.automaticallyUnhideMacosHiddenApps &&
+                lhs.enableNormalizationFlattenContainers == rhs.enableNormalizationFlattenContainers &&
+                lhs.enableNormalizationOppositeOrientationForNestedContainers == rhs.enableNormalizationOppositeOrientationForNestedContainers &&
+                lhs.enableNormalizationBinaryTree == rhs.enableNormalizationBinaryTree &&
+                lhs.defaultRootContainerLayout.rawValue == rhs.defaultRootContainerLayout.rawValue &&
+                lhs.defaultRootContainerOrientation.rawValue == rhs.defaultRootContainerOrientation.rawValue &&
+                lhs.accordionPadding == rhs.accordionPadding &&
+                lhs.focusFollowsAppActivation.rawValue == rhs.focusFollowsAppActivation.rawValue &&
+                lhs.newWindowPreventFlicker == rhs.newWindowPreventFlicker &&
+                lhs.focusedWindowBorder == rhs.focusedWindowBorder &&
+                lhs.focusedWindowBorderColor == rhs.focusedWindowBorderColor &&
+                lhs.focusedWindowBorderWidth == rhs.focusedWindowBorderWidth &&
+                lhs.focusedWindowBorderOpacity == rhs.focusedWindowBorderOpacity &&
+                lhs.focusedWindowBorderRadius == rhs.focusedWindowBorderRadius &&
+                lhs.focusedWindowBorderInset == rhs.focusedWindowBorderInset &&
+                lhs.configVersion == rhs.configVersion &&
+                lhs.persistentWorkspaces == rhs.persistentWorkspaces &&
+                lhs.gaps == rhs.gaps &&
+                lhs.workspaceToMonitorForceAssignment == rhs.workspaceToMonitorForceAssignment &&
+                lhs.keyMappingPreset.rawValue == rhs.keyMappingPreset.rawValue &&
+                lhs.keyNotationToKeyCode == rhs.keyNotationToKeyCode &&
+                lhs.inheritEnvVars == rhs.inheritEnvVars &&
+                lhs.envVars == rhs.envVars &&
+                lhs.rawKeybindings == rhs.rawKeybindings &&
+                lhs.rawWindowRules == rhs.rawWindowRules &&
+                lhs.rawCallbacks == rhs.rawCallbacks
+        }
     }
 
     // MARK: - Table ownership

@@ -211,6 +211,18 @@ extension TomlBlockDocument {
         blocks.first { $0.isKeyValue && $0.name == key }?.text
     }
 
+    /// The key-value entries from matching tables, in source order. Each entry retains
+    /// its complete value text, including continuation lines for arrays and multiline
+    /// strings, so callers can feed it back through the real TOML parser unchanged.
+    func keyValueTexts(inTableMatching predicate: (String) -> Bool) -> [(table: String, text: String)] {
+        var result: [(table: String, text: String)] = []
+        for block in blocks {
+            guard case .table(let table, let text) = block, predicate(table) else { continue }
+            result += Self.keyValueTexts(inTableText: text).map { (table: table, text: $0) }
+        }
+        return result
+    }
+
     /// Appends verbatim top-level text (the Callbacks pane's content) at the end of the
     /// top-level key region, before the first table header.
     mutating func setRawTopLevel(text: String) {
@@ -222,6 +234,34 @@ extension TomlBlockDocument {
             blocks[target - 1] = blocks[target - 1].withText { $0.endsWithNewline ? $0 : $0 + "\n" }
         }
         blocks.insert(.trivia(text: text.endsWithNewline ? text : text + "\n"), at: target)
+    }
+
+    private static func keyValueTexts(inTableText text: String) -> [String] {
+        let lines = text.linesWithTerminators()
+        guard lines.count > 1 else { return [] }
+
+        var result: [String] = []
+        var pending = ""
+        var state = TomlLineState()
+        for line in lines.dropFirst() {
+            let insideValue = state.isInsideValue
+            state.consume(line)
+            if insideValue {
+                pending += line
+                continue
+            }
+
+            let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmed.isEmpty || trimmed.hasPrefix("#") {
+                if !pending.isEmpty { pending += line }
+                continue
+            }
+
+            if !pending.isEmpty { result.append(pending) }
+            pending = line
+        }
+        if !pending.isEmpty { result.append(pending) }
+        return result
     }
 }
 
