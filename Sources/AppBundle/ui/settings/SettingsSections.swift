@@ -97,6 +97,29 @@ struct MenuBarSection: View {
                     MenuBarStyleButton(style: style, color: color).environmentObject(viewModel)
                 }
             }
+            SettingsGroup(
+                "Position",
+                footer: """
+                    Points from the right edge of the menu bar; bigger moves the item further left. \
+                    0 leaves the position to macOS. Applied at startup: while the app runs the \
+                    position belongs to macOS, so ⌘-dragging the item still wins until the next launch.
+                    """,
+            ) {
+                HStack {
+                    Text("Distance from the right edge")
+                    Spacer()
+                    TextField(
+                        "",
+                        value: Binding(
+                            get: { viewModel.experimentalUISettings.menuBarItemPosition },
+                            set: { viewModel.experimentalUISettings.menuBarItemPosition = $0 },
+                        ),
+                        format: .number,
+                    )
+                    .frame(width: 70)
+                    .multilineTextAlignment(.trailing)
+                }
+            }
         }
     }
 }
