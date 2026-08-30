@@ -233,7 +233,7 @@ git checkout -B port/<slug> origin/main
   `docs-md/commands/*.md`. Edit the page's synopsis fence / `description:` frontmatter, then
   `./script/generate-cmd-help.sh` (build-debug regenerates `subcommandDescriptions`). Never
   hand-edit the generated `.swift`.
-- **Docs are part of the change** (see CLAUDE.md command checklist): new flag/command/config/format
+- **Docs are part of the change** (see AGENTS.md command checklist): new flag/command/config/format
   var → update the relevant `.md` + `docs-md/guide.md`/`default-config.toml` + the `<event>`/rule in
   `grammar/commands-bnf-grammar.txt`.
 
