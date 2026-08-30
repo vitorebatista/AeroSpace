@@ -87,3 +87,11 @@ run = ['layout tiling']
 [[on-window-detected]]
 if.window-title-regex-substring = 'document'
 run = ['move-node-to-workspace archive']
+
+[[on-window-detected]]
+if.workspace = 'fixture-workspace'
+run = ['layout floating']
+
+[[on-window-detected]]
+if.during-aerospace-startup = true
+run = ['move-node-to-workspace assignment-only']

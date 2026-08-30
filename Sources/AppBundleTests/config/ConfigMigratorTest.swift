@@ -11,6 +11,28 @@ final class ConfigMigratorTest: XCTestCase {
         try assertFixtureMigration(named: "config-v1-comprehensive")
     }
 
+    func testMigrateComprehensiveV1FixturePreservesWorkspaceAndStartupWindowMatchers() throws {
+        let sourceText = try String(
+            contentsOf: projectRoot.appending(component: "Sources/AppBundleTests/config/fixtures/config-v1-comprehensive.toml"),
+            encoding: .utf8,
+        )
+        let source = parseConfig(sourceText)
+        XCTAssertEqual(source.errors, [])
+        guard source.errors.isEmpty else { return }
+
+        let candidate = migrate(sourceText)
+        let migrated = parseConfig(candidate.text)
+        XCTAssertEqual(migrated.errors, [])
+        guard migrated.errors.isEmpty else { return }
+
+        let sourceMatchers = source.config.onWindowDetected.map(\.matcher)
+        let migratedMatchers = migrated.config.onWindowDetected.map(\.matcher)
+        XCTAssertTrue(sourceMatchers.contains { $0.workspace == "fixture-workspace" })
+        XCTAssertTrue(sourceMatchers.contains { $0.duringAeroSpaceStartup == true })
+        XCTAssertTrue(migratedMatchers.contains { $0.workspace == "fixture-workspace" })
+        XCTAssertTrue(migratedMatchers.contains { $0.duringAeroSpaceStartup == true })
+    }
+
     func testMigrateCurrentShapeV1FixturePreservesEveryDraftFieldAndSourceBlock() throws {
         try assertFixtureMigration(named: "config-v1-current-shape")
     }
