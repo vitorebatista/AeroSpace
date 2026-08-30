@@ -151,18 +151,22 @@ open -a /Applications/AeroSpace-edge.app
 ```
 
 Both binaries are universal (arm64 + x86_64). You only do this once — after that,
-**Check for Updates…** in the menu bar finds, downloads and installs new releases in place.
+**Check for Updates…** in the Settings window footer finds, downloads and installs new
+releases in place.
 
-!!! warning "The one thing that will surprise you"
+!!! warning "Grant Accessibility after installing"
 
-    Builds are signed ad-hoc, so macOS revokes the Accessibility grant on every upgrade. The
-    app notices its permission is gone, clears its TCC entry, and exits at launch. **It looks
-    like a crash. It isn't.**
+    Until you do, the app notices its permission is missing, clears its TCC entry, and exits
+    at launch. **It looks like a crash. It isn't.**
 
-    After installing or upgrading: **System Settings → Privacy & Security → Accessibility**,
-    switch AeroSpace-edge on (add `/Applications/AeroSpace-edge.app` with **+** if the row
-    isn't there), then launch it again. This is a separate entry from any other window
-    manager's — granting it affects nothing else.
+    After installing: **System Settings → Privacy & Security → Accessibility**, switch
+    AeroSpace-edge on (add `/Applications/AeroSpace-edge.app` with **+** if the row isn't
+    there), then launch it again. This is a separate entry from any other window manager's —
+    granting it affects nothing else.
+
+    Releases are signed with a stable identity, so upgrades keep the grant. (Releases up to
+    v1.15 were ad-hoc signed and did force a re-grant every time; the first update past that
+    asks once more, then stops.)
 
 Confirm you're talking to the right server:
 

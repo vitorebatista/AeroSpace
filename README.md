@@ -169,19 +169,22 @@ open -a /Applications/AeroSpace-edge.app
 
 Both binaries are universal (arm64 + x86_64).
 
-You only have to do this once: after that, **Check for Updates…** in the menu bar finds new releases,
-downloads them and installs them in place.
+You only have to do this once: after that, **Check for Updates…** in the Settings window footer
+(menu bar → **Settings…**) finds new releases, downloads them and installs them in place.
 
 There's no Homebrew cask, and there won't be one.
 
-### The one thing that will surprise you
+### Granting Accessibility
 
-**Builds are signed ad-hoc, so macOS revokes the Accessibility grant on every upgrade.** The app notices
-its permission is gone, clears its TCC entry, and exits at launch. It looks like a crash. It isn't.
+On first install: **System Settings → Privacy & Security → Accessibility**, switch AeroSpace‑edge on
+(add `/Applications/AeroSpace-edge.app` with **+** if the row isn't there), then launch it again. Until
+you do, the app notices its permission is missing, clears its TCC entry and exits at launch — it looks
+like a crash, it isn't. This is a separate entry from any other window manager's — granting it affects
+nothing else.
 
-After installing or upgrading: **System Settings → Privacy & Security → Accessibility**, switch
-AeroSpace‑edge on (add `/Applications/AeroSpace-edge.app` with **+** if the row isn't there), then launch
-it again. This is a separate entry from any other window manager's — granting it affects nothing else.
+Releases are signed with a stable identity, so **upgrades keep the grant** and you don't have to redo
+this every time. (Releases up to and including v1.15 were signed ad-hoc, which did force a re-grant on
+every upgrade; the first update past that asks once more, then stops.)
 
 Confirm you're talking to the right server:
 
@@ -191,13 +194,13 @@ aerospace-edge --version   # client and server should report the same 1.x versio
 
 ### Updating
 
-**Check for Updates…** in the menu-bar menu. It finds the newest release, shows what changed, and on
-confirmation downloads it, verifies it, replaces the app and the CLI in place, and relaunches.
+Menu bar → **Settings…**, then **Check for Updates…** in the window footer (it's on every page of the
+window). It finds the newest release, shows what changed, and on confirmation downloads it, verifies
+it, replaces the app and the CLI in place, and relaunches.
 
-The one manual step is unavoidable: builds are ad-hoc signed, so macOS revokes Accessibility whenever
-the app is replaced, and you'll be asked to grant it again. The updater tells you this is coming rather
-than leaving you to wonder why the app quit. Signing with a paid Apple Developer ID would remove the
-step — until then, no updater can avoid it.
+Accessibility survives the update: releases are signed with a stable certificate, so macOS keeps the
+grant when the app is replaced. If it does ask again — it will once, coming from an ad-hoc-signed
+release up to v1.15 — re-grant it in System Settings → Privacy & Security → Accessibility.
 
 The updater only accepts downloads from this repository's GitHub releases over HTTPS, and refuses to
 install a payload whose bundle id or version doesn't match the release it claims to be.

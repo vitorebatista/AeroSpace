@@ -27,9 +27,9 @@ private func askToInstall(_ release: GitHubRelease) -> Bool {
 
         \(release.notes.firstLines(12))
 
-        Installing replaces the app and relaunches it. Because builds are signed ad-hoc, macOS will ask \
-        you to grant Accessibility again afterwards — that's expected on every update, not a problem with \
-        the download.
+        Installing replaces the app and relaunches it. Releases are signed with a stable identity, so \
+        macOS normally keeps the Accessibility permission. If it does ask again, grant it in System \
+        Settings → Privacy & Security → Accessibility.
         """
     alert.addButton(withTitle: "Install and Relaunch")
     alert.addButton(withTitle: "Later")
@@ -49,9 +49,8 @@ private func install(_ release: GitHubRelease) async {
     alert.informativeText = """
         \(aeroSpaceAppName) will now quit and reopen.
 
-        macOS revoked its Accessibility permission when the app was replaced, so the new version will ask \
-        for it again on launch. Grant it in System Settings → Privacy & Security → Accessibility, and the \
-        window manager starts back up.
+        If macOS asks for Accessibility again on launch, grant it in System Settings → Privacy & Security \
+        → Accessibility, and the window manager starts back up.
         """
     alert.addButton(withTitle: "Relaunch")
     _ = alert.runModal()
