@@ -92,6 +92,59 @@ final class ConfigMigratorTest: XCTestCase {
         XCTAssertTrue(candidate.text.contains("persistent-workspaces = ['three', 'two', 'one', 'four', 'five']"))
     }
 
+    func testMigrateKeepsSourceSemanticContextWhenParsingSplitBindings() {
+        let candidate = migrate(
+            """
+            enable-normalization-flatten-containers = false
+
+            [mode.main.binding]
+            alt-s = 'split horizontal'
+            alt-1 = 'workspace 1'
+            """,
+        )
+
+        assertEquals(candidate.persistentWorkspaces, ["1"])
+        XCTAssertTrue(candidate.text.contains("enable-normalization-flatten-containers = false"))
+    }
+
+    func testMigrateUsesCustomKeyMappingWrittenAsDottedKeys() {
+        let candidate = migrate(
+            """
+            key-mapping.key-notation-to-key-code.zz = 'a'
+
+            [mode.main.binding]
+            alt-zz = 'workspace one'
+            """,
+        )
+
+        assertEquals(candidate.persistentWorkspaces, ["one"])
+    }
+
+    func testMigrateParsesMultilineTomlBindingStrings() {
+        let candidate = migrate(
+            #"""
+            [mode.main.binding]
+            alt-1 = """
+            workspace one
+            """
+            """#,
+        )
+
+        assertEquals(candidate.persistentWorkspaces, ["one"])
+    }
+
+    func testMigrateCollectsAssignmentsWithoutModeBindings() {
+        let candidate = migrate(
+            """
+            [workspace-to-monitor-force-assignment]
+            one = 'main'
+            two = 'secondary'
+            """,
+        )
+
+        assertEquals(candidate.persistentWorkspaces, ["one", "two"])
+    }
+
     func testMigrateOnlyRewritesVersionAndPersistentWorkspaceLines() {
         let candidate = migrate(
             """

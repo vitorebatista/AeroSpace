@@ -29,11 +29,11 @@ enum ConfigMigrator {
             return .failure(.semanticMismatch("Source config-version is \(source.config.configVersion), expected \(from)"))
         }
 
-        let keyMappingPreamble = document.text(forTablesMatching: { $0 == "key-mapping" || $0.hasPrefix("key-mapping.") })
+        let bindingPreamble = bindingPreamble(for: source.config)
         var persistentWorkspaces = OrderedSet<String>()
 
         for entry in document.keyValueTexts(inTableMatching: { $0.hasPrefix("mode.") && $0.hasSuffix(".binding") }) {
-            var oneBinding = keyMappingPreamble
+            var oneBinding = bindingPreamble
             if entry.table != "mode.main.binding" { oneBinding += "[mode.main.binding]\n" }
             oneBinding += "[\(entry.table)]\n\(entry.text)"
             let parsed = parseConfig(oneBinding)
@@ -102,5 +102,13 @@ enum ConfigMigrator {
                 persistentWorkspaces: Array(persistentWorkspaces),
             ),
         )
+    }
+
+    private static func bindingPreamble(for config: Config) -> String {
+        "enable-normalization-flatten-containers = \(TomlValue.of(config.enableNormalizationFlattenContainers))\n" +
+            keybindingsPreamble(
+                preset: config.keyMapping.presetForSettings,
+                notationOverrides: config.keyMapping.rawNotationNamesForSettings,
+            )
     }
 }
