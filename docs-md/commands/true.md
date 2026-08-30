@@ -4,14 +4,14 @@ description: Return true value
 section: 1
 ---
 
-# aerospace true
+# aerospace-edge true
 
 Return true value
 
 ## Synopsis
 
 ```synopsis
-aerospace true [-h|--help]
+aerospace-edge true [-h|--help]
 ```
 
 ## Description

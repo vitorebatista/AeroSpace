@@ -4,15 +4,15 @@ description: Interactive command to record Accessibility API debug information t
 section: 1
 ---
 
-# aerospace debug-windows
+# aerospace-edge debug-windows
 
 Interactive command to record Accessibility API debug information to create bug reports
 
 ## Synopsis
 
 ```synopsis
-aerospace debug-windows [-h|--help] [--window-id <window-id>]
-aerospace debug-windows [-h|--help] --app-bundle-id <app-bundle-id>
+aerospace-edge debug-windows [-h|--help] [--window-id <window-id>]
+aerospace-edge debug-windows [-h|--help] --app-bundle-id <app-bundle-id>
 ```
 
 ## Description
@@ -27,7 +27,7 @@ The intended usage is the following:
 
 3.  Run the command one more time to stop the debug session recording and print the results
 
-If the problematic window can’t be focused, or if AeroSpace doesn’t detect the window at all, use `--app-bundle-id` flag to dump debug information about all AX windows of the application, including AX windows that are not treated as windows from AeroSpace perspective. You can get the app-bundle-id of running applications with `aerospace list-apps` command.
+If the problematic window can’t be focused, or if AeroSpace doesn’t detect the window at all, use `--app-bundle-id` flag to dump debug information about all AX windows of the application, including AX windows that are not treated as windows from AeroSpace perspective. You can get the app-bundle-id of running applications with `aerospace-edge list-apps` command.
 
 `debug-windows` command is **not stable API**. Please **don’t rely on** the command existence and output format. The only intended use case is to report bugs about incorrect windows handling.
 

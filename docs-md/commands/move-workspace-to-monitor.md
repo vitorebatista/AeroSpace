@@ -4,16 +4,16 @@ description: Move workspace to monitor targeted by relative direction, by order,
 section: 1
 ---
 
-# aerospace move-workspace-to-monitor
+# aerospace-edge move-workspace-to-monitor
 
 Move workspace to monitor targeted by relative direction, by order, or by pattern.
 
 ## Synopsis
 
 ```synopsis
-aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--wrap-around] (left|down|up|right)
-aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--wrap-around] (next|prev)
-aerospace move-workspace-to-monitor [-h|--help] [--workspace <workspace>] <monitor-pattern>...
+aerospace-edge move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--wrap-around] (left|down|up|right)
+aerospace-edge move-workspace-to-monitor [-h|--help] [--workspace <workspace>] [--wrap-around] (next|prev)
+aerospace-edge move-workspace-to-monitor [-h|--help] [--workspace <workspace>] <monitor-pattern>...
 ```
 
 ## Description

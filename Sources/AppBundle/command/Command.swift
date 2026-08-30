@@ -36,11 +36,12 @@ extension Command {
     var isExec: Bool { self is ExecAndForgetCommand }
 }
 
-// There are 4 entry points for running commands:
+// There are 5 entry points for running commands:
 // 1. config keybindings
 // 2. CLI requests to server
 // 3. on-window-detected callback
 // 4. Tray icon buttons
+// 5. App Intents (Shortcuts, Spotlight, Focus filters). See appIntentsBridge.swift
 extension [Command] {
     @MainActor
     func runCmdSeq(_ env: CmdEnv, _ io: sending CmdIo) async throws -> Int32ExitCode {

@@ -8,8 +8,8 @@ out_dir="${2:-.man}"
 name=$(basename "$file" .md)
 purpose=$(sed -n 's/^description: //p' "$file" | head -1)
 
-# docs-md/aerospace.md is the top-level aerospace-edge(1) page, not a subcommand.
-if test "$name" = aerospace; then
+# docs-md/aerospace-edge.md is the top-level aerospace-edge(1) page, not a subcommand.
+if test "$name" = aerospace-edge; then
     page="aerospace-edge"
 else
     page="aerospace-edge-${name}"
@@ -18,7 +18,7 @@ fi
 mkdir -p "$out_dir"
 
 {
-    echo "% ${page}(1) | AeroSpace Manual"
+    echo "% ${page}(1) | AeroSpace-edge Manual"
     echo
     echo "# NAME"
     echo

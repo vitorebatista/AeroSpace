@@ -4,16 +4,16 @@ description: Move window to monitor targeted by relative direction, by order, or
 section: 1
 ---
 
-# aerospace move-node-to-monitor
+# aerospace-edge move-node-to-monitor
 
 Move window to monitor targeted by relative direction, by order, or by pattern
 
 ## Synopsis
 
 ```synopsis
-aerospace move-node-to-monitor [-h|--help] [--window-id <window-id>] [--focus-follows-window]
+aerospace-edge move-node-to-monitor [-h|--help] [--window-id <window-id>] [--focus-follows-window]
                                [--wrap-around] (left|down|up|right|next|prev)
-aerospace move-node-to-monitor [-h|--help] [--window-id <window-id>] [--focus-follows-window]
+aerospace-edge move-node-to-monitor [-h|--help] [--window-id <window-id>] [--focus-follows-window]
                                [--fail-if-noop] <monitor-pattern>...
 ```
 

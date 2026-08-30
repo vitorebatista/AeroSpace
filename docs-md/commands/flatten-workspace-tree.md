@@ -4,14 +4,14 @@ description: Flatten the tree of the focused workspace
 section: 1
 ---
 
-# aerospace flatten-workspace-tree
+# aerospace-edge flatten-workspace-tree
 
 Flatten the tree of the focused workspace
 
 ## Synopsis
 
 ```synopsis
-aerospace flatten-workspace-tree [-h|--help] [--workspace <workspace>]
+aerospace-edge flatten-workspace-tree [-h|--help] [--workspace <workspace>]
 ```
 
 ## Description

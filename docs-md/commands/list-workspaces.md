@@ -4,16 +4,16 @@ description: Print workspaces that satisfy conditions
 section: 1
 ---
 
-# aerospace list-workspaces
+# aerospace-edge list-workspaces
 
 Print workspaces that satisfy conditions
 
 ## Synopsis
 
 ```synopsis
-aerospace list-workspaces [-h|--help] --monitor <monitor>... [--visible [no]] [--empty [no]] [--format <output-format>] [--count] [--json]
-aerospace list-workspaces [-h|--help] --all [--format <output-format>] [--count] [--json]
-aerospace list-workspaces [-h|--help] --focused [--format <output-format>] [--count] [--json]
+aerospace-edge list-workspaces [-h|--help] --monitor <monitor>... [--visible [no]] [--empty [no]] [--format <output-format>] [--count] [--json]
+aerospace-edge list-workspaces [-h|--help] --all [--format <output-format>] [--count] [--json]
+aerospace-edge list-workspaces [-h|--help] --focused [--format <output-format>] [--count] [--json]
 ```
 
 ## Description

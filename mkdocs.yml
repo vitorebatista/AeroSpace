@@ -59,9 +59,10 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Guide: guide.md
+  - Comparison: comparison.md
   - Goodies: goodies.md
   - Commands:
-      - aerospace.md
+      - aerospace-edge.md
       - commands/balance-sizes.md
       - commands/close-all-windows-but-current.md
       - commands/close.md

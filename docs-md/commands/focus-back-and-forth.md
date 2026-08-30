@@ -4,14 +4,14 @@ description: Switch between the current and previously focused elements back and
 section: 1
 ---
 
-# aerospace focus-back-and-forth
+# aerospace-edge focus-back-and-forth
 
 Switch between the current and previously focused elements back and forth
 
 ## Synopsis
 
 ```synopsis
-aerospace focus-back-and-forth [-h|--help]
+aerospace-edge focus-back-and-forth [-h|--help]
 ```
 
 ## Description
@@ -22,7 +22,7 @@ AeroSpace stores only one previously focused window in history, which means that
 
 That’s why it may be preferred to combine `focus-back-and-forth` with `workspace-back-and-forth`:  
 
-    aerospace focus-back-and-forth || aerospace workspace-back-and-forth
+    aerospace-edge focus-back-and-forth || aerospace-edge workspace-back-and-forth
 
 Also see: [workspace-back-and-forth](workspace-back-and-forth.md)
 

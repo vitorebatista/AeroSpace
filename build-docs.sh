@@ -20,7 +20,7 @@ if ! test -z "$(git status --porcelain)"; then
     echo "git working directory is dirty" >> .site/version.html
 fi
 
-for file in docs-md/aerospace.md docs-md/commands/*.md; do
+for file in docs-md/aerospace-edge.md docs-md/commands/*.md; do
     ./script/md2man.sh "$file" .man > /dev/null
 done
 echo "built .site and $(ls .man | wc -l | tr -d ' ') man pages"

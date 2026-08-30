@@ -4,14 +4,14 @@ description: Move the requested workspace to the focused monitor.
 section: 1
 ---
 
-# aerospace summon-workspace
+# aerospace-edge summon-workspace
 
 Move the requested workspace to the focused monitor.
 
 ## Synopsis
 
 ```synopsis
-aerospace summon-workspace [-h|--help] [--fail-if-noop] [--when-visible (focus|swap)] <workspace>
+aerospace-edge summon-workspace [-h|--help] [--fail-if-noop] [--when-visible (focus|swap)] <workspace>
 ```
 
 ## Description

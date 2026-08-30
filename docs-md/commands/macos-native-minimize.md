@@ -4,14 +4,14 @@ description: Minimize focused window
 section: 1
 ---
 
-# aerospace macos-native-minimize
+# aerospace-edge macos-native-minimize
 
 Minimize focused window
 
 ## Synopsis
 
 ```synopsis
-aerospace macos-native-minimize [-h|--help] [--window-id <window-id>]
+aerospace-edge macos-native-minimize [-h|--help] [--window-id <window-id>]
 ```
 
 ## Description

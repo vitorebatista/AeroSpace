@@ -4,14 +4,14 @@ description: Put the focused window and the nearest node in the specified direct
 section: 1
 ---
 
-# aerospace join-with
+# aerospace-edge join-with
 
 Put the focused window and the nearest node in the specified direction under a common parent container
 
 ## Synopsis
 
 ```synopsis
-aerospace join-with [-h|--help] [--window-id <window-id>] (left|down|up|right)
+aerospace-edge join-with [-h|--help] [--window-id <window-id>] (left|down|up|right)
 ```
 
 ## Description

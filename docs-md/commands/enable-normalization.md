@@ -4,17 +4,17 @@ description: Set or clear a per-workspace override for a refresh-time normalizat
 section: 1
 ---
 
-# aerospace enable-normalization
+# aerospace-edge enable-normalization
 
 Set or clear a per-workspace override for a refresh-time normalization
 
 ## Synopsis
 
 ```synopsis
-aerospace enable-normalization [-h|--help] [--workspace <workspace>] <kind> on [--fail-if-noop]
-aerospace enable-normalization [-h|--help] [--workspace <workspace>] <kind> off [--fail-if-noop]
-aerospace enable-normalization [-h|--help] [--workspace <workspace>] <kind> toggle
-aerospace enable-normalization [-h|--help] [--workspace <workspace>] <kind> reset
+aerospace-edge enable-normalization [-h|--help] [--workspace <workspace>] <kind> on [--fail-if-noop]
+aerospace-edge enable-normalization [-h|--help] [--workspace <workspace>] <kind> off [--fail-if-noop]
+aerospace-edge enable-normalization [-h|--help] [--workspace <workspace>] <kind> toggle
+aerospace-edge enable-normalization [-h|--help] [--workspace <workspace>] <kind> reset
 ```
 
 ## Description
@@ -31,7 +31,7 @@ The override is scoped to a single workspace (the focused workspace by default, 
 
 - `reset` clears the workspace override so the workspace falls back to the global config value.
 
-`on`, `off`, and `toggle` all install an override, even when the resulting value coincides with the global config. While the override is set, later changes to the global config key (including `aerospace reload-config`) have no effect on that workspace until you run `reset`.
+`on`, `off`, and `toggle` all install an override, even when the resulting value coincides with the global config. While the override is set, later changes to the global config key (including `aerospace-edge reload-config`) have no effect on that workspace until you run `reset`.
 
 See the broader normalization-framework discussion in [issue #260](https://github.com/nikitabobko/AeroSpace/issues/260).
 

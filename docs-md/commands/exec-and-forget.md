@@ -4,14 +4,14 @@ description: Run /bin/bash -c '<bash-script>'
 section: 1
 ---
 
-# aerospace exec-and-forget
+# aerospace-edge exec-and-forget
 
 Run /bin/bash -c '<bash-script>'
 
 ## Synopsis
 
 ```synopsis
-aerospace exec-and-forget <bash-script>
+aerospace-edge exec-and-forget <bash-script>
 ```
 
 ## Description

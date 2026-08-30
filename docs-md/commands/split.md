@@ -4,14 +4,14 @@ description: Split focused window
 section: 1
 ---
 
-# aerospace split
+# aerospace-edge split
 
 Split focused window
 
 ## Synopsis
 
 ```synopsis
-aerospace split [-h|--help] [--window-id <window-id>] (horizontal|vertical|opposite)
+aerospace-edge split [-h|--help] [--window-id <window-id>] (horizontal|vertical|opposite)
 ```
 
 ## Description
@@ -32,7 +32,7 @@ The argument configures orientation of the newly created container. `opposite` m
 
 !!! info
 
-    `split` command has no effect on workspaces where the `enable-normalization-flatten-containers` normalization is in effect. Consider using `join-with` if you want to keep `enable-normalization-flatten-containers` enabled. Alternatively, disable the normalization on a single workspace with `aerospace enable-normalization --workspace <workspace> flatten-containers off`
+    `split` command has no effect on workspaces where the `enable-normalization-flatten-containers` normalization is in effect. Consider using `join-with` if you want to keep `enable-normalization-flatten-containers` enabled. Alternatively, disable the normalization on a single workspace with `aerospace-edge enable-normalization --workspace <workspace> flatten-containers off`
 
 ## Options
 

@@ -4,14 +4,14 @@ description: Subscribe to AeroSpace events and receive notifications via socket
 section: 1
 ---
 
-# aerospace subscribe
+# aerospace-edge subscribe
 
 Subscribe to AeroSpace events and receive notifications via socket
 
 ## Synopsis
 
 ```synopsis
-aerospace subscribe [-h|--help] [--all] [--no-send-initial] [<event>...]
+aerospace-edge subscribe [-h|--help] [--all] [--no-send-initial] [<event>...]
 ```
 
 ## Description

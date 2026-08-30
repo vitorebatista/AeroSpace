@@ -4,14 +4,14 @@ description: Move mouse to the requested position
 section: 1
 ---
 
-# aerospace move-mouse
+# aerospace-edge move-mouse
 
 Move mouse to the requested position
 
 ## Synopsis
 
 ```synopsis
-aerospace move-mouse [-h|--help] [--fail-if-noop] <mouse-position>
+aerospace-edge move-mouse [-h|--help] [--fail-if-noop] <mouse-position>
 ```
 
 ## Description
@@ -43,12 +43,12 @@ aerospace move-mouse [-h|--help] [--fail-if-noop] <mouse-position>
 ## Examples
 
 - Try to move mouse to the center of the window. If there is no window in focus, move mouse to the center of the monitor:  
-  `aerospace move-mouse window-lazy-center || aerospace move-mouse monitor-lazy-center`
+  `aerospace-edge move-mouse window-lazy-center || aerospace-edge move-mouse monitor-lazy-center`
 
 ## Resources
 
 **Project homepage:** <https://github.com/nikitabobko/AeroSpace>  
-**Guide:** <https://nikitabobko.github.io/AeroSpace/guide>  
+**Guide:** <https://vitorebatista.github.io/AeroSpace-edge/guide/>  
 
 ## BUGS
 
