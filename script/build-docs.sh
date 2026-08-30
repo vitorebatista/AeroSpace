@@ -1,5 +1,5 @@
 #!/bin/bash
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 set -euo pipefail
 
 # Site -> .site (Material for MkDocs), man pages -> .man (pandoc).

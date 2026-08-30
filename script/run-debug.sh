@@ -1,6 +1,6 @@
 #!/bin/bash
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 source ./script/setup.sh
 
-./build-debug.sh
+./script/build-debug.sh
 ./.debug/AeroSpaceApp "$@"

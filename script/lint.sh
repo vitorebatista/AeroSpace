@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/.."
 source ./script/setup.sh
 
-./format.sh "$@"
+./script/format.sh "$@"
 
 if sw_vers -productVersion | grep -q "^14"; then # macOS 14
     # dyld[6263]: Library not loaded: /usr/lib/swift/libswiftSynchronization.dylib

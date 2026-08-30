@@ -1,5 +1,5 @@
 # EBNF-like grammar of aerospace-edge CLI args to generate shell completion. Managed by https://github.com/adaszko/complgen
-# Run ./build-shell-completion.sh to generate shell completion
+# Run ./script/build-shell-completion.sh to generate shell completion
 aerospace-edge <subcommand>;
 aerospace-edge -v;
 aerospace-edge --version;

@@ -233,14 +233,14 @@ git checkout -B port/<slug> origin/main
   `docs-md/commands/*.md`. Edit the page's synopsis fence / `description:` frontmatter, then
   `./script/generate-cmd-help.sh` (build-debug regenerates `subcommandDescriptions`). Never
   hand-edit the generated `.swift`.
-- **Docs are part of the change** (see CLAUDE.md command checklist): new flag/command/config/format
+- **Docs are part of the change** (see AGENTS.md command checklist): new flag/command/config/format
   var → update the relevant `.md` + `docs-md/guide.md`/`default-config.toml` + the `<event>`/rule in
   `grammar/commands-bnf-grammar.txt`.
 
 ### 4. Verify every branch (the bar)
 ```bash
-./build-debug.sh -Xswiftc -warnings-as-errors    # must exit 0 (warnings are errors)
-./swift-test.sh                                   # rely on exit 0 + "✅ Swift tests have passed"
+./script/build-debug.sh -Xswiftc -warnings-as-errors    # must exit 0 (warnings are errors)
+./script/swift-test.sh                                   # rely on exit 0 + "✅ Swift tests have passed"
 ```
 The "Test run with 0 tests in 0 suites passed" line is normal (Swift Testing framework); XCTest pass
 lines are filtered by the script. IDE/SourceKit diagnostics often lag and show false errors after a
@@ -267,14 +267,14 @@ git merge --no-ff --no-edit origin/port/<slug> -m "Merge pull request #<forkN> f
   `ConfigTest.swift`/`default-config.toml`, empty diff3 base) → resolve by **union** (keep both
   sides). Watch for a function whose closing `}` lived in the shared post-conflict region (union can
   drop one brace — add it back; the build will flag it).
-- After all merges: one final `./build-debug.sh -Xswiftc -warnings-as-errors` + `./swift-test.sh`,
-  confirm no conflict markers (`git grep -nE '^(<<<<<<<|>>>>>>>)' -- . ':!docs/superpowers'`), then
+- After all merges: one final `./script/build-debug.sh -Xswiftc -warnings-as-errors` + `./script/swift-test.sh`,
+  confirm no conflict markers (`git grep -nE '^(<<<<<<<|>>>>>>>)' -- . ':!dev-docs/superpowers'`), then
   `git push origin main`.
 
 ## Building a release binary (what actually works in this environment)
 
-`./build-release.sh` **fails here** on optional packaging extras (not the app): `build-docs.sh`
-needs Ruby-under-`mise` on PATH, `build-shell-completion.sh` needs `fish` + `bash >= 5` — none are
+`./script/build-release.sh` **fails here** on optional packaging extras (not the app): `script/build-docs.sh`
+needs Ruby-under-`mise` on PATH, `script/build-shell-completion.sh` needs `fish` + `bash >= 5` — none are
 installed. Two workarounds:
 
 **A. Make the official script work** (if you want man pages + completions): `brew install fish bash`,
@@ -282,7 +282,7 @@ and add a `mise` shim so the docs step's rubygems plugin finds it:
 ```bash
 printf "exec '/opt/homebrew/bin/mise' \"\$@\"\n" > .deps/bin/mise && chmod +x .deps/bin/mise
 NUKE_PATH=1 PATH="$PWD/.deps/bin:/opt/homebrew/bin:/bin:/usr/bin" \
-  ./build-release.sh --build-version "1.N" --codesign-identity aerospace-codesign-certificate
+  ./script/build-release.sh --build-version "1.N" --codesign-identity aerospace-codesign-certificate
 ```
 
 **B. Lean build (recommended — app + CLI, no man pages/completions).** Put the steps in a script and
@@ -290,7 +290,7 @@ run it with `zsh script.sh`, because the interactive shell hook rewrites `rm`/`l
 `rm -rf` into GNU-flagged `rm` that fails on macOS); running inside a script file bypasses the rewrite.
 The script (see git history of `/tmp/lean-release2.sh` pattern) does, with
 `NUKE_PATH=1 PATH="$PWD/.deps/bin:/opt/homebrew/bin:/bin:/usr/bin"`:
-1. `./generate.sh --ignore-shell-parser --ignore-cmd-help --build-version "1.N" --codesign-identity aerospace-codesign-certificate --generate-git-hash`
+1. `./script/generate.sh --ignore-shell-parser --ignore-cmd-help --build-version "1.N" --codesign-identity aerospace-codesign-certificate --generate-git-hash`
 2. `swift build -c release --arch arm64 --arch x86_64 --product aerospace-edge -Xswiftc -warnings-as-errors`
 3. `xcrun xcodebuild clean build -scheme AeroSpace -destination "generic/platform=macOS" -configuration Release -derivedDataPath .xcode-build`
 4. `git checkout .` (restores generated files + `project.pbxproj` that xcodegen/version-stamping dirtied)

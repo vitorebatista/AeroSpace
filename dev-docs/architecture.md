@@ -25,7 +25,7 @@
 - `../Sources/AppBundleTests/`.
   Tests
 - `../docs-md/`.
-  Markdown sources for the site (Material for MkDocs) and the man pages (pandoc). See `../build-docs.sh`
+  Markdown sources for the site (Material for MkDocs) and the man pages (pandoc). See `../script/build-docs.sh`
 - `../docs/config-examples/`.
   TOML configs shipped with the app and asserted on in tests
 
@@ -50,7 +50,7 @@ todo
 Command checklist:
 - [ ] Documentation in `../docs-md/commands/<command>.md` (+ the nav in `../mkdocs.yml`
       and the card list in `../docs-md/index.md` if the command list changed)
-  - [ ] Check that the site looks alright: `./build-docs.sh`, then open `./.site/index.html`
+  - [ ] Check that the site looks alright: `./script/build-docs.sh`, then open `./.site/index.html`
   - [ ] Check that man page looks alright `./.man`
 - [ ] Do `--window-id` and/or `--workspace` flags make sense for the command?
 - [ ] Shell completion `../grammar/commands-bnf-grammar.txt`

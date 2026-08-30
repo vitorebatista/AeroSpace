@@ -33,8 +33,8 @@ jobs:
       - run: ./.github/gh-actions-runner-xcode-select.sh
       - run: brew install swiftly
       - run: swiftly init --skip-install --assume-yes --verbose && swiftly install
-      - run: ./build-debug.sh
-      - run: ./test.sh
+      - run: ./script/build-debug.sh
+      - run: ./script/test.sh
 
   # We build release artifacts only on the latest macOS versions because:
   # 1. It cuts the build time twice on GH Actions
@@ -52,13 +52,13 @@ jobs:
       - run: ./.github/gh-actions-runner-xcode-select.sh
       - run: brew install bash fish xcbeautify swiftly pandoc # pandoc: build-docs.sh builds the man pages
       - run: swiftly init --skip-install --assume-yes --verbose && swiftly install
-      - name: './build-release.sh'
+      - name: './script/build-release.sh'
         run: |
           # "-" means "Sign to run locally". There is no aerospace-codesign-certificate on GH Actions.
           # CI-only: published releases must be signed with the certificate, or macOS drops the
           # Accessibility grant on every upgrade (dev-docs/fork-maintenance.md).
-          ./build-release.sh --codesign-identity -
-          ./install-from-sources.sh --dont-rebuild
+          ./script/build-release.sh --codesign-identity -
+          ./script/install-from-sources.sh --dont-rebuild
       - name: cat ./.release/xcodebuild.log
         if: ${{ always() }}
         run: 'if test -f ./.release/xcodebuild.log; then cat ./.release/xcodebuild.log; fi'
