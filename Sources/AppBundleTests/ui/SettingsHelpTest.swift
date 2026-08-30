@@ -46,4 +46,19 @@ final class SettingsHelpTest: XCTestCase {
             XCTAssertNotNil(topic.content.visual, "Missing visual explanation for \(topic)")
         }
     }
+
+    func testConfigVersionHelpExplainsMigrationAndRecoveryBeforeSaving() {
+        let details = SettingHelpTopic.configVersion.content.details
+
+        for expected in [
+            "Version 1",
+            "Version 2",
+            "materializes",
+            "persistent-workspaces",
+            "backup-v1-YYYYMMDD-HHmmss",
+            "No files change until Save",
+        ] {
+            XCTAssertTrue(details.contains(expected), "Missing migration guidance: \(expected)")
+        }
+    }
 }
