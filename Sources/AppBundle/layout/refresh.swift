@@ -94,16 +94,16 @@ func runLightSession<T>(
             if focusBefore != focusAfter {
                 focusAfter?.nativeFocus() // syncFocusToMacOs
             }
-            if shouldScheduleFollowUpRefresh(after: event) {
-                scheduleCancellableCompleteRefreshSession(event)
-            }
+            // Unconditional, .startup included. This session cancelled whatever refresh was pending
+            // when it started (see the top of this function), and during startup that is routinely a
+            // real one: restorePersistedLayout() awaits for a long time, and every app that finishes
+            // launching in that window schedules a refresh which this session then throws away.
+            // Dropping the follow-up here would leave those windows unregistered until some later,
+            // unrelated event happens to trigger a refresh.
+            scheduleCancellableCompleteRefreshSession(event)
             return result
         }
     }
-}
-
-func shouldScheduleFollowUpRefresh(after event: RefreshSessionEvent) -> Bool {
-    !event.isStartup
 }
 
 struct RunSessionGuard: Sendable {

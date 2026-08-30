@@ -42,17 +42,15 @@ import Foundation
         GlobalObserver.initObserver()
         Workspace.garbageCollectUnusedWorkspaces() // init workspaces
         _ = Workspace.all.first?.focusWorkspace()
-        do {
-            let state = signposter.beginInterval("startup.initialRefresh")
-            defer { signposter.endInterval("startup.initialRefresh", state) }
-            await runHeavyCompleteRefreshSession(
-                .startup,
-                // It's important for the first initialization to be non cancellable
-                // to make sure that isStartup propagates // to all places
-                cancellable: false,
-                layoutWorkspaces: false,
-            )
-        }
+        // No signpost around this call, nor around the light session below: both
+        // runHeavyCompleteRefreshSession and runLightSession already emit one keyed on #function.
+        await runHeavyCompleteRefreshSession(
+            .startup,
+            // It's important for the first initialization to be non cancellable
+            // to make sure that isStartup propagates // to all places
+            cancellable: false,
+            layoutWorkspaces: false,
+        )
         // After the refresh session above: the live windows exist by now, so they can be put back
         // where the previous run left them.
         do {
@@ -60,13 +58,9 @@ import Foundation
             defer { signposter.endInterval("startup.restorePersistedLayout", state) }
             try await restorePersistedLayout(focusedWorkspaceAtLaunch: focusedWorkspaceAtLaunch)
         }
-        do {
-            let state = signposter.beginInterval("startup.finalize")
-            defer { signposter.endInterval("startup.finalize", state) }
-            try await runLightSession(.startup, .forceRun) {
-                smartLayoutAtStartup()
-                _ = try await config.afterStartupCommand.runCmdSeq(.defaultEnv, .emptyStdin)
-            }
+        try await runLightSession(.startup, .forceRun) {
+            smartLayoutAtStartup()
+            _ = try await config.afterStartupCommand.runCmdSeq(.defaultEnv, .emptyStdin)
         }
     }
 }
