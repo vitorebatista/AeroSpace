@@ -268,7 +268,7 @@ git merge --no-ff --no-edit origin/port/<slug> -m "Merge pull request #<forkN> f
   sides). Watch for a function whose closing `}` lived in the shared post-conflict region (union can
   drop one brace — add it back; the build will flag it).
 - After all merges: one final `./build-debug.sh -Xswiftc -warnings-as-errors` + `./swift-test.sh`,
-  confirm no conflict markers (`git grep -nE '^(<<<<<<<|>>>>>>>)' -- . ':!docs/superpowers'`), then
+  confirm no conflict markers (`git grep -nE '^(<<<<<<<|>>>>>>>)' -- . ':!dev-docs/superpowers'`), then
   `git push origin main`.
 
 ## Building a release binary (what actually works in this environment)

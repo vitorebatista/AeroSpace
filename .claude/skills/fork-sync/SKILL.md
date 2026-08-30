@@ -27,7 +27,32 @@ the **Sync state** (upstream base, last review point, **already-ported list**, *
 list**), the fork **code conventions**, and the **lean release build** steps. This skill is the
 orchestration layer on top of that runbook; don't duplicate its commands here, follow them there.
 
-Also relevant: `CLAUDE.md` (build/test bar, generated files, doc checklist) and `CHANGELOG-FORK.md`.
+Also relevant: `AGENTS.md` (build/test bar, generated files, doc checklist — `CLAUDE.md` is a symlink
+to it) and `CHANGELOG-FORK.md`.
+
+## Path map: the fork's layout is not upstream's
+
+**An upstream diff will not apply cleanly to a path the fork has moved or replaced.** Check this table
+before `git apply`/`git cherry-pick`, and re-apply the change by hand on the fork's side of the map
+when it hits one of these. Everything not listed sits at the same path in both repos.
+
+| Upstream | Fork | What it means for a port |
+|---|---|---|
+| `docs/*.adoc` (asciidoc site + man pages) | `docs-md/**/*.md` (Material for MkDocs, `mkdocs.yml`) | **The big one.** Any doc hunk in an upstream diff will fail. Rewrite it as Markdown: a command's page is `docs-md/commands/<command>.md` (` ```synopsis ` fenced block + `description:` frontmatter), the guide is `docs-md/guide.md`. |
+| `docs/aerospace-<command>.adoc` synopsis | ` ```synopsis ` block in `docs-md/commands/<command>.md` | Regenerate with `./script/generate-cmd-help.sh` (feeds `Sources/Common/cmdHelpGenerated.swift`). Never hand-edit the generated `.swift`. |
+| `docs/index.html`, `docs/util/` | gone (mkdocs builds the site; see `.github/workflows/docs.yml`) | Drop those hunks. |
+| `docs/config-examples/` | same path, symlinked in as `docs-md/config-examples` | Unchanged — apply normally. The symlink exists because mkdocs needs the TOML inside `docs_dir`. |
+| `xcode/` | `project.yml` + `AeroSpace.xcodeproj` (xcodegen) | Project-file hunks don't apply; redo the equivalent in `project.yml`. |
+| — | `dev-docs/superpowers/` (plans + specs), `CHANGELOG-FORK.md`, `dev-docs/fork-maintenance.md`, `AGENTS.md`/`CLAUDE.md`, `.claude/` | Fork-only. Upstream never touches these, so they never conflict. Moved out of `docs/` on 2026-08-30 — old references say `docs/superpowers`. |
+
+Naming diverges too: the app is `AeroSpace-edge.app`, the CLI `aerospace-edge`, the bundle id
+`vitorebatista.aerospace-edge`. Upstream diffs carrying the bare `aerospace` name in **user-visible
+strings, docs, or the completion grammar** need renaming as part of the port (see fork PR #63, which
+fixed exactly this being missed).
+
+**Packaging:** `script/build-brew-cask.sh` has fork-specific changes (conditional completion/manpage
+stanzas, no `conflicts_with`, fork caveats) and feeds `vitorebatista/homebrew-tap`. Take upstream
+changes to it by hand, never wholesale.
 
 ## The efficiency principle
 
@@ -63,8 +88,9 @@ Per the runbook: branch off `origin/main` (`port/<slug>`), apply the change
 (`gh api .../pulls/<N> -H "Accept: application/vnd.github.v3.diff"` + `git apply --3way`, or
 `git cherry-pick <sha>` for upstream-main commits), adapt to fork conventions
 (`-strict-memory-safety`, `.succ`/`.fail(io.err())`/`BinaryExitCode`, data-driven `axDumps` tests,
-generated files from `.adoc`), satisfy the **doc checklist** (`.adoc` synopsis+body, `guide.adoc`/
-`default-config.toml`, `grammar/commands-bnf-grammar.txt`), then verify with
+generated files from `docs-md/`), **translate every doc hunk through the path map above**, satisfy the
+**doc checklist** (`docs-md/commands/<command>.md` synopsis+body, `docs-md/guide.md`/
+`docs/config-examples/default-config.toml`, `grammar/commands-bnf-grammar.txt`), then verify with
 `./build-debug.sh -Xswiftc -warnings-as-errors` **and** `./swift-test.sh` before opening one PR per
 fix with `gh pr create --repo vitorebatista/AeroSpace-edge --base main`.
 
@@ -84,6 +110,9 @@ Use the runbook's **lean release build** (the official `build-release.sh` fails 
 docs/shell-completion tooling). Bump the version (`1.MINOR[.PATCH]` — minor when the release carries backports), build the
 universal app + CLI, then
 `gh release create v<ver> --repo vitorebatista/AeroSpace-edge --target main --prerelease <zip>`.
+Then **publish the cask** — regenerate with `./script/build-brew-cask.sh` and push it to
+`vitorebatista/homebrew-tap` (runbook → "Updating the Homebrew tap"). A release that isn't in the tap
+leaves `brew upgrade` users behind.
 
 ### Phase 6 — Update the markdown (always, after any change)
 This is part of the job, not an afterthought — it's what keeps future syncs cheap and the repo honest:
@@ -91,7 +120,7 @@ This is part of the job, not an afterthought — it's what keeps future syncs ch
 - **`dev-docs/fork-maintenance.md` → Sync state** — update the **last review point** (latest upstream
   commit/date + open-PR count reviewed), extend the **already-ported list**, add anything new to the
   **deliberately-skipped list**, and bump the released version when you cut one.
-- Any command/flag/config docs touched by the ports, per the CLAUDE.md doc checklist.
+- Any command/flag/config docs touched by the ports, per the AGENTS.md doc checklist.
 Commit these doc updates (a small PR, or directly to `main` if the user wants them available
 immediately for the next session).
 
