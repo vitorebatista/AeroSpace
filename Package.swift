@@ -76,6 +76,9 @@ let package = Package(
             dependencies: [
                 .target(name: "AppBundle"),
             ],
+            resources: [
+                .copy("config/fixtures"),
+            ],
             swiftSettings: swiftSettings,
         ),
     ],

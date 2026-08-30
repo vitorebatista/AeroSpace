@@ -1,9 +1,48 @@
 @testable import AppBundle
 import Common
+import Foundation
 import XCTest
 
 @MainActor
 final class ConfigMigratorTest: XCTestCase {
+    private typealias Draft = ConfigTomlWriter.ConfigDraft
+
+    func testMigrateComprehensiveV1FixturePreservesEveryDraftFieldAndSourceBlock() throws {
+        try assertFixtureMigration(named: "config-v1-comprehensive")
+    }
+
+    func testMigrateCurrentShapeV1FixturePreservesEveryDraftFieldAndSourceBlock() throws {
+        try assertFixtureMigration(named: "config-v1-current-shape")
+    }
+
+    func testDryRunMigrationFromEnvironmentWithoutWriting() throws {
+        guard let path = ProcessInfo.processInfo.environment["AEROSPACE_MIGRATION_DRY_RUN"] else {
+            throw XCTSkip("Set AEROSPACE_MIGRATION_DRY_RUN to inspect a local config")
+        }
+
+        let sourceText = try String(contentsOfFile: path, encoding: .utf8)
+        let source = parseConfig(sourceText)
+        XCTAssertEqual(source.errors, [])
+        guard source.errors.isEmpty else { return }
+        guard source.config.configVersion == 1 else {
+            print("Migration dry run diff: skipped; source is already config-version \(source.config.configVersion)")
+            throw XCTSkip("AEROSPACE_MIGRATION_DRY_RUN must point to an effective config-version 1 file")
+        }
+
+        let candidate = migrate(sourceText)
+        let migrated = parseConfig(candidate.text)
+        XCTAssertEqual(migrated.errors, [])
+
+        let sourceKeysAndTables = TomlBlockDocument(sourceText).blocks.compactMap(\.name)
+        let candidateKeysAndTables = TomlBlockDocument(candidate.text).blocks.compactMap(\.name)
+        print("Migration dry run source keys/tables: \(sourceKeysAndTables.joined(separator: ", "))")
+        print("Migration dry run candidate keys/tables: \(candidateKeysAndTables.joined(separator: ", "))")
+        print("Migration dry run workspaces: \(candidate.persistentWorkspaces.joined(separator: ", "))")
+        print("Migration dry run diff: config-version and persistent-workspaces; bytes \(sourceText.utf8.count) -> \(candidate.text.utf8.count)")
+
+        XCTAssertEqual(try String(contentsOfFile: path, encoding: .utf8), sourceText)
+    }
+
     func testMigrateAddsVersionAndPersistentWorkspacesToAnImplicitV1Config() {
         let candidate = migrate(
             """
@@ -180,5 +219,95 @@ final class ConfigMigratorTest: XCTestCase {
                 XCTFail("Migration failed: \(error)")
                 fatalError("Migration failed")
         }
+    }
+
+    private func assertFixtureMigration(named name: String, file: StaticString = #filePath, line: UInt = #line) throws {
+        let sourceText = try String(
+            contentsOf: projectRoot.appending(component: "Sources/AppBundleTests/config/fixtures/\(name).toml"),
+            encoding: .utf8,
+        )
+        let source = parseConfig(sourceText)
+        XCTAssertEqual(source.errors, [], "Invalid fixture \(name)", file: file, line: line)
+        guard source.errors.isEmpty else { return }
+
+        let candidate = migrate(sourceText)
+        let migrated = parseConfig(candidate.text)
+        XCTAssertEqual(migrated.errors, [], "Invalid migrated fixture \(name)", file: file, line: line)
+        guard migrated.errors.isEmpty else { return }
+
+        assertEveryDraftField(
+            source: draft(from: source.config, text: sourceText),
+            migrated: draft(from: migrated.config, text: candidate.text),
+            file: file,
+            line: line,
+        )
+        assertEveryNonMigrationBlockIsByteIdentical(
+            sourceText: sourceText,
+            candidateText: candidate.text,
+            file: file,
+            line: line,
+        )
+    }
+
+    private func draft(from config: Config, text: String) -> Draft {
+        ConfigTomlWriter.draft(
+            from: config,
+            rawExec: SettingsModel.rawExecConfig(from: text),
+            document: TomlBlockDocument(text),
+        )
+    }
+
+    private func assertEveryDraftField(
+        source: Draft,
+        migrated: Draft,
+        file: StaticString,
+        line: UInt,
+    ) {
+        let fields: [(name: String, matches: (Draft, Draft) -> Bool)] = [
+            ("startAtLogin", { $0.startAtLogin == $1.startAtLogin }),
+            ("autoReloadConfig", { $0.autoReloadConfig == $1.autoReloadConfig }),
+            ("automaticallyUnhideMacosHiddenApps", { $0.automaticallyUnhideMacosHiddenApps == $1.automaticallyUnhideMacosHiddenApps }),
+            ("enableNormalizationFlattenContainers", { $0.enableNormalizationFlattenContainers == $1.enableNormalizationFlattenContainers }),
+            ("enableNormalizationOppositeOrientationForNestedContainers", { $0.enableNormalizationOppositeOrientationForNestedContainers == $1.enableNormalizationOppositeOrientationForNestedContainers }),
+            ("enableNormalizationBinaryTree", { $0.enableNormalizationBinaryTree == $1.enableNormalizationBinaryTree }),
+            ("defaultRootContainerLayout", { $0.defaultRootContainerLayout.rawValue == $1.defaultRootContainerLayout.rawValue }),
+            ("defaultRootContainerOrientation", { $0.defaultRootContainerOrientation.rawValue == $1.defaultRootContainerOrientation.rawValue }),
+            ("accordionPadding", { $0.accordionPadding == $1.accordionPadding }),
+            ("focusFollowsAppActivation", { $0.focusFollowsAppActivation.rawValue == $1.focusFollowsAppActivation.rawValue }),
+            ("newWindowPreventFlicker", { $0.newWindowPreventFlicker == $1.newWindowPreventFlicker }),
+            ("focusedWindowBorder", { $0.focusedWindowBorder == $1.focusedWindowBorder }),
+            ("focusedWindowBorderColor", { $0.focusedWindowBorderColor == $1.focusedWindowBorderColor }),
+            ("focusedWindowBorderWidth", { $0.focusedWindowBorderWidth == $1.focusedWindowBorderWidth }),
+            ("focusedWindowBorderOpacity", { $0.focusedWindowBorderOpacity == $1.focusedWindowBorderOpacity }),
+            ("focusedWindowBorderRadius", { $0.focusedWindowBorderRadius == $1.focusedWindowBorderRadius }),
+            ("focusedWindowBorderInset", { $0.focusedWindowBorderInset == $1.focusedWindowBorderInset }),
+            ("configVersion", { $0.configVersion == 1 && $1.configVersion == 2 }),
+            ("persistentWorkspaces membership", { Set($0.persistentWorkspaces) == Set($1.persistentWorkspaces) }),
+            ("gaps", { $0.gaps == $1.gaps }),
+            ("workspaceToMonitorForceAssignment", { $0.workspaceToMonitorForceAssignment == $1.workspaceToMonitorForceAssignment }),
+            ("keyMappingPreset", { $0.keyMappingPreset.rawValue == $1.keyMappingPreset.rawValue }),
+            ("keyNotationToKeyCode", { $0.keyNotationToKeyCode == $1.keyNotationToKeyCode }),
+            ("inheritEnvVars", { $0.inheritEnvVars == $1.inheritEnvVars }),
+            ("envVars", { $0.envVars == $1.envVars }),
+            ("rawKeybindings", { $0.rawKeybindings == $1.rawKeybindings }),
+            ("rawWindowRules", { $0.rawWindowRules == $1.rawWindowRules }),
+            ("rawCallbacks", { $0.rawCallbacks == $1.rawCallbacks }),
+        ]
+
+        for field in fields {
+            XCTAssertTrue(field.matches(source, migrated), "Draft field changed: \(field.name)", file: file, line: line)
+        }
+    }
+
+    private func assertEveryNonMigrationBlockIsByteIdentical(
+        sourceText: String,
+        candidateText: String,
+        file: StaticString,
+        line: UInt,
+    ) {
+        let migrationOwnedKeys = Set(["config-version", "persistent-workspaces"])
+        let sourceBlocks = TomlBlockDocument(sourceText).blocks.filter { !migrationOwnedKeys.contains($0.name ?? "") }
+        let candidateBlocks = TomlBlockDocument(candidateText).blocks.filter { !migrationOwnedKeys.contains($0.name ?? "") }
+        XCTAssertEqual(candidateBlocks, sourceBlocks, "A non-migration TOML block changed or moved", file: file, line: line)
     }
 }
