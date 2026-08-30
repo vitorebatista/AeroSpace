@@ -1042,6 +1042,32 @@ The idea of making pool of workspaces shared is based on <span id="observation">
 
     - AeroSpace model is more consistent (it works the same for empty workspaces and non-empty workspaces)
 
+### Window placement is remembered across restarts
+
+!!! note "AeroSpace-edge only"
+
+    This is a fork-only behavior with no upstream equivalent.
+
+AeroSpace-edge records which workspace each window sits on, and replays that placement the next
+time it starts. Restarting the app — or recovering from a crash — no longer collapses every window
+into whichever workspace happens to be active; two browser windows that were on separate workspaces
+come back on separate workspaces.
+
+The snapshot is written to `~/Library/Application Support/AeroSpace-edge/window-layout.json`, a
+couple of seconds after any layout change, and read back once at startup. There is nothing to
+configure. Deleting the file is harmless: the next layout change writes a fresh one.
+
+Windows are matched back by their WindowServer id, which stays valid for as long as the window
+itself lives, so placement always restores when only AeroSpace restarted. After a reboot or an app
+relaunch those ids are gone, and windows are instead matched on app bundle id plus window title —
+close, but not exact when an app has several identically titled windows. Anything that can't be
+matched is left wherever it would otherwise land.
+
+Startup runs [`on-window-detected`](#on-window-detected-callback) callbacks first and replays the
+saved placement afterwards, so for a window that was matched, the workspace you last left it on
+wins over a `move-node-to-workspace` window rule. Unmatched windows are placed by your rules as
+before.
+
 ### Assign workspaces to monitors
 
 You can use `workspace-to-monitor-force-assignment` syntax to assign workspaces to always appear on particular monitors

@@ -40,6 +40,9 @@ import Foundation
             cancellable: false,
             layoutWorkspaces: false,
         )
+        // After the refresh session above: the live windows exist by now, so they can be put back
+        // where the previous run left them.
+        try await restorePersistedLayout()
         try await runLightSession(.startup, .forceRun) {
             smartLayoutAtStartup()
             _ = try await config.afterStartupCommand.runCmdSeq(.defaultEnv, .emptyStdin)
