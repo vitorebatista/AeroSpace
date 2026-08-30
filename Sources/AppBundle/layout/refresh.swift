@@ -38,6 +38,7 @@ func runHeavyCompleteRefreshSession(
     defer { signposter.endInterval(#function, state) }
     if !TrayMenuModel.shared.isEnabled { return }
     if screenSleepWakeInProgress { return }
+    invalidateWindowLevelCache()
     let res = await Result {
         try await $refreshSessionEvent.withValue(event) {
             try await $_isStartup.withValue(event.isStartup) {
@@ -75,6 +76,7 @@ func runLightSession<T>(
     defer { signposter.endInterval(#function, state) }
     activeRefreshTask?.cancel() // Give priority to runSession
     activeRefreshTask = nil
+    invalidateWindowLevelCache()
     return try await $refreshSessionEvent.withValue(event) {
         try await $_isStartup.withValue(event.isStartup) {
             let nativeFocused = try await getNativeFocusedWindow()
@@ -144,9 +146,16 @@ private func refresh() async throws {
             window.garbageCollect(skipClosedWindowsCache: false)
         }
     }
+    // Registering a window needs two AX reads (its rect and its window type), and those are plain
+    // reads with no tree involvement, so issue them for every not-yet-known window up front: each
+    // app answers on its own AX thread, so N apps overlap instead of queueing behind each other on
+    // the main actor. The loop below then binds windows into the tree in exactly the same order as
+    // before, and no longer blocks on AX at all. At startup every window is new, which is where the
+    // serialization used to cost the most.
+    let snapshots = try await MacWindow.prefetchAxSnapshots(mapping)
     for (app, windowIds) in mapping {
         for windowId in windowIds {
-            try await MacWindow.getOrRegister(windowId: windowId, macApp: app)
+            try await MacWindow.getOrRegister(windowId: windowId, macApp: app, snapshot: snapshots[windowId])
         }
     }
 
