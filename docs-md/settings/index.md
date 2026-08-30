@@ -68,22 +68,18 @@ Only the regions you actually edited are emitted.
 
 ## Which file Settings edits
 
-An explicit `--config-path` wins. Otherwise AeroSpace-edge checks these locations in order:
+Settings edits whichever config AeroSpace-edge already resolved at startup — the same
+lookup order, and the same `--config-path` override, described in
+[Custom config location](../guide.md#custom-config-location). Three cases are specific to
+this window:
 
-1. `~/.aerospace-edge.toml`
-2. `${XDG_CONFIG_HOME}/aerospace-edge/aerospace-edge.toml`
-3. `~/.aerospace.toml`
-4. `${XDG_CONFIG_HOME}/aerospace/aerospace.toml`
-
-`XDG_CONFIG_HOME` defaults to `~/.config`. The two AeroSpace-edge locations form one
-resolution tier and the two upstream locations form another. One edge config and one
-upstream config are not ambiguous — the edge config wins. Two files in the *same* tier are
-ambiguous, so Settings opens read-only and lists the candidates rather than guessing.
-
-If no custom config exists, Settings shows the bundled default. The first Save creates
+**No custom config yet.** Settings shows the bundled default. The first Save creates
 `~/.aerospace-edge.toml`, seeded from that default; the footer announces this before
 writing. **Application → Open config** likewise copies the bundled default there before
 opening it.
+
+**Two candidates in the same resolution tier.** Settings opens read-only and lists them
+rather than guessing which one you meant.
 
 When the resolved path is a symlink, Settings reads and writes the *target*. The symlink
 stays a symlink, the target's permissions are preserved, and a migration backup is placed

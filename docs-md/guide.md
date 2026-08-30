@@ -88,12 +88,9 @@ config file. It is a source-preserving editor for that TOML file, not a separate
 store; Application controls such as reload, menu-bar appearance, and update checking live
 there too.
 
-The [Settings section](settings/index.md) has a page per destination in the window, each
-documenting the options it holds, the TOML key behind them, and what changes when you turn
-them on. It also covers file resolution and first-save behavior, raw recovery, validation
-and preservation rules, external-change handling, symlinks, and the transactional
-[version-1-to-version-2 migration](settings/migration.md) with its byte-identical backup
-and restore instructions.
+The [Settings section](settings/index.md) has a page per destination in the window,
+documenting the options it holds, the TOML key behind each one, and what changes when you
+turn it on.
 
 ### Config samples
 

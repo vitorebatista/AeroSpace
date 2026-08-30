@@ -50,9 +50,9 @@ plain fallback:
 top = [{ monitor.main = 34 }, { monitor."Studio Display" = 12 }, 8]
 ```
 
-A monitor description is `main`, `secondary`, a 1-based monitor number, or a regex matched
-against the monitor name. Rules are tested **in order**, and the trailing plain integer is
-the fallback used when none match.
+Rules are tested **in order**, and the trailing plain integer is the fallback used when none
+match. The monitor patterns are the same ones
+[workspace-to-monitor assignment](../guide.md#assign-workspaces-to-monitors) accepts.
 
 Ticking **Per monitor** keeps the value you already had as the fallback. Unticking it
 collapses the row back to that fallback but remembers the rules, so toggling it off and on

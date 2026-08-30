@@ -19,14 +19,11 @@ see [Keyboard layouts](../guide.md#keyboard-layouts-and-key-mapping)
 
 ## Custom notation mapping
 
-Overrides individual names, or invents new ones. The left side is the notation you use in
-bindings; the right side is an AeroSpace key-code name. Overrides win over the preset.
-
-```toml
-[key-mapping.key-notation-to-key-code]
-å = 'a'
-ø = 'semicolon'
-```
+Overrides individual names, or invents new ones. Each row is the notation you use in
+bindings on the left and an AeroSpace key-code name on the right. Overrides win over the
+preset — useful for a different alphabet, or just a fancy alias; see
+[Keyboard layouts and key mapping](../guide.md#keyboard-layouts-and-key-mapping) for
+worked examples.
 
 Notation names may not contain whitespace or `-`, and the value must be a key-code name
 AeroSpace-edge knows. Both are checked when Save validates the file.

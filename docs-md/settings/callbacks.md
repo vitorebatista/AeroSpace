@@ -19,14 +19,10 @@ Exactly these five keys:
 | `on-focused-monitor-changed` | Focus moves to another monitor |
 | `exec-on-workspace-change` | The focused workspace changes |
 
-```toml
-after-startup-command = 'exec-and-forget /opt/homebrew/bin/sketchybar'
-on-focus-changed = ['move-mouse window-lazy-center']
-exec-on-workspace-change = ['/bin/bash', '-c', 'echo $AEROSPACE_FOCUSED_WORKSPACE']
-```
-
-Each value is a command string or an array of them, and the parser's fallback for all five
-is an empty command list. See [Callbacks](../guide.md#callbacks).
+Each value is a command string or an array of them, and the parser's fallback for all five is
+an empty command list. Worked examples — mouse-follows-focus, bar integration, and the
+environment variables a workspace-change callback receives — are in
+[Callbacks](../guide.md#callbacks).
 
 The deprecated `after-login-command` is **not** edited here. It is preserved byte-for-byte
 wherever it already is in your file.

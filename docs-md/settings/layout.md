@@ -41,12 +41,14 @@ the tree — and full responsibility for it. See [Normalization](../guide.md#nor
 
 ### Flatten containers
 
-When a container ends up with the same orientation as its parent, it no longer adds
-structure, so AeroSpace-edge merges it away.
+A container left with only one child no longer adds any structure, so AeroSpace-edge
+replaces it with that child. The root container is the exception — it may keep a single
+window child.
 
-![A redundant nested container disappearing and its windows joining the parent row](../assets/settings/anim-flatten.svg)
+![A container holding a single window collapsing, so the window becomes a direct child of the row](../assets/settings/anim-flatten.svg)
 
-Turn it off to preserve every manually created nesting level.
+Turn it off to preserve every manually created nesting level. Empty containers are removed
+either way.
 
 **TOML** `enable-normalization-flatten-containers` · **values** `true` / `false` ·
 **default** `true` · **applies** on every reload and refresh

@@ -10,18 +10,12 @@ editor rather than a form.
 ## What the pane owns
 
 Every `[mode]` / `[mode.*]` table in your config. Each binding maps a key combination to one
-command string, or to an array of command strings:
-
-```toml
-[mode.main.binding]
-alt-h = 'focus left'
-alt-shift-h = 'move left'
-alt-r = ['mode resize', 'exec-and-forget echo entered resize mode']
-'alt-custom.key' = 'focus left'   # quote a key with TOML punctuation in it
-```
-
-`[mode.main.binding]` must exist. See [Binding modes](../guide.md#binding-modes),
+command string, or to an array of command strings, and `[mode.main.binding]` must exist. See
+[Binding modes](../guide.md#binding-modes) for how modes are declared and switched,
 [`mode`](../commands/mode.md), and the [command index](../aerospace-edge.md).
+
+One thing worth knowing while typing into this pane: a binding key containing TOML
+punctuation has to be quoted, e.g. `'alt-custom.key' = 'focus left'`.
 
 ## Validation
 

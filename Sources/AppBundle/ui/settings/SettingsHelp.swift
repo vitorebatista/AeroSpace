@@ -78,7 +78,7 @@ enum SettingHelpTopic: String, CaseIterable {
             case .defaultOrientation:
                 help("Choose the first split direction for a workspace.", "Horizontal places children left-to-right; vertical places them top-to-bottom. Auto selects horizontal on wide displays and vertical on tall displays.", ["default-root-container-orientation"], .orientation)
             case .flattenContainers:
-                help("Remove containers that no longer add structure.", "When nested containers have the same orientation, AeroSpace merges them. Turning this off preserves every manually-created nesting level.", ["enable-normalization-flatten-containers"], .tree)
+                help("Remove containers that no longer add structure.", "A container left with a single child is replaced by that child; the root container may keep a single window. Turning this off preserves every manually-created nesting level.", ["enable-normalization-flatten-containers"], .tree)
             case .oppositeOrientation:
                 help("Alternate split direction at each nesting level.", "A horizontal parent gets vertical child containers and vice versa. This prevents redundant nesting; binary-tree normalization takes precedence when both are enabled.", ["enable-normalization-opposite-orientation-for-nested-containers"], .tree)
             case .binaryTree:

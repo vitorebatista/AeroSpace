@@ -14,27 +14,13 @@ Every `[[on-window-detected]]` table in your config.
 ```toml
 [[on-window-detected]]
 if.app-id = 'com.apple.systempreferences'
-if.window-title-regex-substring = 'Settings'
 run = 'layout floating'
-
-[[on-window-detected]]
-if.app-name-regex-substring = 'slack'
-run = ['move-node-to-workspace S', 'layout tiling']
 ```
 
-Supported matchers:
-
-| Matcher | Matches |
-|---|---|
-| `app-id` | The app's exact bundle id |
-| `app-id-regex-substring` | A regex searched inside the bundle id |
-| `app-name-regex-substring` | A regex searched inside the app name |
-| `window-title-regex-substring` | A regex searched inside the window title |
-| `workspace` | The workspace the window would land on |
-| `during-aerospace-startup` | Whether the window was found during startup |
-
-`run` is mandatory and is a command string or an array of them. See
-[on-window-detected callbacks](../guide.md#on-window-detected-callback).
+`run` is mandatory and is a command string or an array of them. Every supported `if.*`
+matcher, how multiple rules are ordered, and `check-further-callbacks` are documented in
+[the 'on-window-detected' callback](../guide.md#on-window-detected-callback) — including
+the ways to find an app's `app-id`.
 
 ## Validation and preservation
 

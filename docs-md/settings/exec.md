@@ -20,19 +20,16 @@ command starts with only your explicit overrides plus the variables AeroSpace-ed
 
 ## Environment variable overrides
 
-Adds or replaces variables for every `exec-and-forget`. `$VAR` interpolates the inherited
-value, so a variable can extend rather than replace itself:
+Adds or replaces variables for every `exec-and-forget`. Each row is a variable name and its
+value; `${VAR}` inside a value interpolates the inherited value, so a variable can extend
+rather than replace itself. `PWD` is managed by AeroSpace-edge and is rejected.
 
-```toml
-[exec.env-vars]
-PATH = '/opt/homebrew/bin:$PATH'
-TERM = 'xterm-256color'
-```
-
-`PWD` is managed by AeroSpace-edge and is rejected.
+[exec-* environment variables](../guide.md#exec-env-vars) has the syntax in full, the
+Homebrew `PATH` fallback AeroSpace-edge applies when you don't override this section, and
+[`list-exec-env-vars`](../commands/list-exec-env-vars.md) for inspecting the end result.
 
 **TOML** `[exec.env-vars]` · **default** no authored overrides · **applies** to commands run
-after reload · see [Exec environment](../guide.md#exec-env-vars)
+after reload
 
 !!! warning "Whole-family rewrite"
 

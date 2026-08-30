@@ -30,19 +30,12 @@ currently available, and moves the workspace as monitors come and go.
 
 ![Workspace A moving onto the secondary monitor as soon as that monitor is available](../assets/settings/anim-workspace-monitor.svg)
 
-A monitor description is `main`, `secondary`, a 1-based monitor number, or a regex matched
-against the monitor name:
-
-```toml
-[workspace-to-monitor-force-assignment]
-1 = 'main'
-A = ['secondary', 'main']
-B = '^Studio Display$'
-```
+Each row is one workspace on the left and one monitor pattern — or an array of them — on the
+right. [Assign workspaces to monitors](../guide.md#assign-workspaces-to-monitors) lists every
+supported pattern and its exact matching rules.
 
 **TOML** `[workspace-to-monitor-force-assignment]` · **default** empty table ·
-**applies** after reload and whenever monitor availability changes ·
-see [Assign workspaces to monitors](../guide.md#assign-workspaces-to-monitors)
+**applies** after reload and whenever monitor availability changes
 
 !!! warning "Whole-family rewrite"
 
