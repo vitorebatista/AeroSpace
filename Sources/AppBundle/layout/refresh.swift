@@ -94,10 +94,16 @@ func runLightSession<T>(
             if focusBefore != focusAfter {
                 focusAfter?.nativeFocus() // syncFocusToMacOs
             }
-            scheduleCancellableCompleteRefreshSession(event)
+            if shouldScheduleFollowUpRefresh(after: event) {
+                scheduleCancellableCompleteRefreshSession(event)
+            }
             return result
         }
     }
+}
+
+func shouldScheduleFollowUpRefresh(after event: RefreshSessionEvent) -> Bool {
+    !event.isStartup
 }
 
 struct RunSessionGuard: Sendable {
