@@ -140,7 +140,11 @@ And one option with no upstream equivalent, written here:
 
 ## Install
 
-There is no Homebrew cask, and there won't be one. Download the latest zip from
+```shell
+brew install --cask vitorebatista/tap/aerospace-edge
+```
+
+Or download the latest zip from
 [**Releases**](https://github.com/vitorebatista/AeroSpace-edge/releases/latest), then:
 
 ```shell

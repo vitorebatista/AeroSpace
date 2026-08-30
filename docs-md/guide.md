@@ -9,9 +9,15 @@ This Guide is designed to be read from top to bottom as a whole. You can skip pa
 ## Installation
 
 AeroSpace-edge is distributed as a zip on the
-[releases page](https://github.com/vitorebatista/AeroSpace-edge/releases/latest). There is
-no Homebrew cask for the fork — `brew install --cask nikitabobko/tap/aerospace` installs
-*upstream* AeroSpace, which is a different app.
+[releases page](https://github.com/vitorebatista/AeroSpace-edge/releases/latest) and as a
+Homebrew cask in the fork's own tap:
+
+``` shell
+brew install --cask vitorebatista/tap/aerospace-edge
+```
+
+Mind the tap: `brew install --cask nikitabobko/tap/aerospace` installs *upstream* AeroSpace,
+which is a different app. To install manually instead:
 
 1.  Download the latest zip from the
     [releases page](https://github.com/vitorebatista/AeroSpace-edge/releases/latest)

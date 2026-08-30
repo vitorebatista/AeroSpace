@@ -336,6 +336,22 @@ gh release create "v1.N" ".release/AeroSpace-edge-v1.N.zip" \
 - Do **not** use `script/publish-release.sh` (it pushes tags to the upstream repo).
 - After releasing, **update the "Sync state" section above** and append to `CHANGELOG-FORK.md`.
 
+## Updating the Homebrew tap
+The cask lives in [`vitorebatista/homebrew-tap`](https://github.com/vitorebatista/homebrew-tap)
+(`brew install --cask vitorebatista/tap/aerospace-edge`). After the GitHub release exists:
+```bash
+./script/build-brew-cask.sh --cask-name aerospace-edge --build-version 1.N \
+  --zip-uri "https://github.com/vitorebatista/AeroSpace-edge/releases/download/v1.N/AeroSpace-edge-v1.N.zip"
+cp .release/aerospace-edge.rb <tap-clone>/Casks/aerospace-edge.rb
+# commit + push in the tap clone, then:
+brew update && brew info --cask vitorebatista/tap/aerospace-edge   # parses the cask
+```
+- `Casks/aerospace-edge.rb` is generated — never hand-edit it in the tap.
+- The generator emits shell-completion/man-page stanzas **only if the zip contains them**, so the lean
+  release build (app + CLI only) produces a cask that installs cleanly.
+- `brew audit --cask --online` will flag "is a GitHub pre-release" because releases are cut with
+  `--prerelease`. Install and upgrade work fine; it's an audit-only complaint.
+
 ## CI
 `.github/workflows/build.yml` verifies builds across macOS versions once GitHub Actions is enabled on
 the fork. `close-third-party-issues.yml` is upstream-only tooling — safe to disable on the fork.

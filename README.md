@@ -157,7 +157,11 @@ an error.
 
 ## Install
 
-Download the latest zip from [**Releases**](https://github.com/vitorebatista/AeroSpace-edge/releases/latest),
+```bash
+brew install --cask vitorebatista/tap/aerospace-edge
+```
+
+Or download the latest zip from [**Releases**](https://github.com/vitorebatista/AeroSpace-edge/releases/latest),
 then:
 
 ```bash
@@ -172,7 +176,9 @@ Both binaries are universal (arm64 + x86_64).
 You only have to do this once: after that, **Check for Updates…** in the Settings window footer
 (menu bar → **Settings…**) finds new releases, downloads them and installs them in place.
 
-There's no Homebrew cask, and there won't be one.
+Pick one update channel and stay on it. If you installed with Homebrew, `brew upgrade --cask
+aerospace-edge` keeps you current; using **Check for Updates…** on a Homebrew install leaves Homebrew
+with a stale idea of the installed version until the next `brew upgrade` overwrites it.
 
 ### Granting Accessibility
 
@@ -206,6 +212,10 @@ The updater only accepts downloads from this repository's GitHub releases over H
 install a payload whose bundle id or version doesn't match the release it claims to be.
 
 ### Uninstalling
+
+```bash
+brew uninstall --cask aerospace-edge   # if you installed it with Homebrew
+```
 
 ```bash
 rm -rf /Applications/AeroSpace-edge.app
