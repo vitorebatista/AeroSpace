@@ -59,30 +59,22 @@ if [[ -z "$revision" ]]; then
     revision="$(git -C "$project_root" rev-parse --short HEAD)"
 fi
 results="$output_dir/results.csv"
-printf 'revision,run,traced_launch_seconds,direct_real_seconds,direct_user_seconds,direct_system_seconds,direct_max_rss_bytes,trace_file\n' > "$results"
+printf 'revision,run,traced_launch_seconds,trace_file\n' > "$results"
 
 for ((run = 1; run <= runs; run++)); do
     trace_path="$output_dir/run-$run.trace"
     toc_path="$output_dir/run-$run.toc.xml"
-    time_path="$output_dir/run-$run.time.txt"
-
     xcrun xctrace record --template 'App Launch' --time-limit 15s --output "$trace_path" --launch -- "$executable"
     xcrun xctrace export --input "$trace_path" --toc --output "$toc_path"
-    /usr/bin/time -l "$executable" 2> "$time_path"
 
     traced_launch_seconds="$(sed -n 's:.*<duration>\(.*\)</duration>.*:\1:p' "$toc_path" | head -1)"
-    direct_real_seconds="$(awk 'NR == 1 { print $1 }' "$time_path")"
-    direct_user_seconds="$(awk 'NR == 1 { print $3 }' "$time_path")"
-    direct_system_seconds="$(awk 'NR == 1 { print $5 }' "$time_path")"
-    direct_max_rss_bytes="$(awk '/maximum resident set size/ { print $1 }' "$time_path")"
 
-    if [[ -z "$traced_launch_seconds" || -z "$direct_real_seconds" || -z "$direct_user_seconds" || -z "$direct_system_seconds" || -z "$direct_max_rss_bytes" ]]; then
+    if [[ -z "$traced_launch_seconds" ]]; then
         echo "Failed to parse benchmark output for run $run" >&2
         exit 1
     fi
-    printf '%s,%s,%s,%s,%s,%s,%s,%s\n' \
-        "$revision" "$run" "$traced_launch_seconds" "$direct_real_seconds" \
-        "$direct_user_seconds" "$direct_system_seconds" "$direct_max_rss_bytes" "$(basename "$trace_path")" >> "$results"
+    printf '%s,%s,%s,%s\n' \
+        "$revision" "$run" "$traced_launch_seconds" "$(basename "$trace_path")" >> "$results"
 done
 
 echo "Wrote $results"
