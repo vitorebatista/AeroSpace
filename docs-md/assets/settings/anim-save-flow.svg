@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 118" width="460" height="118" role="img"
+     aria-label="Animation: a Settings edit travels through draft, rendering, validation of the complete file, and only then an atomic write and reload">
+  <g font-family="system-ui, sans-serif" font-size="12" fill="#8b93a7" text-anchor="middle">
+    <!-- 1. edit -->
+    <rect x="8" y="26" width="96" height="44" rx="7" fill="none" stroke="#8b93a7" stroke-width="1.5"/>
+    <rect x="8" y="26" width="96" height="44" rx="7" fill="#6366f1" fill-opacity="0" stroke="#6366f1" stroke-width="2.5" stroke-opacity="0">
+      <animate attributeName="fill-opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.05;0.25;0.3;1" values="0;0.18;0.18;0;0"/>
+      <animate attributeName="stroke-opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.05;0.25;0.3;1" values="0;1;1;0;0"/>
+    </rect>
+    <text x="56" y="52">Edit a control</text>
+    <text x="56" y="88" font-size="11" opacity="0.8">draft only</text>
+
+    <!-- 2. render -->
+    <rect x="124" y="26" width="96" height="44" rx="7" fill="none" stroke="#8b93a7" stroke-width="1.5"/>
+    <rect x="124" y="26" width="96" height="44" rx="7" fill="#6366f1" fill-opacity="0" stroke="#6366f1" stroke-width="2.5" stroke-opacity="0">
+      <animate attributeName="fill-opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.3;0.35;0.5;0.55;1" values="0;0;0.18;0.18;0;0"/>
+      <animate attributeName="stroke-opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.3;0.35;0.5;0.55;1" values="0;0;1;1;0;0"/>
+    </rect>
+    <text x="172" y="52">Render</text>
+    <text x="172" y="88" font-size="11" opacity="0.8">only edited regions</text>
+
+    <!-- 3. validate -->
+    <rect x="240" y="26" width="96" height="44" rx="7" fill="none" stroke="#8b93a7" stroke-width="1.5"/>
+    <rect x="240" y="26" width="96" height="44" rx="7" fill="#6366f1" fill-opacity="0" stroke="#6366f1" stroke-width="2.5" stroke-opacity="0">
+      <animate attributeName="fill-opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.55;0.6;0.75;0.8;1" values="0;0;0.18;0.18;0;0"/>
+      <animate attributeName="stroke-opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.55;0.6;0.75;0.8;1" values="0;0;1;1;0;0"/>
+    </rect>
+    <text x="288" y="52">Validate</text>
+    <text x="288" y="88" font-size="11" opacity="0.8">startup parser</text>
+
+    <!-- 4. write -->
+    <rect x="356" y="26" width="96" height="44" rx="7" fill="none" stroke="#8b93a7" stroke-width="1.5"/>
+    <rect x="356" y="26" width="96" height="44" rx="7" fill="#12b981" fill-opacity="0" stroke="#12b981" stroke-width="2.5" stroke-opacity="0">
+      <animate attributeName="fill-opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.8;0.85;0.97;1" values="0;0;0.18;0.18;0"/>
+      <animate attributeName="stroke-opacity" dur="8s" repeatCount="indefinite" keyTimes="0;0.8;0.85;0.97;1" values="0;0;1;1;0"/>
+    </rect>
+    <text x="404" y="52">Write &amp; reload</text>
+    <text x="404" y="88" font-size="11" opacity="0.8">atomic replace</text>
+  </g>
+  <g stroke="#8b93a7" stroke-width="1.5" fill="none">
+    <path d="M108 48 h12"/><path d="M224 48 h12"/><path d="M340 48 h12"/>
+  </g>
+  <g fill="#8b93a7">
+    <path d="M120 44 l6 4 -6 4 z"/><path d="M236 44 l6 4 -6 4 z"/><path d="M352 44 l6 4 -6 4 z"/>
+  </g>
+</svg>

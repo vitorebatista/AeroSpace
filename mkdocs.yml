@@ -59,7 +59,21 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Guide: guide.md
-  - Settings: settings.md
+  - Settings:
+      - settings/index.md
+      - settings/general.md
+      - settings/layout.md
+      - settings/gaps.md
+      - settings/focus.md
+      - settings/window-border.md
+      - settings/workspaces.md
+      - settings/key-mapping.md
+      - settings/exec.md
+      - settings/keybindings.md
+      - settings/window-rules.md
+      - settings/callbacks.md
+      - settings/application.md
+      - settings/migration.md
   - Comparison: comparison.md
   - Goodies: goodies.md
   - Commands:

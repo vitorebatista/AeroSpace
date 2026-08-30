@@ -40,8 +40,13 @@ update checking, and version information; these actions do not dirty the config 
   `<filename>.backup-v1-YYYYMMDD-HHmmss` beside the resolved target. Backup collisions never
   overwrite an existing file, symlinks remain intact, permissions are preserved, failures
   leave or restore the original bytes, and Settings displays/reveals the exact backup path.
-- The new dedicated Settings guide documents all twelve destinations, structured option
-  types and parser fallbacks, source-preservation boundaries, raw fragment validation,
+- The docs gained a **Settings section** with one page per destination in the window, in the
+  same order as its sidebar, so "where do I change this?" has a one-line answer. Each option
+  carries its TOML key, allowed values, parser fallback and when it takes effect, and the
+  spatial ones (layout, orientation, gaps, accordion padding, border, normalization, focus
+  follows app activation, new-window flicker, workspace-to-monitor priority) are explained
+  with animated diagrams of the before/after. The section also covers the save pipeline,
+  source-preservation boundaries, raw fragment validation,
   first-save/ambiguous/symlink/external-edit behavior, and migration recovery.
 
 **Native macOS integration.** Four fork-original changes that use public macOS APIs the codebase

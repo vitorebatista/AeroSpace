@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 160" width="320" height="160" role="img"
+     aria-label="Animation: workspace A moving onto the secondary monitor as soon as that monitor becomes available">
+  <!-- monitor 1 -->
+  <rect x="18" y="24" width="124" height="76" rx="6" fill="none" stroke="#8b93a7" stroke-width="1.5"/>
+  <rect x="66" y="100" width="28" height="8" rx="2" fill="#8b93a7" fill-opacity="0.5"/>
+  <text x="80" y="126" font-family="system-ui, sans-serif" font-size="12" fill="#8b93a7" text-anchor="middle">Monitor 1 (main)</text>
+
+  <!-- monitor 2 appears part-way through -->
+  <g>
+    <animate attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.25;0.35;0.9;1" values="0.25;0.25;1;1;0.25"/>
+    <rect x="178" y="24" width="124" height="76" rx="6" fill="none" stroke="#8b93a7" stroke-width="1.5"/>
+    <rect x="226" y="100" width="28" height="8" rx="2" fill="#8b93a7" fill-opacity="0.5"/>
+    <text x="240" y="126" font-family="system-ui, sans-serif" font-size="12" fill="#8b93a7" text-anchor="middle">Monitor 2 (secondary)</text>
+  </g>
+
+  <!-- workspace A follows its forced assignment -->
+  <g>
+    <animateTransform attributeName="transform" type="translate" dur="6s" repeatCount="indefinite"
+                      keyTimes="0;0.35;0.5;0.9;1" values="0 0;0 0;160 0;160 0;0 0"/>
+    <rect x="34" y="40" width="92" height="44" rx="5" fill="#6366f1" fill-opacity="0.85"/>
+    <text x="80" y="69" font-family="system-ui, sans-serif" font-size="17" font-weight="600" fill="#ffffff" text-anchor="middle">A</text>
+  </g>
+
+  <text x="160" y="150" font-family="system-ui, sans-serif" font-size="12" fill="#8b93a7" text-anchor="middle">
+    A = ['secondary', 'main']
+  </text>
+</svg>

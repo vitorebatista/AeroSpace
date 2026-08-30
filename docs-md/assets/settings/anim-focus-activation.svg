@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 170" width="320" height="170" role="img"
+     aria-label="Animation: a background app activates on workspace 2 — Always follows it, Smart stays on workspace 1">
+  <g font-family="system-ui, sans-serif" font-size="12" fill="#8b93a7" text-anchor="middle">
+    <text x="82" y="18" font-weight="600">Always</text>
+    <text x="238" y="18" font-weight="600">Smart</text>
+  </g>
+  <rect x="12" y="26" width="140" height="80" rx="8" fill="none" stroke="#8b93a7" stroke-width="1.5"/>
+  <rect x="168" y="26" width="140" height="80" rx="8" fill="none" stroke="#8b93a7" stroke-width="1.5"/>
+
+  <!-- Always: the visible workspace follows the activation -->
+  <g>
+    <rect x="22" y="36" width="120" height="60" rx="4" fill="#6366f1" fill-opacity="0.8"/>
+    <text x="82" y="72" font-family="system-ui, sans-serif" font-size="15" font-weight="600" fill="#ffffff" text-anchor="middle">
+      Workspace 1
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.45;0.5;0.9;1" values="1;1;0;0;1"/>
+    </text>
+    <text x="82" y="72" font-family="system-ui, sans-serif" font-size="15" font-weight="600" fill="#ffffff" text-anchor="middle" opacity="0">
+      Workspace 2
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.45;0.5;0.9;1" values="0;0;1;1;0"/>
+    </text>
+  </g>
+
+  <!-- Smart: nothing looked user-initiated, so the view stays put -->
+  <g>
+    <rect x="178" y="36" width="120" height="60" rx="4" fill="#6366f1" fill-opacity="0.8"/>
+    <text x="238" y="72" font-family="system-ui, sans-serif" font-size="15" font-weight="600" fill="#ffffff" text-anchor="middle">Workspace 1</text>
+  </g>
+
+  <!-- the background activation on workspace 2 -->
+  <circle cx="160" cy="128" r="0" fill="#22d3ee" fill-opacity="0.7">
+    <animate attributeName="r" dur="6s" repeatCount="indefinite" keyTimes="0;0.35;0.45;0.55;1" values="0;0;9;0;0"/>
+  </circle>
+  <text x="160" y="158" font-family="system-ui, sans-serif" font-size="12" fill="#8b93a7" text-anchor="middle">
+    A background app activates on workspace 2
+  </text>
+</svg>
