@@ -25,6 +25,53 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
+## v1.16 (2026-08-30)
+
+**Updates no longer cost you the Accessibility grant.** Releases are signed with a stable
+self-signed certificate instead of ad-hoc. An ad-hoc signature has no certificate, so its
+designated requirement is the literal binary hash — it changes with every build, and macOS
+treats each update as a different app and revokes the permission. The requirement is now
+`identifier "vitorebatista.aerospace-edge" and certificate leaf = H"…"`, which is stable
+across versions, so the grant survives an update.
+
+> **This release still asks once.** Going from an ad-hoc-signed build to a signed one is
+> itself an identity change. Grant Accessibility one more time after installing 1.16 — and
+> not again after that. `tccutil reset Accessibility vitorebatista.aerospace-edge` clears
+> the stale entry if the old one lingers.
+
+**The menu-bar menu and the Settings window.** Fork-original; no upstream equivalent.
+
+- **"New" now lists workspaces you have a binding for but have never visited.** `Workspace.all`
+  only holds live workspaces, and on `config-version = 2` the persistent list is explicit rather
+  than derived from bindings — so a workspace like `D`, reachable by `alt-d`, was missing from the
+  menu until the first time you went there. With every live workspace in use the submenu vanished
+  altogether.
+- **The version line at the top of the menu is gone.** It is in Settings → Application → Version,
+  where it can be copied.
+- **A workspace restart lands you where you left off.** The persisted layout already restored every
+  window and each monitor's visible workspace, but not focus, so a restart dropped you on whichever
+  workspace sorted first. The focused workspace is now recorded with the layout and restored with it.
+- **Raw TOML editors are syntax-highlighted** — comments, strings, numbers, booleans, table headers
+  and keys, in VS Code's Light+/Dark+ palettes. The colouring is derived from the text, not from a
+  parse, so a half-typed or invalid document still reads as TOML; Save remains the only validator.
+- **"Check for Updates…" moved to the window footer**, reachable from every destination instead of
+  buried in one.
+- **Menu-bar appearance is its own destination**, and can now pin the item's position. macOS stores
+  a status item's position per app and restores it at launch, so an item that once landed behind the
+  notch — where a freshly installed app goes when the menu bar is full — stayed there, invisible and
+  undraggable. Settings → Menu Bar → Position re-pins it at startup, warns when a value is wider than
+  the display, and has a Relaunch to Apply button, since nothing can move a status item once it exists.
+- **Application → Show Crash Reports** selects `~/Library/Logs/DiagnosticReports/AeroSpace-edge-*.ips`
+  in Finder, so a crash file can be attached to a bug report.
+- **Every destination links to its documentation page**, and controls that need a structure typed
+  into them — key notation overrides, env vars, persistent workspaces, workspace-to-monitor
+  assignment, per-monitor gaps, border colour — show concrete examples in the tooltip and the help
+  popover. The three raw TOML panes show worked examples instead of a one-line description.
+
+**Docs and tooling.** `script/create-codesign-certificate.sh` creates the signing certificate without
+the Keychain Access clicks. `CLAUDE.md` gained a Settings window checklist and the menu-bar item
+behavior that is easy to rediscover the hard way.
+
 ## v1.15 (2026-08-30)
 
 **Settings is now the single application and configuration surface.** The menu-bar menu

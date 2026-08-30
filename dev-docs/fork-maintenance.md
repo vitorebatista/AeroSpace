@@ -30,7 +30,15 @@ Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for A
   skipped: `c548c7f8` (`Monitor` → `MonitorInfo` rename, part of the "track upstream main" milestone)
   and `ae2aa7aa` (upstream-only PR-labelling CI) — and 17 new open PRs, of which it ported #2244,
   #2232, #2211, #2228 and #2225 as fork PRs #55–#59.
-- **Released:** `v1.15` (cut 2026-08-30) — fork-original, no backports. Merges fork PRs #62
+- **Released:** `v1.16` (cut 2026-08-30) — fork-original, no backports. Merges fork PR #66:
+  **releases are signed with the stable `aerospace-codesign-certificate` instead of ad-hoc**, so
+  macOS keeps the user's Accessibility grant across updates (1.16 itself still re-prompts once —
+  ad-hoc → certificate is an identity change); "New" lists workspaces that exist only in a binding
+  (`config-version = 2` never materializes them, so the submenu could be empty); a restart returns
+  to the workspace you left off on; syntax-highlighted raw TOML editors; "Check for Updates…" moved
+  to the Settings footer; a Menu Bar destination that can pin the status item's position; Application
+  → Show Crash Reports; and a docs link plus worked examples on every destination.
+  Previous: `v1.15` (cut 2026-08-30) — fork-original, no backports. Merges fork PRs #62
   (Settings becomes the single application/configuration surface: direct menu items, Application
   destination, transactional config-version 1→2 migration with a byte-identical backup, and a
   Settings docs section with a page per destination), #65 (native macOS integration: App Intents
