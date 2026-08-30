@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Remove the redundant full Accessibility refresh after a cold AeroSpace startup and demonstrate the impact with repeatable CPU, peak-RSS, and signpost timing measurements.
+**Goal:** Remove the redundant full Accessibility refresh after a cold AeroSpace startup and demonstrate the impact with repeatable CPU, resident-memory, and signpost timing measurements.
 
-**Architecture:** Keep launch state on the main actor. `runLightSession` will use a pure scheduling-policy helper, so startup alone finalizes its layout without enqueuing a second heavy refresh. Constant `OSSignposter` intervals make startup phases visible in Instruments without recording user data. A local-only benchmark runner will launch a supplied debug executable repeatedly under `xctrace` and record process metrics in an ignored directory.
+**Architecture:** Keep launch state on the main actor. `runLightSession` will use a pure scheduling-policy helper, so startup alone finalizes its layout without enqueuing a second heavy refresh. Constant `OSSignposter` intervals make startup phases visible in Instruments without recording user data. A local-only benchmark runner will use the available `App Launch` template for elapsed time and a second direct launch for CPU and maximum resident memory, writing results in an ignored directory.
 
 **Tech Stack:** Swift 6.3, AppKit, `OSSignposter`, XCTest, Bash, Xcode `xctrace`, macOS `/usr/bin/time`.
 
@@ -86,7 +86,6 @@ git commit -m "perf: skip redundant startup refresh"
 
 **Files:**
 - Modify: `Sources/AppBundle/initAppBundle.swift:5-55`
-- Modify: `Sources/AppBundle/tree/frozen/persistedLayout.swift:78-93`
 
 **Interfaces:**
 - Consumes: the process-global `signposter` from `Sources/AppBundle/util/appBundleUtil.swift`.
@@ -114,14 +113,14 @@ Expected: exit zero.
 
 - [ ] **Step 4: Inspect one trace**
 
-Run: `xcrun xctrace record --template 'Points of Interest' --time-limit 15s --output /tmp/aerospace-startup-smoke.trace --launch -- ./.debug/AeroSpaceApp`
+Run: `xcrun xctrace record --template 'App Launch' --time-limit 15s --output /tmp/aerospace-startup-smoke.trace --launch -- ./.debug/AeroSpaceApp`
 
-Expected: the Points of Interest instrument exposes the four constant intervals. Remove only the explicit `/tmp/aerospace-startup-smoke.trace` after inspection.
+Expected: the App Launch trace reports target launch-to-exit duration in its exported table of contents. The constant signposts remain available for interactive Instruments inspection when a Points of Interest instrument is installed. Remove only the explicit `/tmp/aerospace-startup-smoke.trace` after inspection.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add Sources/AppBundle/initAppBundle.swift Sources/AppBundle/tree/frozen/persistedLayout.swift
+git add Sources/AppBundle/initAppBundle.swift
 git commit -m "perf: add startup phase signposts"
 ```
 
@@ -134,7 +133,7 @@ git commit -m "perf: add startup phase signposts"
 
 **Interfaces:**
 - Consumes: `--executable PATH`, `--output-dir PATH`, optional `--runs N`, and local `xcrun xctrace`.
-- Produces: one CSV row per run with revision, run number, elapsed seconds, user CPU seconds, system CPU seconds, maximum RSS KiB, and trace name.
+- Produces: one CSV row per run with revision, run number, traced launch duration, direct-process user/system CPU seconds, maximum resident memory KiB, and trace name.
 
 - [ ] **Step 1: Write the shell acceptance checks before the runner**
 
@@ -147,14 +146,16 @@ Run the first command before adding the script. Expected: file-not-found failure
 
 - [ ] **Step 2: Implement safe argument validation and collection**
 
-Require executable and output directory, default to seven runs, reject non-positive runs, create only the requested output directory, and never kill or quit a running AeroSpace process. Each run calls:
+Require executable and output directory, default to seven runs, reject non-positive runs, create only the requested output directory, and never kill or quit a running AeroSpace process. Each benchmark iteration performs two matched cold launches:
 
 ```bash
-/usr/bin/time -l xcrun xctrace record --template 'Points of Interest' --time-limit 15s \
+xcrun xctrace record --template 'App Launch' --time-limit 15s \
   --output "$trace_path" --launch -- "$executable"
+
+/usr/bin/time -l "$executable"
 ```
 
-Parse `time -l` real/user/system/maximum-resident-set-size output into CSV and fail clearly if `xctrace` fails.
+Export the App Launch trace table of contents and record its target duration. Parse the direct process's `time -l` user CPU, system CPU, and maximum-resident-set-size output into the same CSV row. Label the row as two matched cold launches, not a single combined measurement; fail clearly if either launch fails.
 
 - [ ] **Step 3: Document and ignore local artifacts**
 
@@ -180,8 +181,8 @@ git commit -m "test: add startup benchmark runner"
 - Modify: a narrow Swift 6.3 launch-path file only if tracing identifies a separate measurable cause.
 
 **Interfaces:**
-- Consumes: Task 3 CSV files and Points-of-Interest traces from baseline and optimized revisions.
-- Produces: an aggregate-only report with machine model, macOS/Swift version, three-display topology, run count, elapsed/user/system CPU/peak-RSS medians, individual numeric samples, and percentage deltas.
+- Consumes: Task 3 CSV files and App Launch traces from baseline and optimized revisions.
+- Produces: an aggregate-only report with machine model, macOS/Swift version, three-display topology, run count, traced launch duration, direct-process CPU/maximum-resident-memory medians, individual numeric samples, and percentage deltas.
 
 - [ ] **Step 1: Collect the baseline**
 

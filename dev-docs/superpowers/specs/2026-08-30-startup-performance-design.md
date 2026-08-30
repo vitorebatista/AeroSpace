@@ -34,12 +34,13 @@ while macOS is still settling three displays.
 
 ## Chosen Design
 
-1. Add stable Points-of-Interest signposts for the important startup stages:
+1. Add stable launch signposts for the important startup stages:
    configuration load, initial window discovery, persisted-layout restoration,
    and startup finalization.
 2. Add a checked-in benchmark guide and script that runs repeated cold
-   relaunches, collects `xctrace` signpost timing plus process CPU and peak RSS,
-   and writes a timestamped, machine-readable result outside the repository.
+   relaunches, collects `xctrace` App Launch timing plus direct-process CPU
+   and maximum resident memory, and writes a timestamped, machine-readable result
+   outside the repository.
 3. Change the startup finalization path so it does not automatically request
    the redundant full refresh. The finalization still performs its existing
    layout and `after-startup-command`; subsequent AX and workspace
@@ -65,7 +66,7 @@ experience.
 - Use Swift 6.3 strict concurrency and preserve main-actor ownership of app
   state.
 - Prefer a simpler Swift concurrency or collection implementation only when
-  profiling demonstrates less launch CPU, elapsed time, or peak RSS; do not
+  profiling demonstrates less launch CPU, elapsed time, or resident memory; do not
   trade correctness for parallelism.
 - Do not change the pinned Swift toolchain unless compatibility and the same
   before/after benchmark demonstrate a material benefit.
@@ -86,7 +87,8 @@ event. The normal project debug build with warnings treated as errors and the
 full Swift test suite must pass. Manual benchmark comparison requires at least
 seven cold relaunch samples per revision, with the same user configuration,
 three connected displays, and the same active applications. If median launch
-time or peak RSS regresses, the change will not be proposed as an optimization.
+time, direct-process CPU, or maximum resident memory regresses, the change will not be
+proposed as an optimization.
 
 ## Deliverables
 
