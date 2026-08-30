@@ -86,6 +86,10 @@ struct GeneralSection: View {
 struct MenuBarSection: View {
     @ObservedObject var viewModel: TrayMenuModel
 
+    /// What the item that's on screen right now is actually using, which is only the same as the
+    /// setting once the app has been restarted with it.
+    private var livePosition: Int { UserDefaults.standard.integer(forKey: statusItemPositionKey) }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             SettingsGroup(
@@ -120,6 +124,19 @@ struct MenuBarSection: View {
                     .frame(width: 70)
                     .multilineTextAlignment(.trailing)
                     .help(SettingHelpTopic.menuBarItemPosition.content.tooltip)
+                    Button("Relaunch to Apply") {
+                        applyMenuBarItemPosition()
+                        relaunchAfterExit()
+                        terminateApp()
+                    }
+                    .disabled(viewModel.experimentalUISettings.menuBarItemPosition == livePosition)
+                }
+                if let warning = menuBarPositionWarning(
+                    viewModel.experimentalUISettings.menuBarItemPosition,
+                    screenWidth: NSScreen.main?.frame.width,
+                ) {
+                    Label(warning, systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption).foregroundStyle(.orange)
                 }
             }
         }

@@ -70,6 +70,18 @@ func statusItemPositionToPersist(_ configured: Int) -> Int? {
     configured > 0 ? configured : nil
 }
 
+/// A value wider than the display pushes the item off the end of the status area and into the
+/// strip where app menus are drawn, where it is invisible and can't be ⌘-dragged back — the exact
+/// hole this setting exists to climb out of. Warn instead of clamping: silently changing what
+/// someone typed is worse than telling them it won't work.
+func menuBarPositionWarning(_ configured: Int, screenWidth: CGFloat?) -> String? {
+    guard configured > 0, let screenWidth else { return nil }
+    let usable = Int(screenWidth) - 200 // the app menus need the left end of the bar
+    guard configured > usable else { return nil }
+    return "\(configured) is past the usable end of a \(Int(screenWidth))-point-wide display. "
+        + "The item will land behind the app menus, where it can't be seen or dragged. Try \(usable) or less."
+}
+
 @MainActor
 struct MenuBarStyleButton: View {
     @EnvironmentObject var viewModel: TrayMenuModel

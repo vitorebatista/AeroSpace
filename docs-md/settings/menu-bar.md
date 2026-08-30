@@ -23,13 +23,19 @@ The experimental styles require macOS 14 or later and carry no stability guarant
 | Control | What it does |
 |---|---|
 | **Distance from the right edge** | Where the menu-bar item sits, in points from the right edge. Bigger moves it further left. `0` *(default)* leaves the position to macOS. |
+| **Relaunch to Apply** | Quits and reopens the app so the new value takes effect. Disabled while the setting already matches the running item. |
 
 macOS stores a status item's position per app and restores it on every launch, so an item that once
 landed badly — behind the notch, or off in the strip where app menus are drawn, which is where a
 freshly installed app goes when the menu bar is full — stays there. Setting a value here re-pins the
 item at startup instead.
 
-It applies **at startup only**: while the app is running the position belongs to macOS, so ⌘-dragging
-the item still works and wins until the next launch. As a sanity check, an item at `400` on a
+It applies **at startup only** — nothing can move a status item after `MenuBarExtra` has created it —
+which is what **Relaunch to Apply** is for. While the app is running the position belongs to macOS, so
+⌘-dragging the item still works and wins until the next launch.
+
+A value wider than your display pushes the item off the end of the status area and into the strip where
+app menus are drawn, where it can be neither seen nor ⌘-dragged back. Settings warns rather than clamps:
+it says what won't fit and what the largest usable value is. As a sanity check, an item at `400` on a
 1512-point-wide display sits at x ≈ 1112 — left of the Control Center cluster and clear of the notch.
 Values much past ~600 on that display put it back under the notch.

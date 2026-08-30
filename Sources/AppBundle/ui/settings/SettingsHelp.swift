@@ -186,7 +186,7 @@ enum SettingHelpTopic: String, CaseIterable {
             case .menuBarItemPosition:
                 appPref(
                     "Pin where the menu-bar item sits.",
-                    "macOS stores a status item's position per app and restores it on every launch, so an item that once landed behind the notch stays there. A value here is re-applied at startup; while the app runs the position belongs to macOS, so ⌘-dragging the item wins until the next launch.",
+                    "macOS stores a status item's position per app and restores it on every launch, so an item that once landed behind the notch stays there. A value here is re-applied at startup — nothing can move the item once it exists, which is why the change only shows after Relaunch to Apply. While the app runs the position belongs to macOS, so ⌘-dragging the item wins until the next launch.",
                     examples: [
                         "0    let macOS place it (default)",
                         "400  left of the Control Center icons on a 1512-point-wide display",
