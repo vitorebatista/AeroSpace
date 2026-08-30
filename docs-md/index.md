@@ -81,8 +81,9 @@ commands together, subscribe to events, and drive it all from your status bar.
 
 <div markdown>
 ### Plain-text config
-One TOML file, comments and all. No GUI, no hidden state — diff it, version it, share it.
-[Default config →](guide.md#default-config)
+One TOML file, comments and all. No hidden state — diff it, version it, share it. The
+Settings window edits that same file in place and keeps your comments.
+[Settings →](settings/index.md) · [Default config →](guide.md#default-config)
 </div>
 
 <div markdown>

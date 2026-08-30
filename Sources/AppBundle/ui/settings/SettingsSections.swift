@@ -35,6 +35,7 @@ func tracked<Value>(_ binding: Binding<Value>, _ onEdit: @escaping () -> Void) -
 @MainActor
 struct GeneralSection: View {
     @Binding var draft: ConfigTomlWriter.ConfigDraft
+    let migrationPending: Bool
     let onEdit: () -> Void
 
     var body: some View {
@@ -56,19 +57,62 @@ struct GeneralSection: View {
                 "Config version",
                 footer: """
                     This is the format your config is written in, not a version to bump. \
-                    Version 2 is current. On version 1, 'persistent-workspaces' is rejected \
-                    and AeroSpace instead derives the workspace list from your bindings and \
-                    monitor assignments — so switching down loses the explicit list, and \
-                    switching up starts with whatever list it had derived.
+                    Version 1 derives persistent workspaces from bindings and monitor assignments. \
+                    Version 2 stores that list explicitly. Moving from version 1 to version 2 \
+                    is an explicit migration; moving back is not its inverse.
                     """,
             ) {
                 Picker(selection: tracked($draft.configVersion, onEdit)) {
-                    Text("2 (current)").tag(2)
-                    Text("1 (legacy)").tag(1)
+                    Text("Version 1 — legacy derived workspaces").tag(1)
+                    Text("Version 2 — explicit persistent workspaces").tag(2)
                 } label: {
                     SettingHelpLabel(title: "Config version", topic: .configVersion)
                 }
                 .pickerStyle(.radioGroup)
+                if migrationPending {
+                    Text(SettingsMigrationCopy.configVersionHelp(migrationPending: true))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+}
+
+@MainActor
+struct ApplicationSection: View {
+    @ObservedObject var viewModel: TrayMenuModel
+
+    private var shortIdentification: String {
+        "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitShortHash)"
+    }
+
+    private var identification: String {
+        "\(aeroSpaceAppName) v\(aeroSpaceAppVersion) \(gitHash)"
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            SettingsGroup("Configuration file") {
+                openConfigButton()
+                reloadConfigButton()
+            }
+            SettingsGroup(
+                "Menu bar appearance",
+                footer: "Experimental styles require macOS 14 or later and have no stability guarantees.",
+            ) {
+                let color = AppearanceTheme.current == .dark ? Color.white : Color.black
+                ForEach(MenuBarStyle.allCases) { style in
+                    MenuBarStyleButton(style: style, color: color).environmentObject(viewModel)
+                }
+            }
+            SettingsGroup("Updates") {
+                Button("Check Now") { Task { await runCheckForUpdatesFlow() } }
+                HStack {
+                    Text(shortIdentification).foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Copy Version Info") { identification.copyToClipboard() }
+                }
             }
         }
     }

@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 148" width="320" height="148" role="img"
+     aria-label="Animation: outer gaps growing, pulling the whole tiling area away from every screen edge">
+  <rect x="10" y="10" width="300" height="100" rx="8" fill="none" stroke="#8b93a7" stroke-width="1.5"/>
+  <!-- the margin the outer gaps carve out -->
+  <rect x="10" y="10" width="300" height="100" rx="8" fill="#22d3ee" fill-opacity="0">
+    <animate attributeName="fill-opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.35;0.65;1" values="0;0.28;0.28;0"/>
+  </rect>
+  <g fill="#6366f1" fill-opacity="0.85">
+    <rect x="10" y="10" width="150" height="100" rx="4">
+      <animate attributeName="x" dur="6s" repeatCount="indefinite" keyTimes="0;0.35;0.65;1" values="10;28;28;10"/>
+      <animate attributeName="y" dur="6s" repeatCount="indefinite" keyTimes="0;0.35;0.65;1" values="10;28;28;10"/>
+      <animate attributeName="width" dur="6s" repeatCount="indefinite" keyTimes="0;0.35;0.65;1" values="150;132;132;150"/>
+      <animate attributeName="height" dur="6s" repeatCount="indefinite" keyTimes="0;0.35;0.65;1" values="100;64;64;100"/>
+    </rect>
+    <rect x="160" y="10" width="150" height="100" rx="4">
+      <animate attributeName="x" dur="6s" repeatCount="indefinite" keyTimes="0;0.35;0.65;1" values="160;160;160;160"/>
+      <animate attributeName="y" dur="6s" repeatCount="indefinite" keyTimes="0;0.35;0.65;1" values="10;28;28;10"/>
+      <animate attributeName="width" dur="6s" repeatCount="indefinite" keyTimes="0;0.35;0.65;1" values="150;132;132;150"/>
+      <animate attributeName="height" dur="6s" repeatCount="indefinite" keyTimes="0;0.35;0.65;1" values="100;64;64;100"/>
+    </rect>
+  </g>
+  <g font-family="system-ui, sans-serif" font-size="13" fill="#8b93a7" text-anchor="middle">
+    <text x="160" y="133">gaps.outer = 0
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.3;0.35;0.65;0.7;1" values="1;1;0;0;1;1"/>
+    </text>
+    <text x="160" y="133" opacity="0">gaps.outer = 18
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite" keyTimes="0;0.3;0.35;0.65;0.7;1" values="0;0;1;1;0;0"/>
+    </text>
+  </g>
+</svg>

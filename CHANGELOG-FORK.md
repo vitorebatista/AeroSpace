@@ -27,6 +27,28 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 
 ## Unreleased
 
+**Settings is now the single application and configuration surface.** The menu-bar menu
+has direct Enable/Disable, **Settings…**, and Quit actions instead of a nested Settings
+submenu. A new Application destination contains config-file actions, menu-bar appearance,
+update checking, and version information; these actions do not dirty the config draft.
+
+- Changing a loaded effective-version-1 config to version 2 is now an explicit,
+  transactional migration. AeroSpace-edge materializes the persistent workspace order
+  that v1 derived from binding source order and monitor assignments, validates the complete
+  candidate, and asks for confirmation before writing.
+- A successful migration first creates a byte-identical
+  `<filename>.backup-v1-YYYYMMDD-HHmmss` beside the resolved target. Backup collisions never
+  overwrite an existing file, symlinks remain intact, permissions are preserved, failures
+  leave or restore the original bytes, and Settings displays/reveals the exact backup path.
+- The docs gained a **Settings section** with one page per destination in the window, in the
+  same order as its sidebar, so "where do I change this?" has a one-line answer. Each option
+  carries its TOML key, allowed values, parser fallback and when it takes effect, and the
+  spatial ones (layout, orientation, gaps, accordion padding, border, normalization, focus
+  follows app activation, new-window flicker, workspace-to-monitor priority) are explained
+  with animated diagrams of the before/after. The section also covers the save pipeline,
+  source-preservation boundaries, raw fragment validation,
+  first-save/ambiguous/symlink/external-edit behavior, and migration recovery.
+
 **Native macOS integration.** Four fork-original changes that use public macOS APIs the codebase
 wasn't reaching for. No upstream equivalent for any of them.
 

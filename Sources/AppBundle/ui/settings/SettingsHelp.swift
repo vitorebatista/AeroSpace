@@ -1,5 +1,20 @@
 import SwiftUI
 
+enum SettingsMigrationCopy {
+    static let durableConfigVersionHelp = """
+        Version 1 derives persistent workspaces from bindings and workspace-to-monitor assignments. Version 2 stores `persistent-workspaces` explicitly. If you change a loaded Version 1 config to Version 2, Save asks for confirmation, materializes that list, and creates a byte-identical backup named `<filename>.backup-v1-YYYYMMDD-HHmmss` before writing.
+        """
+    static let pending = """
+        This is a migration from Version 1 to Version 2. Version 2 materializes the `persistent-workspaces` list that Version 1 derives from bindings and workspace-to-monitor assignments. Saving creates a byte-identical backup beside the config named `<filename>.backup-v1-YYYYMMDD-HHmmss`. No files change until Save is chosen and you confirm this migration.
+        """
+    static let confirmationTitle = "Migrate config from version 1 to version 2?"
+    static let confirmationMessage = "Version 2 will write the persistent-workspaces list that version 1 currently derives from your bindings and workspace-to-monitor assignments. A byte-identical backup of the version 1 config is created before the migrated config is saved."
+
+    static func configVersionHelp(migrationPending: Bool) -> String {
+        migrationPending ? pending : durableConfigVersionHelp
+    }
+}
+
 enum SettingHelpVisual: Equatable {
     case layout
     case orientation
@@ -57,13 +72,13 @@ enum SettingHelpTopic: String, CaseIterable {
             case .unhideHiddenApps:
                 help("Unhide an app before focusing one of its windows.", "macOS can hide an entire application. This makes AeroSpace unhide it automatically when focus moves to one of its windows.", ["automatically-unhide-macos-hidden-apps"])
             case .configVersion:
-                help("Choose the config format, not the app version.", "Version 2 supports an explicit persistent-workspaces list. Version 1 derives that list from bindings and monitor assignments, so switching versions can change how empty workspaces are discovered.", ["config-version"])
+                help("Choose the config format, not the app version.", SettingsMigrationCopy.configVersionHelp(migrationPending: false), ["config-version"])
             case .defaultLayout:
                 help("Choose how new workspaces arrange windows.", "Tiles divide the available area. Accordion stacks window headers and shows one main window at a time. Existing workspaces keep their current layout until changed.", ["default-root-container-layout"], .layout)
             case .defaultOrientation:
                 help("Choose the first split direction for a workspace.", "Horizontal places children left-to-right; vertical places them top-to-bottom. Auto selects horizontal on wide displays and vertical on tall displays.", ["default-root-container-orientation"], .orientation)
             case .flattenContainers:
-                help("Remove containers that no longer add structure.", "When nested containers have the same orientation, AeroSpace merges them. Turning this off preserves every manually-created nesting level.", ["enable-normalization-flatten-containers"], .tree)
+                help("Remove containers that no longer add structure.", "A container left with a single child is replaced by that child; the root container may keep a single window. Turning this off preserves every manually-created nesting level.", ["enable-normalization-flatten-containers"], .tree)
             case .oppositeOrientation:
                 help("Alternate split direction at each nesting level.", "A horizontal parent gets vertical child containers and vice versa. This prevents redundant nesting; binary-tree normalization takes precedence when both are enabled.", ["enable-normalization-opposite-orientation-for-nested-containers"], .tree)
             case .binaryTree:

@@ -1,0 +1,68 @@
+# Sanitized structural twin of the active v1 configuration. It contains no personal
+# application names, paths, bundle identifiers, or commands.
+after-startup-command = []
+on-focus-changed = []
+on-mode-changed = []
+on-focused-monitor-changed = []
+exec-on-workspace-change = []
+
+start-at-login = false
+auto-reload-config = true
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+enable-normalization-binary-tree = false
+default-root-container-layout = 'tiles'
+default-root-container-orientation = 'auto'
+accordion-padding = 30
+focus-follows-app-activation = 'always'
+new-window-prevent-flicker = false
+focused-window-border = false
+focused-window-border-color = '0xff12B981'
+focused-window-border-width = 4
+focused-window-border-opacity = 100
+focused-window-border-radius = 10
+focused-window-border-inset = 0
+
+[key-mapping]
+preset = 'qwerty'
+
+[gaps]
+inner.horizontal = 0
+inner.vertical = 0
+outer.left = 0
+outer.bottom = 0
+outer.top = [{ monitor.main = 22 }, 10]
+outer.right = 0
+
+[exec]
+inherit-env-vars = true
+
+[exec.env-vars]
+FIXTURE_PATH = '${PATH}'
+
+[mode.main.binding]
+alt-1 = 'workspace 1'
+alt-2 = 'workspace 2'
+alt-3 = 'workspace 3'
+alt-a = 'workspace A'
+alt-b = 'workspace B'
+alt-c = 'workspace C'
+alt-enter = '''
+exec-and-forget osascript -e '
+tell application "System Events"
+    return "migration fixture"
+end tell'
+'''
+
+[mode.service.binding]
+esc = ['reload-config', 'mode main']
+r = ['flatten-workspace-tree', 'mode main']
+
+[workspace-to-monitor-force-assignment]
+'1' = 'main'
+# 'archive' = 'secondary'
+# 'later' = ['main', 'secondary']
+
+[[on-window-detected]]
+if.app-id = 'org.example.fixture'
+run = ['move-node-to-workspace A']

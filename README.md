@@ -66,7 +66,8 @@ And two features that have no upstream equivalent, written here:
   upstream behavior and is safe.
 
 - **Native Settings window** — edit the same AeroSpace-edge config the app resolves at startup from
-  **Settings → Settings…**, without moving to a separate preference store. Fixed-choice options use
+  the menu bar's **Settings…** item, without moving to a separate preference store
+  ([docs](https://vitorebatista.github.io/AeroSpace-edge/settings/)). Fixed-choice options use
   native controls; keybindings, window rules and callbacks remain transparent TOML editors for the
   full command DSL. Save validates the complete candidate with AeroSpace's real parser before writing
   anything, preserves untouched regions of the file, then reloads the configuration. It also opens a

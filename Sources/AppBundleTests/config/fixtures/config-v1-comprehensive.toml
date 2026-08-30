@@ -1,0 +1,97 @@
+# Comprehensive v1 migration fixture. Keep every value generic and non-personal.
+config-version = 1
+after-login-command = [] # deprecated, but preserved
+after-startup-command = ['exec-and-forget printf startup']
+on-focus-changed = ['move-mouse window-lazy-center']
+on-mode-changed = ['exec-and-forget printf mode']
+on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
+exec-on-workspace-change = ['exec-and-forget printf workspace']
+
+start-at-login = true
+auto-reload-config = true
+automatically-unhide-macos-hidden-apps = true
+enable-normalization-flatten-containers = false
+enable-normalization-opposite-orientation-for-nested-containers = false
+enable-normalization-binary-tree = true
+default-root-container-layout = 'accordion'
+default-root-container-orientation = 'vertical'
+accordion-padding = 24
+focus-follows-app-activation = 'smart'
+new-window-prevent-flicker = true
+focused-window-border = true
+focused-window-border-color = '0xff112233'
+focused-window-border-width = 6
+focused-window-border-opacity = 80
+focused-window-border-radius = 12
+focused-window-border-inset = 2
+
+[key-mapping]
+preset = 'qwerty'
+
+[key-mapping.key-notation-to-key-code]
+zz = 'a'
+
+[gaps]
+inner.horizontal = 7
+inner.vertical = [{ monitor.main = 11 }, 8]
+outer.left = [{ monitor.secondary = 12 }, 9]
+outer.bottom = [{ monitor.2 = 13 }, 10]
+outer.top = [{ monitor."fixture-display" = 14 }, 11]
+outer.right = 15
+
+[exec]
+inherit-env-vars = true
+
+[exec.env-vars]
+FIXTURE_PATH = '${PATH}:fixture'
+'FIXTURE.PATH' = '${PATH}:extra'
+
+# The binding table includes single commands, raw command arrays, custom notation,
+# and a multiline TOML command.
+[mode.main.binding]
+alt-slash = 'layout tiles horizontal vertical'
+alt-1 = 'workspace 1'
+alt-2 = ['workspace 2', 'move-node-to-workspace 3']
+alt-zz = 'move-node-to-workspace custom'
+alt-m = """
+workspace multiline
+"""
+alt-shift-1 = ['move-node-to-workspace 1', 'focus left']
+
+[mode.service.binding]
+esc = ['reload-config', 'mode main']
+w = ['workspace service', 'mode main']
+
+[workspace-to-monitor-force-assignment]
+'archive' = ['main', 'secondary']
+'assignment-only' = 2
+
+# Each supported matcher shape stays in raw TOML and must survive the migration.
+[[on-window-detected]]
+if.app-id = 'org.example.fixture'
+run = ['layout floating', 'move-node-to-workspace 1']
+
+[[on-window-detected]]
+if.app-id = ['org.example.fixture-a', 'org.example.fixture-b']
+check-further-callbacks = true
+run = ['move-node-to-workspace 2']
+
+[[on-window-detected]]
+if.app-id-regex-substring = '^org\\.example\\.'
+run = ['move-node-to-workspace 3']
+
+[[on-window-detected]]
+if.app-name-regex-substring = 'fixture'
+run = ['layout tiling']
+
+[[on-window-detected]]
+if.window-title-regex-substring = 'document'
+run = ['move-node-to-workspace archive']
+
+[[on-window-detected]]
+if.workspace = 'fixture-workspace'
+run = ['layout floating']
+
+[[on-window-detected]]
+if.during-aerospace-startup = true
+run = ['move-node-to-workspace assignment-only']

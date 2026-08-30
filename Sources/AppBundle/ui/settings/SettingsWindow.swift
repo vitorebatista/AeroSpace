@@ -1,13 +1,14 @@
+import AppKit
 import Common
 import SwiftUI
 
 public let settingsWindowId = "\(aeroSpaceAppName).settings"
 
 @MainActor
-public func getSettingsWindow(model: SettingsModel) -> some Scene {
+public func getSettingsWindow(model: SettingsModel, viewModel: TrayMenuModel) -> some Scene {
     // SwiftUI.Window because AeroSpace already has a class called Window
     SwiftUI.Window("\(aeroSpaceAppName) Settings", id: settingsWindowId) {
-        SettingsView(model: model)
+        SettingsView(model: model, viewModel: viewModel)
             .onAppear {
                 // Without this an accessory-mode app's window can't receive keyboard input
                 NSApp.setActivationPolicy(.accessory)
@@ -29,6 +30,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
     case keybindings = "Keybindings"
     case windowRules = "Window Rules"
     case callbacks = "Callbacks"
+    case application = "Application"
 
     var id: String { rawValue }
 
@@ -45,6 +47,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
             case .keybindings: "command"
             case .windowRules: "macwindow.badge.plus"
             case .callbacks: "arrow.triangle.branch"
+            case .application: "gearshape.2"
         }
     }
 }
@@ -52,10 +55,15 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
 @MainActor
 struct SettingsView: View {
     @StateObject private var model: SettingsModel
+    @ObservedObject var viewModel: TrayMenuModel
     @State private var selection: SettingsCategory = .general
     @State private var showOverwriteAlert = false
+    @State private var showMigrationAlert = false
 
-    init(model: SettingsModel) { self._model = .init(wrappedValue: model) }
+    init(model: SettingsModel, viewModel: TrayMenuModel) {
+        self._model = .init(wrappedValue: model)
+        self.viewModel = viewModel
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -75,6 +83,7 @@ struct SettingsView: View {
                     } detail: {
                         ScrollView { section(for: selection).padding() }
                     }
+                    .disabled(model.isSaving)
             }
             Divider()
             footer
@@ -90,6 +99,7 @@ struct SettingsView: View {
             Text(parseError).font(.caption.monospaced()).textSelection(.enabled)
             TextEditor(text: Binding(get: { model.wholeFileText }, set: { guard !model.isSaving else { return }; model.wholeFileText = $0; markDirty() }))
                 .font(.system(size: 12).monospaced())
+                .disabled(model.isSaving)
         }
         .padding()
     }
@@ -108,7 +118,7 @@ struct SettingsView: View {
     @ViewBuilder
     private func section(for category: SettingsCategory) -> some View {
         switch category {
-            case .general: GeneralSection(draft: draft, onEdit: markDirty)
+            case .general: GeneralSection(draft: draft, migrationPending: model.requiresVersionMigration, onEdit: markDirty)
             case .layout: LayoutSection(draft: draft, onEdit: markDirty)
             case .focus: FocusSection(draft: draft, onEdit: markDirty)
             case .windowBorder: WindowBorderSection(draft: draft, onEdit: markDirty)
@@ -141,6 +151,8 @@ struct SettingsView: View {
                     text: draft.rawCallbacks,
                     onEdit: markDirty,
                 )
+            case .application:
+                ApplicationSection(viewModel: viewModel)
         }
     }
 
@@ -160,6 +172,21 @@ struct SettingsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxHeight: 120)
+            } else if case .migrated(let backupUrl) = model.status {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text("Migrated to config version 2. Backup: \(backupUrl.path)")
+                            .textSelection(.enabled)
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.green)
+                    Button("Reveal Backup") {
+                        NSWorkspace.shared.activateFileViewerSelecting([backupUrl])
+                    }
+                    .font(.caption)
+                    .accessibilityHint("Reveals the migration backup in Finder")
+                }
             }
             HStack {
                 if model.willCreateConfig {
@@ -169,21 +196,46 @@ struct SettingsView: View {
                 }
                 Spacer()
                 Button("Revert") { model.revert() }.disabled(!model.isDirty || model.isSaving)
-                Button("Save") {
-                    if model.externallyModified { showOverwriteAlert = true } else { Task { await model.save() } }
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(!model.isDirty || model.isSaving)
+                Button("Save") { requestSave() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!model.isDirty || model.isSaving)
             }
         }
         .padding()
         .alert("The config file changed on disk", isPresented: $showOverwriteAlert) {
-            Button("Overwrite") { Task { await model.save() } }
+            Button("Overwrite") { confirmMigrationThenSave() }
             Button("Discard my changes") { model.load() }
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Someone or something edited the config after this window opened. Overwriting will lose those edits.")
         }
+        .alert(SettingsMigrationCopy.confirmationTitle, isPresented: $showMigrationAlert) {
+            Button("Migrate and Save") { beginSave() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(SettingsMigrationCopy.confirmationMessage)
+        }
+    }
+
+    private func requestSave() {
+        guard !model.isSaving else { return }
+        if model.externallyModified {
+            showOverwriteAlert = true
+        } else {
+            confirmMigrationThenSave()
+        }
+    }
+
+    private func confirmMigrationThenSave() {
+        if model.requiresVersionMigration {
+            showMigrationAlert = true
+        } else {
+            beginSave()
+        }
+    }
+
+    private func beginSave() {
+        Task { await model.save() }
     }
 
     /// `SettingsModel.save()` validates against a temp file and its error message embeds
