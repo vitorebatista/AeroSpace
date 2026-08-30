@@ -4,19 +4,19 @@ description: Print windows that satisfy conditions
 section: 1
 ---
 
-# aerospace list-windows
+# aerospace-edge list-windows
 
 Print windows that satisfy conditions
 
 ## Synopsis
 
 ```synopsis
-aerospace list-windows [-h|--help] (--workspace <workspace>...|--monitor <monitor>...)
+aerospace-edge list-windows [-h|--help] (--workspace <workspace>...|--monitor <monitor>...)
                        [--monitor <monitor>...] [--workspace <workspace>...]
                        [--pid <pid>] [--app-bundle-id <app-bundle-id>] [--format <output-format>]
                        [--count] [--json] [--sort <sort-option>...]
-aerospace list-windows [-h|--help] --all [--format <output-format>] [--count] [--json] [--sort <sort-option>...]
-aerospace list-windows [-h|--help] --focused [--format <output-format>] [--count] [--json] [--sort <sort-option>...]
+aerospace-edge list-windows [-h|--help] --all [--format <output-format>] [--count] [--json] [--sort <sort-option>...]
+aerospace-edge list-windows [-h|--help] --focused [--format <output-format>] [--count] [--json] [--sort <sort-option>...]
 ```
 
 ## Description
@@ -120,7 +120,7 @@ The following variables can be used inside `<output-format>`:
 
 %{window-is-fullscreen}
 
-: Boolean. Is window in fullscreen by `aerospace fullscreen` command
+: Boolean. Is window in fullscreen by `aerospace-edge fullscreen` command
 
 %{window-layout}
 

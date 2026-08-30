@@ -4,14 +4,14 @@ description: Close the focused window
 section: 1
 ---
 
-# aerospace close
+# aerospace-edge close
 
 Close the focused window
 
 ## Synopsis
 
 ```synopsis
-aerospace close [-h|--help] [--quit-if-last-window] [--window-id <window-id>]
+aerospace-edge close [-h|--help] [--quit-if-last-window] [--window-id <window-id>]
 ```
 
 ## Description

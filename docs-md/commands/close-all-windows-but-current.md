@@ -4,14 +4,14 @@ description: On the focused workspace, close all windows but current
 section: 1
 ---
 
-# aerospace close-all-windows-but-current
+# aerospace-edge close-all-windows-but-current
 
 On the focused workspace, close all windows but current
 
 ## Synopsis
 
 ```synopsis
-aerospace close-all-windows-but-current [-h|--help] [--quit-if-last-window]
+aerospace-edge close-all-windows-but-current [-h|--help] [--quit-if-last-window]
 ```
 
 ## Description

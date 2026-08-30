@@ -4,21 +4,21 @@ description: List environment variables that exec-* commands and callbacks are r
 section: 1
 ---
 
-# aerospace list-exec-env-vars
+# aerospace-edge list-exec-env-vars
 
 List environment variables that exec-* commands and callbacks are run with
 
 ## Synopsis
 
 ```synopsis
-aerospace list-exec-env-vars [-h|--help]
+aerospace-edge list-exec-env-vars [-h|--help]
 ```
 
 ## Description
 
 Examples of commands and callbacks:
 
-- `aerospace exec-and-forget` command
+- `aerospace-edge exec-and-forget` command
 
 - `exec-on-workspace-change-callback`
 

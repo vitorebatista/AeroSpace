@@ -60,9 +60,9 @@ defaults write -g NSAutomaticWindowAnimationsEnabled -bool false
 The following commands focus next or previous workspaces on monitors where the mouse is located
 
 ``` bash
-aerospace workspace "$(aerospace list-workspaces --monitor mouse --visible)" && aerospace workspace next
+aerospace-edge workspace "$(aerospace-edge list-workspaces --monitor mouse --visible)" && aerospace-edge workspace next
 
-aerospace workspace "$(aerospace list-workspaces --monitor mouse --visible)" && aerospace workspace prev
+aerospace-edge workspace "$(aerospace-edge list-workspaces --monitor mouse --visible)" && aerospace-edge workspace prev
 ```
 
 Use the software of your choice to assign trackpad gestures to the respective commands. Here are a few third party options in alphabetical order:
@@ -71,7 +71,7 @@ Use the software of your choice to assign trackpad gestures to the respective co
 
 - <https://github.com/acsandmann/aerospace-swipe>
 
-- [BetterTouchTool](https://folivora.ai/) can assign arbitrary commands to trackpad gestures. Beware that you might need to specify full path to aerospace executable <https://community.folivora.ai/t/how-to-execute-terminal-command-to-switch-workspaces-with-aerospace/35914>
+- [BetterTouchTool](https://folivora.ai/) can assign arbitrary commands to trackpad gestures. Beware that you might need to specify full path to aerospace-edge executable <https://community.folivora.ai/t/how-to-execute-terminal-command-to-switch-workspaces-with-aerospace/35914>
 
 - <https://github.com/MediosZ/SwipeAeroSpace>
 
@@ -83,7 +83,7 @@ Use the software of your choice to assign trackpad gestures to the respective co
 
 You can integrate AeroSpace workspace indicators with [Sketchybar](https://github.com/FelixKratz/SketchyBar). Use these snippets as a starting point.
 
-**~/.aerospace.toml**
+**~/.aerospace-edge.toml**
 
 ``` toml
 ## Run Sketchybar together with AeroSpace
@@ -106,7 +106,7 @@ exec-on-workspace-change = ['/bin/bash', '-c',
 ``` bash
 sketchybar --add event aerospace_workspace_change
 
-for sid in $(aerospace list-workspaces --all); do
+for sid in $(aerospace-edge list-workspaces --all); do
     sketchybar --add item space.$sid left   
         --subscribe space.$sid aerospace_workspace_change   
         --set space.$sid   
@@ -115,7 +115,7 @@ for sid in $(aerospace list-workspaces --all); do
         background.height=20   
         background.drawing=off   
         label="$sid"   
-        click_script="aerospace workspace $sid"   
+        click_script="aerospace-edge workspace $sid"   
         script="$CONFIG_DIR/plugins/aerospace.sh $sid"
 done
 ```
@@ -142,7 +142,7 @@ fi
 
 In order to sync simple-bar with AeroSpace, add these lines to your AeroSpace config file:
 
-**~/.aerospace.toml**
+**~/.aerospace-edge.toml**
 
 ``` toml
 ## Notify simple-bar about window focus change
@@ -164,7 +164,7 @@ exec-on-workspace-change = [
 
 Invoking Safari/Terminal with a command the obvious way (`exec-and-forget open -a Safari`) results in an outcome that is probably not the intended one. Namely, that any workspace already containing an instance of Safari/Terminal is brought in focus.
 
-Opening **a new window** of a program that can support multiple windows (such as Safari or Terminal.app) can be accomplished with an AppleScript inlined in `aerospace.toml` as follows:
+Opening **a new window** of a program that can support multiple windows (such as Safari or Terminal.app) can be accomplished with an AppleScript inlined in `aerospace-edge.toml` as follows:
 
 - Safari
 
@@ -202,7 +202,7 @@ Opening **a new window** of a program that can support multiple windows (such as
 
 If `automatically-unhide-macos-hidden-apps` isn’t enough, you can disable `cmd-h` altogether (which will make this hotkey unavailable for apps that might use it for other purposes)
 
-**~/.aerospace.toml**
+**~/.aerospace-edge.toml**
 
 ``` toml
 [mode.main.binding]
@@ -214,7 +214,7 @@ If `automatically-unhide-macos-hidden-apps` isn’t enough, you can disable `cmd
 
 You can configure a custom shortcut to take a screenshot. `screencapture` is a built-in macOS command.
 
-**~/.aerospace.toml**
+**~/.aerospace-edge.toml**
 
 ``` toml
 alt-shift-s = 'exec-and-forget screencapture -i -c'
@@ -249,7 +249,7 @@ enable-normalization-opposite-orientation-for-nested-containers = false
 on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 
 [mode.main.binding]
-    # See: https://nikitabobko.github.io/AeroSpace/goodies#open-a-new-window-with-applescript
+    # See: https://vitorebatista.github.io/AeroSpace-edge/goodies/#open-a-new-window-with-applescript
     alt-enter = '''exec-and-forget osascript -e '
     tell application "Terminal"
         do script
@@ -282,7 +282,7 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
     alt-shift-space = 'layout floating tiling' # 'floating toggle' in i3
 
     # Not supported, because this command is redundant in AeroSpace mental model.
-    # See: https://nikitabobko.github.io/AeroSpace/guide#floating-windows
+    # See: https://vitorebatista.github.io/AeroSpace-edge/guide/#floating-windows
     #alt-space = 'focus toggle_tiling_floating'
 
     # `focus parent`/`focus child` are not yet supported, and it's not clear whether they

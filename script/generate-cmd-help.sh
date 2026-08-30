@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 
 out_file="${1:-./Sources/Common/cmdHelpGenerated.swift}"
 
-aerospace_prefix="aerospace"
+aerospace_prefix="aerospace-edge"
 ____usage_prefix="   USAGE:"
 _______or_prefix="      OR:"
 ____strip_prefix="   "

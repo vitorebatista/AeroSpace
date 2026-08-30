@@ -86,6 +86,13 @@ final class MacApp: AbstractApp {
             let thread = Thread {
                 $axTaskLocalAppThreadToken.withValue(AxAppThreadToken(pid: pid, idForDebug: nsApp.idForDebug)) {
                     let axApp = AXUIElementCreateApplication(nsApp.processIdentifier)
+                    // Every AX read is a synchronous IPC round-trip into the target app. Without an
+                    // explicit timeout, one wedged app (Electron mid-freeze, a JetBrains IDE indexing)
+                    // stalls the whole refresh and the WM appears hung. Cap the wait instead: a slow
+                    // app loses one refresh cycle, everything else keeps tiling.
+                    // Tuning knob: too low and genuinely slow apps (e.g. Godot) get their windows
+                    // dropped from a refresh; too high and a hang is user-visible.
+                    AXUIElementSetMessagingTimeout(axApp, axMessagingTimeoutSeconds)
                     let handlers: HandlerToNotifKeyMapping = unsafe [
                         (refreshObs, [kAXWindowCreatedNotification, kAXFocusedWindowChangedNotification]),
                     ]
@@ -201,13 +208,13 @@ final class MacApp: AbstractApp {
         if (!NSScreen.screensHaveSeparateSpaces || monitors.count == 1) &&
             (lastNativeFocusedWindowId == windowId || windowsCount == 1)
         {
-            nsApp.activate(options: .activateIgnoringOtherApps)
+            nativeActivate(nsApp)
         } else {
             MacApp.focusJob = withWindowAsync(windowId) { [nsApp] window, job in
                 // Raise firstly to make sure that by the time we activate the app, the window would be already on top
                 window.set(Ax.isMainAttr, true)
                 AXUIElementPerformAction(window, kAXRaiseAction as CFString)
-                nsApp.activate(options: .activateIgnoringOtherApps)
+                nativeActivate(nsApp)
             }
         }
     }

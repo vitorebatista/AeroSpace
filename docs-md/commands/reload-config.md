@@ -4,14 +4,14 @@ description: Reload currently active config
 section: 1
 ---
 
-# aerospace reload-config
+# aerospace-edge reload-config
 
 Reload currently active config
 
 ## Synopsis
 
 ```synopsis
-aerospace reload-config [-h|--help] [--no-gui] [--dry-run]
+aerospace-edge reload-config [-h|--help] [--no-gui] [--dry-run]
 ```
 
 ## Description

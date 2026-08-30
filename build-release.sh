@@ -59,6 +59,9 @@ codesign -s "$codesign_identity" .release/aerospace-edge
 ### VALIDATE ###
 ################
 
+# Metadata.appintents is emitted by Xcode's App Intents metadata processor from the intents in
+# Sources/AeroSpaceApp. It is what makes the commands visible to Shortcuts, Spotlight and Focus
+# filters, so its presence here doubles as the build-time check that they were extracted at all.
 expected_layout=$(cat <<EOF
 .release/AeroSpace-edge.app
 .release/AeroSpace-edge.app/Contents
@@ -68,6 +71,9 @@ expected_layout=$(cat <<EOF
 .release/AeroSpace-edge.app/Contents/MacOS/AeroSpace-edge
 .release/AeroSpace-edge.app/Contents/Resources
 .release/AeroSpace-edge.app/Contents/Resources/default-config.toml
+.release/AeroSpace-edge.app/Contents/Resources/Metadata.appintents
+.release/AeroSpace-edge.app/Contents/Resources/Metadata.appintents/version.json
+.release/AeroSpace-edge.app/Contents/Resources/Metadata.appintents/extract.actionsdata
 .release/AeroSpace-edge.app/Contents/Resources/AppIcon.icns
 .release/AeroSpace-edge.app/Contents/Resources/Assets.car
 .release/AeroSpace-edge.app/Contents/Info.plist

@@ -44,6 +44,54 @@ update checking, and version information; these actions do not dirty the config 
   types and parser fallbacks, source-preservation boundaries, raw fragment validation,
   first-save/ambiguous/symlink/external-edit behavior, and migration recovery.
 
+**Native macOS integration.** Four fork-original changes that use public macOS APIs the codebase
+wasn't reaching for. No upstream equivalent for any of them.
+
+- **App Intents: Shortcuts, Spotlight and Focus filters.** Commands are published as native App
+  Intents — `Run Command` (any CLI command verbatim), `Focus Workspace`, and a `Switch Workspace`
+  Focus filter that ties a workspace to a macOS Focus mode. Intents route through the same
+  parse → execute path as the CLI and the socket server, so every existing and future command is
+  exposed for free. `exec-and-forget` is rejected, as it already is over the socket. Documented in
+  [the guide](./docs-md/guide.md#shortcuts-spotlight-and-focus-filters).
+- **The layout now reacts to display changes.** Nothing was observing
+  `NSApplication.didChangeScreenParametersNotification`, so plugging in a monitor, unplugging one,
+  changing resolution or rearranging displays left the tree on the stale monitor arrangement until
+  some unrelated event happened to trigger a refresh. The burst of notifications a reconfiguration
+  emits is coalesced, so the layout runs once against the final arrangement.
+- **A hung app can no longer stall the whole refresh.** Per-app Accessibility elements now set
+  `AXUIElementSetMessagingTimeout`. Every AX read is a synchronous IPC round-trip into the target
+  app; without a timeout, one wedged app (Electron mid-freeze, an IDE indexing) blocked the refresh
+  and the window manager appeared hung. A slow app now loses one refresh cycle instead.
+- **More reliable focus on macOS 14+.** `nativeFocus` used
+  `activate(options: .activateIgnoringOtherApps)`, which macOS 14 both deprecated and increasingly
+  ignores — a root cause of "the focus command did nothing". On macOS 14+ it now uses
+  `activate(from:)`, which models activation as a transfer from the app currently holding focus and
+  is honoured by the window server. Falls back to the old call, so macOS 13 is unchanged.
+
+**Docs.** New [comparison page](./docs-md/comparison.md) and README matrix covering AeroSpace-edge
+against upstream AeroSpace, yabai, Amethyst, Rectangle and the tiling built into macOS.
+
+**Two crash fixes and window-placement memory.** Fork-original; no upstream equivalent.
+
+- **Fixed: segfault during display reconfiguration.** `Monitor.activeWorkspace` retried
+  `rearrangeWorkspacesOnMonitors()` by recursing into itself, but that only ever caches the
+  monitors `NSScreen.screens` reports right now. A `Monitor` that list no longer contains — the
+  ordinary case when you close the lid with external displays attached, or while every display is
+  momentarily off and `screens` is empty — could never be found, so the retry ran until the stack
+  guard was hit (`EXC_BAD_ACCESS` / `SIGSEGV`). It now falls back to a stub workspace and lets the
+  next refresh settle the placement.
+- **Fixed: Settings window crashed on open.** TOMLDecoder unpacks scalars through
+  `source.utf8.withContiguousStorageIfAvailable { ... }!`, which returns nil — and therefore traps
+  with `SIGTRAP` — for a String that isn't natively stored. Config read from disk is native, but
+  text handed back by AppKit/SwiftUI is NSString-backed, so the Settings panes' own parse check
+  could take the app down. `parseConfig` now normalizes its input with `makeContiguousUTF8()`.
+- **Window placement survives a restart.** AeroSpace already froze the whole window tree in memory
+  to recover from the lock screen; that snapshot is now also written to
+  `~/Library/Application Support/AeroSpace-edge/window-layout.json`, debounced two seconds after
+  any layout change, and replayed once at startup. Windows are matched back by WindowServer id,
+  falling back to app bundle id + window title so placement still restores after a reboot or an
+  app relaunch, when ids have changed. Unmatched windows are left where they land today.
+
 ## v1.14 (2026-08-28)
 
 **Settings window.** AeroSpace-edge can now edit its own config from a GUI, reachable from

@@ -75,6 +75,55 @@ And two features that have no upstream equivalent, written here:
 
   ![AeroSpace-edge Settings window, showing the Gaps editor](./docs-md/assets/settings-window.jpg)
 
+- **Shortcuts, Spotlight and Focus filters** — AeroSpace‑edge exposes its commands as native
+  [App Intents](https://vitorebatista.github.io/AeroSpace-edge/guide/#shortcuts-spotlight-and-focus-filters).
+  Drive workspaces from Shortcuts without shelling out, run a command straight from Spotlight, or
+  attach a workspace to a macOS Focus so turning on **Work** puts you where you work. No other
+  window manager in this category offers Focus filters — they're reachable only through App Intents,
+  which a hotkey daemon has no way to register.
+
+## How it compares
+
+The honest version. Every one of these is good at something, and the right pick depends on what you
+value — this table is about structural differences, not quality.
+
+| | AeroSpace‑edge | AeroSpace | yabai | Amethyst | Rectangle | macOS built-in |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Tiling model** | tree | tree | BSP tree | preset layouts | manual snap | manual snap |
+| **Layout persists** | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Needs SIP disabled** | never | never | for parts | never | never | — |
+| **Private APIs** | ❌ | ❌ | ✅ | ❌ | ❌ | — |
+| **Workspaces** | emulated, unlimited | emulated, unlimited | native Spaces | native Spaces | none | native Spaces |
+| **Config** | TOML file | TOML file | shell script | GUI | GUI | System Settings |
+| **Built-in keybindings** | ✅ | ✅ | needs `skhd` | ✅ | ✅ | fixed set |
+| **Scriptable CLI** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Shortcuts / Spotlight** | ✅ | ❌ | ❌ | ❌ | ❌ | — |
+| **macOS Focus filters** | ✅ | ❌ | ❌ | ❌ | ❌ | — |
+| **Native Settings UI** | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ |
+| **Ships upstream fixes early** | ✅ | — | — | — | — | — |
+| **License** | MIT | MIT | MIT | MIT | MIT | closed |
+
+**What the rows actually mean:**
+
+- **SIP and private APIs.** yabai's best features need System Integrity Protection partially disabled
+  and a scripting addition injected into Dock. That's a real security and stability tradeoff, and it
+  breaks on macOS updates. AeroSpace‑edge works entirely through the public Accessibility API — nothing
+  to disable, nothing to re-patch after an OS update.
+- **Emulated workspaces.** Native macOS Spaces have a slow unskippable switch animation, a 16-Space
+  cap, and no public API at all. Tools built on Spaces inherit every one of those limits. AeroSpace
+  reimplements workspaces instead: instant, unlimited, assignable to monitors, scriptable.
+- **Focus filters** are the row that has no workaround. They're only reachable through App Intents, so
+  it isn't a feature the others haven't gotten around to — it's one their architecture can't reach.
+- **Against upstream AeroSpace**, the tiling is the same tiling; that's the point. What differs is
+  cadence and what's already fixed — plus native integrations written here.
+
+**Pick something else if:** you want window opacity, borders and per-Space rules and don't mind
+disabling SIP (yabai); you want tiling with zero configuration (Amethyst); or you only ever wanted to
+throw a window to half the screen (Rectangle, or macOS itself — both are free and already installed).
+
+*Snapshot as of v1.13. If a row is out of date, [open an issue](https://github.com/vitorebatista/AeroSpace-edge/issues)
+— an inaccurate comparison table helps nobody.*
+
 ## Installs alongside anything else
 
 AeroSpace‑edge is its own app — its own bundle id, name, icon, socket, CLI and Accessibility grant.

@@ -32,13 +32,6 @@ open -a /Applications/AeroSpace-edge.app
 
 Shell completions for bash, fish and zsh ship in the zip under `shell-completion/`.
 
-!!! note "The CLI is `aerospace-edge`"
-
-    Every command page in these docs writes the synopsis as `aerospace <subcommand>`,
-    because that is what the program prints in its own `--help` output. The binary you
-    actually type is `aerospace-edge`, so `aerospace focus left` on a command page is
-    `aerospace-edge focus left` in your shell (and in `exec-and-forget` bindings).
-
 ### Installs alongside upstream AeroSpace
 
 The fork has its own bundle id (`vitorebatista.aerospace-edge`), app name, socket and
@@ -135,9 +128,9 @@ cp /Applications/AeroSpace-edge.app/Contents/Resources/default-config.toml ~/.ae
 [Download default-config.toml](config-examples/default-config.toml)
 
 ``` toml
-## Place a copy of this config to ~/.aerospace.toml
+## Place a copy of this config to ~/.aerospace-edge.toml
 
-## After that, you can edit ~/.aerospace.toml to your liking
+## After that, you can edit ~/.aerospace-edge.toml to your liking
 
 ## Config version for compatibility and deprecations
 
@@ -147,7 +140,7 @@ config-version = 2
 
 ## You can use it to add commands that run after AeroSpace startup.
 
-## Available commands : https://nikitabobko.github.io/AeroSpace/commands
+## Available commands : https://vitorebatista.github.io/AeroSpace-edge/#commands
 
 after-startup-command = []
 
@@ -161,7 +154,7 @@ start-at-login = false
 
 auto-reload-config = false
 
-## Normalizations. See: https://nikitabobko.github.io/AeroSpace/guide#normalization
+## Normalizations. See: https://vitorebatista.github.io/AeroSpace-edge/guide/#normalization
 
 enable-normalization-flatten-containers = true
 enable-normalization-opposite-orientation-for-nested-containers = true
@@ -171,7 +164,7 @@ enable-normalization-opposite-orientation-for-nested-containers = true
 
 enable-normalization-binary-tree = false
 
-## See: https://nikitabobko.github.io/AeroSpace/guide#layouts
+## See: https://vitorebatista.github.io/AeroSpace-edge/guide/#layouts
 
 ## The 'accordion-padding' specifies the size of accordion padding
 
@@ -195,9 +188,9 @@ default-root-container-orientation = 'auto'
 
 ## Drop it from your config, if you don't like this behavior
 
-## See https://nikitabobko.github.io/AeroSpace/guide#on-focus-changed-callbacks
+## See https://vitorebatista.github.io/AeroSpace-edge/guide/#on-focus-changed-callbacks
 
-## See https://nikitabobko.github.io/AeroSpace/commands#move-mouse
+## See https://vitorebatista.github.io/AeroSpace-edge/commands/move-mouse/
 
 ## Fallback value (if you omit the key): on-focused-monitor-changed = []
 
@@ -207,7 +200,7 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 
 ## Useful if you don't use this macOS feature, but accidentally hit cmd-h or cmd-alt-h key
 
-## Also see: https://nikitabobko.github.io/AeroSpace/goodies#disable-hide-app
+## Also see: https://vitorebatista.github.io/AeroSpace-edge/goodies/#disable-hide-app
 
 automatically-unhide-macos-hidden-apps = false
 
@@ -293,15 +286,15 @@ persistent-workspaces = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B",
 
 ## A callback that runs every time binding mode changes
 
-## See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
+## See: https://vitorebatista.github.io/AeroSpace-edge/guide/#binding-modes
 
-## See: https://nikitabobko.github.io/AeroSpace/commands#mode
+## See: https://vitorebatista.github.io/AeroSpace-edge/commands/mode/
 
 on-mode-changed = []
 
 ## Possible values: (qwerty|dvorak|colemak)
 
-## See https://nikitabobko.github.io/AeroSpace/guide#key-mapping
+## See https://vitorebatista.github.io/AeroSpace-edge/guide/#key-mapping
 
 [key-mapping]
     preset = 'qwerty'
@@ -320,7 +313,7 @@ on-mode-changed = []
 
 ##                 See:
 
-##                 https://nikitabobko.github.io/AeroSpace/guide#assign-workspaces-to-monitors
+##                 https://vitorebatista.github.io/AeroSpace-edge/guide/#assign-workspaces-to-monitors
 
 [gaps]
     inner.horizontal = 0
@@ -332,7 +325,7 @@ on-mode-changed = []
 
 ## 'main' binding mode declaration
 
-## See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
+## See: https://vitorebatista.github.io/AeroSpace-edge/guide/#binding-modes
 
 ## 'main' binding mode must be always presented
 
@@ -355,9 +348,9 @@ on-mode-changed = []
 
     # All possible modifiers: cmd, alt, ctrl, shift
 
-    # All possible commands: https://nikitabobko.github.io/AeroSpace/commands
+    # All possible commands: https://vitorebatista.github.io/AeroSpace-edge/#commands
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#exec-and-forget
+    # See: https://vitorebatista.github.io/AeroSpace-edge/commands/exec-and-forget/
     # You can uncomment the following lines to open up terminal with alt + enter shortcut
     # (like in i3)
     # alt-enter = '''exec-and-forget osascript -e '
@@ -367,27 +360,27 @@ on-mode-changed = []
     # end tell'
     # '''
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#layout
+    # See: https://vitorebatista.github.io/AeroSpace-edge/commands/layout/
     alt-slash = 'layout tiles horizontal vertical'
     alt-comma = 'layout accordion horizontal vertical'
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#focus
+    # See: https://vitorebatista.github.io/AeroSpace-edge/commands/focus/
     alt-h = 'focus left'
     alt-j = 'focus down'
     alt-k = 'focus up'
     alt-l = 'focus right'
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#move
+    # See: https://vitorebatista.github.io/AeroSpace-edge/commands/move/
     alt-shift-h = 'move left'
     alt-shift-j = 'move down'
     alt-shift-k = 'move up'
     alt-shift-l = 'move right'
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#resize
+    # See: https://vitorebatista.github.io/AeroSpace-edge/commands/resize/
     alt-minus = 'resize smart -50'
     alt-equal = 'resize smart +50'
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#workspace
+    # See: https://vitorebatista.github.io/AeroSpace-edge/commands/workspace/
     alt-1 = 'workspace 1'
     alt-2 = 'workspace 2'
     alt-3 = 'workspace 3'
@@ -420,7 +413,7 @@ on-mode-changed = []
     alt-y = 'workspace Y'
     alt-z = 'workspace Z'
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#move-node-to-workspace
+    # See: https://vitorebatista.github.io/AeroSpace-edge/commands/move-node-to-workspace/
     alt-shift-1 = 'move-node-to-workspace 1'
     alt-shift-2 = 'move-node-to-workspace 2'
     alt-shift-3 = 'move-node-to-workspace 3'
@@ -453,17 +446,17 @@ on-mode-changed = []
     alt-shift-y = 'move-node-to-workspace Y'
     alt-shift-z = 'move-node-to-workspace Z'
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#workspace-back-and-forth
+    # See: https://vitorebatista.github.io/AeroSpace-edge/commands/workspace-back-and-forth/
     alt-tab = 'workspace-back-and-forth'
-    # See: https://nikitabobko.github.io/AeroSpace/commands#move-workspace-to-monitor
+    # See: https://vitorebatista.github.io/AeroSpace-edge/commands/move-workspace-to-monitor/
     alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
 
-    # See: https://nikitabobko.github.io/AeroSpace/commands#mode
+    # See: https://vitorebatista.github.io/AeroSpace-edge/commands/mode/
     alt-shift-semicolon = 'mode service'
 
 ## 'service' binding mode declaration.
 
-## See: https://nikitabobko.github.io/AeroSpace/guide#binding-modes
+## See: https://vitorebatista.github.io/AeroSpace-edge/guide/#binding-modes
 
 [mode.service.binding]
     esc = ['reload-config', 'mode main']
@@ -516,7 +509,7 @@ There are two ways on how you can use commands:
 2.  Run commands in CLI. Open up a Terminal.app and type:
 
     ``` bash
-    aerospace workspace 1
+    aerospace-edge workspace 1
     ```
 
 For the list of available commands see: [commands](index.md#commands)
@@ -548,7 +541,7 @@ If you use different layout, different alphabet, or you just want to have a fanc
 
 You can configure environment variables of `exec-*` commands and callbacks (such as [exec-and-forget](commands/exec-and-forget.md), ['exec-on-workspace-change' callback](#exec-on-workspace-change-callback))
 
-- `exec.inherit-env-vars = true` configures whether inherit environment variables of `AeroSpace.app` or not. (The default is `true`)
+- `exec.inherit-env-vars = true` configures whether inherit environment variables of `AeroSpace-edge.app` or not. (The default is `true`)
 
 - You can override env variables with the following syntax:
 
@@ -796,6 +789,53 @@ defaults write com.apple.spaces spans-displays -bool true && killall SystemUISer
 
 (or in System Settings: `System Settings → Desktop & Dock → Displays have separate Spaces`). Logout is required for the setting to take effect.
 
+## Shortcuts, Spotlight and Focus filters
+
+!!! info "AeroSpace-edge only"
+
+    This is a fork feature. Upstream AeroSpace has no App Intents support.
+
+AeroSpace-edge registers its commands as native [App
+Intents](https://developer.apple.com/documentation/appintents), which makes them available to
+Shortcuts, Spotlight and macOS Focus modes without shelling out to the CLI.
+
+Three intents are published:
+
+| Intent | What it does |
+|---|---|
+| **Run Command** | Runs any AeroSpace command, using exactly the CLI syntax — `workspace 3`, `layout tiles`, `move-node-to-workspace 2`. |
+| **Focus Workspace** | Switches to a workspace, with existing workspaces offered as autocomplete. |
+| **Switch Workspace** (Focus filter) | Attaches a workspace to a macOS Focus mode. |
+
+`Run Command` accepts anything the CLI does, so every command — including ones added later — is
+available with no extra work. `exec-and-forget` is the one exception: it is rejected, exactly as it is
+over the socket, because it would turn any Shortcut into arbitrary shell execution routed through
+AeroSpace. Shortcuts already ships a **Run Shell Script** action for that.
+
+### From Spotlight
+
+Open Spotlight and type `Focus AeroSpace-edge workspace` or `Run AeroSpace-edge command`. On macOS 26
+Spotlight runs App Intents directly, so this needs no Shortcut to be created first.
+
+### As a Focus filter
+
+`System Settings → Focus → (pick a Focus) → Focus Filters → Add Filter → AeroSpace-edge`, then choose a
+workspace. Turning on that Focus switches to the workspace; macOS restores your previous state when the
+Focus ends.
+
+This is the piece that has no equivalent elsewhere: Focus filters are reachable only through App
+Intents, so a window manager driven purely by an external hotkey daemon cannot offer one. Wiring
+"Work Focus on → workspace 2, Do Not Disturb on → workspace 5" needs no config and no scripting.
+
+If a Focus filter names a workspace that no longer exists, it does nothing rather than raising a system
+error — a filter firing at 9am shouldn't greet you with an alert.
+
+### Compared to the CLI
+
+Intents run through the same parse → execute path as `aerospace-edge` and the socket server, so
+behavior is identical. Use whichever fits: the CLI for scripts and status bars, intents for Shortcuts
+automations, Spotlight and anything that should follow a Focus mode.
+
 ## Callbacks
 
 ### 'on-window-detected' callback
@@ -839,7 +879,7 @@ There are several ways to know `app-id`:
 
 - Take a look at the precompiled [list of Apple application IDs](goodies.md#list-of-apple-application-ids)
 
-- You can use [`aerospace list-apps`](commands/list-apps.md) CLI command to get IDs of running applications
+- You can use [`aerospace-edge list-apps`](commands/list-apps.md) CLI command to get IDs of running applications
 
 - `mdls -name kMDItemCFBundleIdentifier -r /Applications/App.app`
 
@@ -917,7 +957,7 @@ Besides the [`exec.env-vars`](#exec-env-vars), the process has access to the fol
 
 - `AEROSPACE_PREV_WORKSPACE` - the workspace user switched from
 
-- `AEROSPACE_WORKSPACE` and `AEROSPACE_WINDOW_ID` - describe the current focus. Exactly one is set: `AEROSPACE_WINDOW_ID` if a window is focused, otherwise `AEROSPACE_WORKSPACE` for an empty workspace. This lets the callback forward the focus to another `aerospace` command without a self-conflicting target.
+- `AEROSPACE_WORKSPACE` and `AEROSPACE_WINDOW_ID` - describe the current focus. Exactly one is set: `AEROSPACE_WINDOW_ID` if a window is focused, otherwise `AEROSPACE_WORKSPACE` for an empty workspace. This lets the callback forward the focus to another `aerospace-edge` command without a self-conflicting target.
 
 For a more elaborate example on how to integrate with Sketchybar see [./goodies](goodies.md#show-aerospace-workspaces-in-sketchybar)
 
@@ -978,6 +1018,32 @@ The idea of making pool of workspaces shared is based on <span id="observation">
     - I find that AeroSpace model works better with [*the observation*](#observation) listed above.
 
     - AeroSpace model is more consistent (it works the same for empty workspaces and non-empty workspaces)
+
+### Window placement is remembered across restarts
+
+!!! note "AeroSpace-edge only"
+
+    This is a fork-only behavior with no upstream equivalent.
+
+AeroSpace-edge records which workspace each window sits on, and replays that placement the next
+time it starts. Restarting the app — or recovering from a crash — no longer collapses every window
+into whichever workspace happens to be active; two browser windows that were on separate workspaces
+come back on separate workspaces.
+
+The snapshot is written to `~/Library/Application Support/AeroSpace-edge/window-layout.json`, a
+couple of seconds after any layout change, and read back once at startup. There is nothing to
+configure. Deleting the file is harmless: the next layout change writes a fresh one.
+
+Windows are matched back by their WindowServer id, which stays valid for as long as the window
+itself lives, so placement always restores when only AeroSpace restarted. After a reboot or an app
+relaunch those ids are gone, and windows are instead matched on app bundle id plus window title —
+close, but not exact when an app has several identically titled windows. Anything that can't be
+matched is left wherever it would otherwise land.
+
+Startup runs [`on-window-detected`](#on-window-detected-callback) callbacks first and replays the
+saved placement afterwards, so for a window that was matched, the workspace you last left it on
+wins over a `move-node-to-workspace` window rule. Unmatched windows are placed by your rules as
+before.
 
 ### Assign workspaces to monitors
 
@@ -1056,7 +1122,7 @@ A common culprit is KeePassXC: at the time of writing, v2.7.10 can get stuck hol
 
 ## Socket protocol
 
-This section documents the client-server socket protocol that the `aerospace` CLI uses to talk to the running `AeroSpace.app` server. It is intended for people who want to integrate with AeroSpace from a custom client (e.g. a status bar, an editor plugin, a script in a language without an `aerospace` wrapper).
+This section documents the client-server socket protocol that the `aerospace-edge` CLI uses to talk to the running `AeroSpace-edge.app` server. It is intended for people who want to integrate with AeroSpace from a custom client (e.g. a status bar, an editor plugin, a script in a language without an `aerospace-edge` wrapper).
 
 ### Socket location
 
@@ -1114,7 +1180,7 @@ The request payload is a JSON object with the following fields:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `args` | array of strings | The CLI arguments as you would pass them to `aerospace`, **excluding** the program name itself. For example, `["workspace", "1"]` is the wire form of `aerospace workspace 1`. To send the `subscribe` command, pass `["subscribe", ...]` here. |
+| `args` | array of strings | The CLI arguments as you would pass them to `aerospace-edge`, **excluding** the program name itself. For example, `["workspace", "1"]` is the wire form of `aerospace-edge workspace 1`. To send the `subscribe` command, pass `["subscribe", ...]` here. |
 | `stdin` | string | Contents to feed to the command as standard input. Use `""` if the command doesn’t read stdin. Some commands (e.g. [`workspace --stdin`](commands/workspace.md)) consume this field. |
 | `windowId` | unsigned 32-bit integer or `null` | The value of the `AEROSPACE_WINDOW_ID` environment variable as the client saw it, or `null` if there is no such variable in scope. AeroSpace sets this variable when invoking [exec callbacks](guide.md#exec-env-vars) so that the called process knows the window it was triggered from. If you are calling AeroSpace from your own context (no surrounding window), send `null`. |
 | `workspace` | string or `null` | The value of the `AEROSPACE_WORKSPACE` environment variable as the client saw it, or `null` if unset. Same rationale as `windowId`. |
@@ -1134,20 +1200,20 @@ The reply to a one-shot command is a JSON object:
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `exitCode` | signed 32-bit integer | `0` on success, non-zero on failure. Mirrors what the `aerospace` CLI would have exited with. |
+| `exitCode` | signed 32-bit integer | `0` on success, non-zero on failure. Mirrors what the `aerospace-edge` CLI would have exited with. |
 | `stdout` | string | What the CLI would have printed to standard output. May contain newlines. |
 | `stderr` | string | What the CLI would have printed to standard error. |
 | `serverVersionAndHash` | string | Free-form `"<version> <git-hash>"` identifying the running server. Useful for compatibility checks; compare against the equivalent string from your own client and warn the user on mismatch. |
 
 ### Subscribe mode
 
-When the client sends a request with `args` starting with `"subscribe"`, the server enters event-streaming mode. The remaining `args` follow the same syntax as the [`aerospace subscribe`](commands/subscribe.md) CLI command (`--all`, `--no-send-initial`, or an explicit list of event types).
+When the client sends a request with `args` starting with `"subscribe"`, the server enters event-streaming mode. The remaining `args` follow the same syntax as the [`aerospace-edge subscribe`](commands/subscribe.md) CLI command (`--all`, `--no-send-initial`, or an explicit list of event types).
 
 After accepting the subscription, the server writes framed JSON objects in the same length-prefixed format as `ServerAnswer`. The server keeps writing until the connection is closed.
 
 ### End-to-end example
 
-A minimal Python client that runs `aerospace list-workspaces --focused`:
+A minimal Python client that runs `aerospace-edge list-workspaces --focused`:
 
 ``` python
 import json, os, socket, struct

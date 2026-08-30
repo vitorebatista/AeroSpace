@@ -4,14 +4,14 @@ description: Swaps the focused window with another window.
 section: 1
 ---
 
-# aerospace swap
+# aerospace-edge swap
 
 Swaps the focused window with another window.
 
 ## Synopsis
 
 ```synopsis
-aerospace swap [-h|--help] [--window-id <window-id>] [--swap-focus]
+aerospace-edge swap [-h|--help] [--window-id <window-id>] [--swap-focus]
                [--wrap-around]
                (left|down|up|right|dfs-next|dfs-prev)
 ```

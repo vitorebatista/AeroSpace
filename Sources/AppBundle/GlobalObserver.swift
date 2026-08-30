@@ -5,6 +5,12 @@ import Common
 @MainActor private var screenSleepWakeTask: Task<Void, Never>? = nil
 private let screenSleepWakeSettleDelay: Duration = .milliseconds(1000)
 
+@MainActor private var screenParamsTask: Task<Void, Never>? = nil
+/// Display reconfiguration (hotplug, resolution change, rearrange) emits a burst of
+/// `didChangeScreenParametersNotification`. Coalesce them so the tree is laid out once,
+/// against the final monitor arrangement, rather than once per intermediate state.
+private let screenParamsSettleDelay: Duration = .milliseconds(500)
+
 enum GlobalObserver {
     private static func onNotif(_ notification: Notification) {
         // Third line of defence against lock screen window. See: closedWindowsCache
@@ -69,6 +75,24 @@ enum GlobalObserver {
         }
     }
 
+    /// `monitors` is derived from `NSScreen.screens` on demand, so nothing recomputes the layout
+    /// when a display is plugged in, unplugged, rearranged, or changes resolution. Without this,
+    /// the tree keeps the stale monitor arrangement until some unrelated event triggers a refresh.
+    private static func onScreenParamsChanged(_ notification: Notification) {
+        let notifName = notification.name.rawValue
+        Task { @MainActor in
+            if !TrayMenuModel.shared.isEnabled { return }
+            screenParamsTask?.cancel()
+            screenParamsTask = Task { @MainActor in
+                try? await Task.sleep(for: screenParamsSettleDelay)
+                if Task.isCancelled { return }
+                // A display change while the screens are asleep is settled by the wake handler
+                if screenSleepWakeInProgress { return }
+                scheduleCancellableCompleteRefreshSession(.globalObserver(notifName))
+            }
+        }
+    }
+
     @MainActor
     static func initObserver() {
         let nc = NSWorkspace.shared.notificationCenter
@@ -89,6 +113,14 @@ enum GlobalObserver {
             object: nil,
             queue: .main,
             using: onScreenSleepWake,
+        )
+
+        // Unlike the notifications above, this one is posted on the default center, not NSWorkspace's
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main,
+            using: onScreenParamsChanged,
         )
 
         NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { _ in

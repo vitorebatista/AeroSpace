@@ -4,15 +4,15 @@ description: Focus the specified workspace
 section: 1
 ---
 
-# aerospace workspace
+# aerospace-edge workspace
 
 Focus the specified workspace
 
 ## Synopsis
 
 ```synopsis
-aerospace workspace [-h|--help] [--auto-back-and-forth] [--fail-if-noop] <workspace-name>
-aerospace workspace [-h|--help] [--wrap-around] [--stdin|--no-stdin] (next|prev)
+aerospace-edge workspace [-h|--help] [--auto-back-and-forth] [--fail-if-noop] <workspace-name>
+aerospace-edge workspace [-h|--help] [--wrap-around] [--stdin|--no-stdin] (next|prev)
 ```
 
 ## Description
@@ -58,4 +58,4 @@ Focuses next or previous workspace in **the list**.
 ## Examples
 
 - Go to the next non empty workspace on the focused monitor:  
-  `aerospace list-workspaces --monitor focused --empty no | aerospace workspace --stdin next`
+  `aerospace-edge list-workspaces --monitor focused --empty no | aerospace-edge workspace --stdin next`

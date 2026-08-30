@@ -15,7 +15,7 @@ body:
         ### Additional info
 
         ```shell
-        $ aerospace -v
+        $ aerospace-edge -v
         ```
     validations:
       required: true
