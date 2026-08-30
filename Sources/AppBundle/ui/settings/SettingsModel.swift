@@ -15,6 +15,7 @@ enum SettingsMode: Equatable {
 
 enum SettingsStatus: Equatable {
     case error(String)
+    case migrated(backupUrl: URL)
     case saved
 }
 
@@ -51,8 +52,34 @@ public final class SettingsModel: ObservableObject {
     /// against it so a region the user never went near is left byte-for-byte alone.
     private var loadedDraft: ConfigTomlWriter.ConfigDraft = ConfigTomlWriter.ConfigDraft.defaults
     private var loadedModificationDate: Date?
+    private let configFileProvider: () -> ConfigFile
+    private let bundledDefaultConfigUrl: URL
+    private let fileManager: FileManager
+    private let backupCreator: (URL, Int) throws -> ConfigMigrationBackup
+    private let atomicWriter: (Data, URL) throws -> Void
+    private let reloadAfterSave: () async throws -> Void
 
-    private init() {}
+    init(
+        configFile: @escaping () -> ConfigFile = { findCustomConfigUrl() },
+        bundledDefaultConfigUrl: URL = defaultConfigUrl,
+        fileManager: FileManager = .default,
+        backupCreator: @escaping (URL, Int) throws -> ConfigMigrationBackup = {
+            try ConfigMigrationBackup.create(forResolvedTarget: $0, fromVersion: $1)
+        },
+        atomicWriter: @escaping (Data, URL) throws -> Void = {
+            try $0.write(to: $1, options: .atomic)
+        },
+        reloadAfterSave: @escaping () async throws -> Void = {
+            try await SettingsModel.reloadCurrentConfig()
+        },
+    ) {
+        configFileProvider = configFile
+        self.bundledDefaultConfigUrl = bundledDefaultConfigUrl
+        self.fileManager = fileManager
+        self.backupCreator = backupCreator
+        self.atomicWriter = atomicWriter
+        self.reloadAfterSave = reloadAfterSave
+    }
 
     /// The path writes actually land on. `write(to:atomically:)` renames a fresh temp file
     /// over the path, which replaces a *symlink* with a regular file instead of writing
@@ -61,15 +88,20 @@ public final class SettingsModel: ObservableObject {
     /// modification-date check and the write looking at the same file.
     private var writeUrl: URL? { targetUrl?.resolvingSymlinksInPath() }
 
+    var requiresVersionMigration: Bool {
+        guard case .form = mode else { return false }
+        return loadedDraft.configVersion == 1 && draft.configVersion == 2
+    }
+
     /// `true` if the file changed on disk since `load()`. Checked before overwriting.
     var externallyModified: Bool {
         guard let writeUrl, let loadedModificationDate else { return false }
-        guard let current = Self.modificationDate(of: writeUrl) else { return false }
+        guard let current = modificationDate(of: writeUrl) else { return false }
         return current != loadedModificationDate
     }
 
-    private static func modificationDate(of url: URL) -> Date? {
-        try? FileManager.default.attributesOfItem(atPath: url.path)[.modificationDate] as? Date
+    private func modificationDate(of url: URL) -> Date? {
+        try? fileManager.attributesOfItem(atPath: url.path)[.modificationDate] as? Date
     }
 
     func load() {
@@ -77,7 +109,7 @@ public final class SettingsModel: ObservableObject {
         isDirty = false
         loadGeneration += 1
 
-        switch findCustomConfigUrl() {
+        switch configFileProvider() {
             case .ambiguousConfigError(let candidates):
                 mode = .readOnly(reason: """
                     Several AeroSpace configs exist, so the settings window will not guess which one to write:
@@ -93,17 +125,17 @@ public final class SettingsModel: ObservableObject {
                 willCreateConfig = false
             case .noCustomConfigExists:
                 // Read the bundled default, but write to the user's own dotfile.
-                targetUrl = FileManager.default.homeDirectoryForCurrentUser.appending(path: configDotfileName)
+                targetUrl = fileManager.homeDirectoryForCurrentUser.appending(path: configDotfileName)
                 willCreateConfig = true
         }
 
-        let sourceUrl = willCreateConfig ? defaultConfigUrl : targetUrl.orDie()
+        let sourceUrl = willCreateConfig ? bundledDefaultConfigUrl : targetUrl.orDie()
         let text = (try? String(contentsOf: sourceUrl, encoding: .utf8)) ?? ""
         document = TomlBlockDocument(text)
         wholeFileText = text
         // Read through the resolved path, the same one `save()` writes, so the two agree
         // when the config is a symlink (`attributesOfItem` does not follow one).
-        loadedModificationDate = willCreateConfig ? nil : writeUrl.flatMap(Self.modificationDate(of:))
+        loadedModificationDate = willCreateConfig ? nil : writeUrl.flatMap(modificationDate(of:))
 
         let (config, errors) = parseConfig(text)
         if errors.isEmpty {
@@ -133,21 +165,61 @@ public final class SettingsModel: ObservableObject {
         defer { isSaving = false }
         status = nil
 
+        let migrationRequired = requiresVersionMigration
+        let migration: ConfigMigrationCandidate?
         let candidate: String
         switch mode {
             case .form:
-                var working = document
-                ConfigTomlWriter.apply(draft, original: loadedDraft, to: &working)
-                candidate = working.render()
+                if migrationRequired {
+                    let migrationResult = ConfigMigrator.migrate(
+                        text: document.render(),
+                        from: loadedDraft.configVersion,
+                        to: draft.configVersion,
+                    )
+                    let migrated: ConfigMigrationCandidate
+                    switch migrationResult {
+                        case .failure(let error):
+                            status = .error("Can't migrate the config: \(error)")
+                            return
+                        case .success(let value):
+                            migrated = value
+                    }
+                    migration = migrated
+
+                    let migratedDocument = TomlBlockDocument(migrated.text)
+                    let (migratedConfig, errors) = parseConfig(migrated.text)
+                    guard errors.isEmpty else {
+                        status = .error(errors.joined(separator: "\n\n"))
+                        return
+                    }
+                    let migratedBaseline = ConfigTomlWriter.draft(
+                        from: migratedConfig,
+                        rawExec: Self.rawExecConfig(from: migrated.text),
+                        document: migratedDocument,
+                    )
+                    var editedDraft = draft
+                    if draft.persistentWorkspaces == loadedDraft.persistentWorkspaces {
+                        editedDraft.persistentWorkspaces = .init(migrated.persistentWorkspaces)
+                    }
+                    var working = migratedDocument
+                    ConfigTomlWriter.apply(editedDraft, original: migratedBaseline, to: &working)
+                    candidate = working.render()
+                } else {
+                    migration = nil
+                    var working = document
+                    ConfigTomlWriter.apply(draft, original: loadedDraft, to: &working)
+                    candidate = working.render()
+                }
             case .rawOnly:
+                migration = nil
                 candidate = wholeFileText
             case .readOnly:
                 return
         }
 
-        let tempUrl = FileManager.default.temporaryDirectory
+        let tempUrl = fileManager.temporaryDirectory
             .appending(path: "aerospace-settings-\(UUID().uuidString).toml")
-        defer { try? FileManager.default.removeItem(at: tempUrl) }
+        defer { try? fileManager.removeItem(at: tempUrl) }
         do {
             try candidate.write(to: tempUrl, atomically: true, encoding: .utf8)
         } catch {
@@ -163,37 +235,96 @@ public final class SettingsModel: ObservableObject {
                 break
         }
 
-        // The atomic write gives the file the temp file's mode (0644 -> 0755 in practice),
-        // so put the original permissions back afterwards.
-        let originalPermissions = try? FileManager.default
-            .attributesOfItem(atPath: writeUrl.path)[.posixPermissions] as? NSNumber
+        let targetExisted = fileManager.fileExists(atPath: writeUrl.path)
+        let originalData: Data?
+        let originalPermissions: NSNumber?
         do {
-            try candidate.write(to: writeUrl, atomically: true, encoding: .utf8)
+            originalData = targetExisted ? try Data(contentsOf: writeUrl) : nil
+            originalPermissions = targetExisted
+                ? try fileManager.attributesOfItem(atPath: writeUrl.path)[.posixPermissions] as? NSNumber
+                : nil
         } catch {
-            status = .error("Can't write \(targetUrl.path): \(error.localizedDescription)")
+            status = .error("Can't read \(targetUrl.path) before saving: \(error.localizedDescription)")
             return
         }
-        if let originalPermissions {
-            try? FileManager.default.setAttributes([.posixPermissions: originalPermissions], ofItemAtPath: writeUrl.path)
+
+        let backup: ConfigMigrationBackup?
+        if let migration {
+            do {
+                backup = try backupCreator(writeUrl, migration.fromVersion)
+            } catch {
+                status = .error("Can't back up \(targetUrl.path): \(error.localizedDescription)")
+                return
+            }
+        } else {
+            backup = nil
         }
 
         do {
-            // Mirror `reloadConfigButton`: a reload swaps the config in, and the windows
-            // only pick up the new gaps/normalization once a refresh session relays them
-            // out. A bare `reloadConfig()` would leave the footer claiming "Saved and
-            // reloaded" while nothing on screen moved until the next natural refresh.
-            if let token: RunSessionGuard = .isServerEnabled {
-                try await runLightSession(.menuBarButton, token) { _ = try await reloadConfig() }
-            } else {
-                _ = try await reloadConfig()
+            try atomicWriter(Data(candidate.utf8), writeUrl)
+            if let originalPermissions {
+                try fileManager.setAttributes([.posixPermissions: originalPermissions], ofItemAtPath: writeUrl.path)
             }
         } catch {
-            status = .error("Saved, but reloading the config failed: \(error.localizedDescription)")
+            do {
+                try restoreOriginalTarget(
+                    at: writeUrl,
+                    targetExisted: targetExisted,
+                    originalData: originalData,
+                    originalPermissions: originalPermissions,
+                    backup: backup,
+                )
+                status = .error("Can't write \(targetUrl.path): \(error.localizedDescription)")
+            } catch let restorationError {
+                status = .error(
+                    "Can't write \(targetUrl.path): \(error.localizedDescription). " +
+                        "Restoring the original also failed: \(restorationError.localizedDescription)",
+                )
+            }
+            return
+        }
+
+        do {
+            try await reloadAfterSave()
+        } catch {
+            let backupMessage = backup.map { " Backup: \($0.url.path)." } ?? ""
+            status = .error("Saved, but reloading the config failed:\(backupMessage) \(error.localizedDescription)")
             return
         }
 
         load() // re-read from disk so the form and the document match the file exactly
-        status = .saved
+        status = backup.map { .migrated(backupUrl: $0.url) } ?? .saved
+    }
+
+    private func restoreOriginalTarget(
+        at writeUrl: URL,
+        targetExisted: Bool,
+        originalData: Data?,
+        originalPermissions: NSNumber?,
+        backup: ConfigMigrationBackup?,
+    ) throws {
+        guard targetExisted else {
+            if fileManager.fileExists(atPath: writeUrl.path) {
+                try fileManager.removeItem(at: writeUrl)
+            }
+            return
+        }
+
+        let data = try backup.map { try Data(contentsOf: $0.url) } ?? originalData.orDie()
+        try data.write(to: writeUrl, options: .atomic)
+        if let originalPermissions {
+            try fileManager.setAttributes([.posixPermissions: originalPermissions], ofItemAtPath: writeUrl.path)
+        }
+    }
+
+    private static func reloadCurrentConfig() async throws {
+        // Mirror `reloadConfigButton`: a reload swaps the config in, and the windows only
+        // pick up the new gaps/normalization once a refresh session relays them out.
+        if let token: RunSessionGuard = .isServerEnabled {
+            try await runLightSession(.menuBarButton, token) { _ = try await reloadConfig() }
+        } else {
+            _ = try await reloadConfig()
+        }
     }
 
     /// Recovers `inherit-env-vars` and the override map exactly as written in the file,
