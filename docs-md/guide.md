@@ -812,6 +812,53 @@ defaults write com.apple.spaces spans-displays -bool true && killall SystemUISer
 
 (or in System Settings: `System Settings → Desktop & Dock → Displays have separate Spaces`). Logout is required for the setting to take effect.
 
+## Shortcuts, Spotlight and Focus filters
+
+!!! info "AeroSpace-edge only"
+
+    This is a fork feature. Upstream AeroSpace has no App Intents support.
+
+AeroSpace-edge registers its commands as native [App
+Intents](https://developer.apple.com/documentation/appintents), which makes them available to
+Shortcuts, Spotlight and macOS Focus modes without shelling out to the CLI.
+
+Three intents are published:
+
+| Intent | What it does |
+|---|---|
+| **Run Command** | Runs any AeroSpace command, using exactly the CLI syntax — `workspace 3`, `layout tiles`, `move-node-to-workspace 2`. |
+| **Focus Workspace** | Switches to a workspace, with existing workspaces offered as autocomplete. |
+| **Switch Workspace** (Focus filter) | Attaches a workspace to a macOS Focus mode. |
+
+`Run Command` accepts anything the CLI does, so every command — including ones added later — is
+available with no extra work. `exec-and-forget` is the one exception: it is rejected, exactly as it is
+over the socket, because it would turn any Shortcut into arbitrary shell execution routed through
+AeroSpace. Shortcuts already ships a **Run Shell Script** action for that.
+
+### From Spotlight
+
+Open Spotlight and type `Focus AeroSpace-edge workspace` or `Run AeroSpace-edge command`. On macOS 26
+Spotlight runs App Intents directly, so this needs no Shortcut to be created first.
+
+### As a Focus filter
+
+`System Settings → Focus → (pick a Focus) → Focus Filters → Add Filter → AeroSpace-edge`, then choose a
+workspace. Turning on that Focus switches to the workspace; macOS restores your previous state when the
+Focus ends.
+
+This is the piece that has no equivalent elsewhere: Focus filters are reachable only through App
+Intents, so a window manager driven purely by an external hotkey daemon cannot offer one. Wiring
+"Work Focus on → workspace 2, Do Not Disturb on → workspace 5" needs no config and no scripting.
+
+If a Focus filter names a workspace that no longer exists, it does nothing rather than raising a system
+error — a filter firing at 9am shouldn't greet you with an alert.
+
+### Compared to the CLI
+
+Intents run through the same parse → execute path as `aerospace-edge` and the socket server, so
+behavior is identical. Use whichever fits: the CLI for scripts and status bars, intents for Shortcuts
+automations, Spotlight and anything that should follow a Focus mode.
+
 ## Callbacks
 
 ### 'on-window-detected' callback

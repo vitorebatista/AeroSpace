@@ -74,6 +74,7 @@ extension MainActor {
 }
 
 public enum RefreshSessionEvent: Sendable, CustomStringConvertible {
+    case appIntent(String)
     case configAutoReload
     case deferredNativeFocus
     case globalObserver(String)
@@ -94,6 +95,7 @@ public enum RefreshSessionEvent: Sendable, CustomStringConvertible {
 
     public var description: String {
         switch self {
+            case .appIntent(let str): "appIntent(\(str))"
             case .ax(let str): "ax(\(str))"
             case .configAutoReload: "configAutoReload"
             case .deferredNativeFocus: "deferredNativeFocus"

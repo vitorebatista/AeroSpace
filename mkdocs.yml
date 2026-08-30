@@ -59,6 +59,7 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Guide: guide.md
+  - Comparison: comparison.md
   - Goodies: goodies.md
   - Commands:
       - aerospace-edge.md
