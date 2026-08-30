@@ -118,6 +118,13 @@ struct MenuBarSection: View {
                     )
                     .frame(width: 70)
                     .multilineTextAlignment(.trailing)
+                    .help("""
+                        Points from the right edge of the menu bar.
+
+                        Examples:
+                        0    let macOS place the item (default)
+                        400  left of the Control Center icons on a 1512-point-wide display
+                        """)
                 }
             }
         }
