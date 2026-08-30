@@ -10,7 +10,7 @@ set -euo pipefail
 
 name="${1:-aerospace-codesign-certificate}"
 keychain="$HOME/Library/Keychains/login.keychain-db"
-out_dir="${2:-$HOME/.aerospace-codesign}"
+out_dir="${2:-${AEROSPACE_CODESIGN_DIR:-$HOME/.config/aerospace-codesign}}"
 
 if security find-identity -v -p codesigning | grep --fixed-string "$name" > /dev/null; then
     echo "Identity '$name' already exists — nothing to do."

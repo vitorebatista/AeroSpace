@@ -40,7 +40,7 @@ If you only plan to build the debug version of AeroSpace, you can run it from th
 
 Or skip the clicks: `./script/create-codesign-certificate.sh` creates and imports the same
 certificate (it asks for your login password to store the trust setting) and writes a `.p12`
-backup to `~/.aerospace-codesign`. Keep that backup: the identity must stay the same across
+backup to `$AEROSPACE_CODESIGN_DIR` (`~/.config/aerospace-codesign` by default). Keep that backup: the identity must stay the same across
 releases or macOS drops every user's Accessibility grant on upgrade — see the "Signing identity"
 section of [fork-maintenance.md](./fork-maintenance.md).
 
