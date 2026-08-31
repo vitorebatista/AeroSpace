@@ -77,6 +77,7 @@ public enum RefreshSessionEvent: Sendable, CustomStringConvertible {
     case appIntent(String)
     case configAutoReload
     case deferredNativeFocus
+    case suppressedAppActivation
     case globalObserver(String)
     case globalObserverLeftMouseUp
     case menuBarButton
@@ -99,6 +100,7 @@ public enum RefreshSessionEvent: Sendable, CustomStringConvertible {
             case .ax(let str): "ax(\(str))"
             case .configAutoReload: "configAutoReload"
             case .deferredNativeFocus: "deferredNativeFocus"
+            case .suppressedAppActivation: "suppressedAppActivation"
             case .globalObserver(let str): "globalObserver(\(str))"
             case .globalObserverLeftMouseUp: "globalObserverLeftMouseUp"
             case .hotkeyBinding: "hotkeyBinding"
