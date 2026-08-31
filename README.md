@@ -295,6 +295,11 @@ release script needs docs tooling that isn't required here.
 | Release binary runs | ✅ | ✅ | ✅ | ✅ |
 | Debug build from source | — | ✅ | ✅ | ✅ |
 | Release build from source (Xcode 26+) | — | — | ✅ | ✅ |
+| Verified by CI on every commit | — | — | ✅ | ✅ |
+
+Nothing above changes what the app supports — the deployment target is macOS 13. The last row is
+only about what GitHub Actions can still run: it never offered a macOS 13 runner, and it
+[retires the macOS 14 one on 2026-11-02](https://github.com/actions/runner-images/issues/13518).
 
 ## Credit
 
