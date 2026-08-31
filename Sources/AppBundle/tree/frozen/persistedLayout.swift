@@ -18,8 +18,9 @@ private struct PersistedLayout: Codable {
     var version: Int = currentVersion
     let world: FrozenWorld
     let identities: [WindowIdentity]
-    /// The workspace that had focus when this was written. Restoring windows without it drops you
-    /// on whichever workspace happened to sort first, which is never where you left off.
+    /// The workspace that had focus when this was written. ``focusedWorkspaceDefaultsKey`` holds a
+    /// fresher copy of the same thing and wins at startup; this field survives as the fallback for
+    /// the first launch after upgrading, when the defaults key does not exist yet.
     let focusedWorkspace: String?
 }
 
@@ -32,6 +33,22 @@ private struct WindowIdentity: Codable {
 private let persistedLayoutUrl: URL? = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first?
     .appendingPathComponent(aeroSpaceAppName, isDirectory: true)
     .appendingPathComponent("window-layout.json", isDirectory: false)
+/// Where the focused workspace is remembered, separately from the layout snapshot below.
+///
+/// The snapshot is debounced, so quitting right after a workspace switch — or crashing inside
+/// that window — loses the switch. A single string is cheap enough to write eagerly, so focus
+/// gets its own store and is never more than one switch stale.
+let focusedWorkspaceDefaultsKey = "last-focused-workspace"
+
+@MainActor func storedFocusedWorkspace() -> String? {
+    UserDefaults.standard.string(forKey: focusedWorkspaceDefaultsKey)
+}
+
+@MainActor func storeFocusedWorkspace(_ name: String) {
+    UserDefaults.standard.setValue(name, forKey: focusedWorkspaceDefaultsKey)
+    // Flush now rather than at the next checkpoint: the whole point is to survive an immediate quit.
+    UserDefaults.standard.synchronize()
+}
 
 // ponytail: 2s is long enough that a burst of commands writes once, short enough that a crash
 // loses at most the last couple of seconds of placement.
@@ -78,32 +95,48 @@ private let persistDebounce: Duration = .seconds(2)
 }
 
 /// Replays the persisted placement. Call once at startup, after windows have been discovered.
-@MainActor func restorePersistedLayout() async throws {
+///
+/// ``storedFocusedWorkspace()`` has to be read by the caller *before* the first refresh session and
+/// passed in as `focusedWorkspaceAtLaunch`: startup and this function both focus workspaces, and
+/// both writes land on the same key, so reading it any later reads back whatever startup picked
+/// rather than where the user left off.
+@MainActor func restorePersistedLayout(focusedWorkspaceAtLaunch: String?) async throws {
     guard !isUnitTest, !serverArgs.isReadOnly else { return }
-    guard let url = persistedLayoutUrl, let data = try? Data(contentsOf: url) else { return }
-    guard let persisted = try? JSONDecoder().decode(PersistedLayout.self, from: data),
-          persisted.version == PersistedLayout.currentVersion
-    else { return }
+    let decoded = persistedLayoutUrl
+        .flatMap { try? Data(contentsOf: $0) }
+        .flatMap { try? JSONDecoder().decode(PersistedLayout.self, from: $0) }
+    // A missing, unreadable or older-shaped file only costs the window replay. Focus restore below
+    // still runs off the remembered name — which is the half a version bump must not throw away.
+    let persisted = decoded?.version == PersistedLayout.currentVersion ? decoded : nil
 
-    let mapping = await resolveWindows(persisted)
-    // Focus is restored even when no window matched: the windows may all be gone, but "the
-    // workspace I was on" is still meaningful and is the part a restart most visibly loses.
-    if !mapping.isEmpty {
-        try await applyFrozenWorld(persisted.world) { mapping[$0.id] }
+    if let persisted {
+        let mapping = await resolveWindows(persisted)
+        // Focus is restored even when no window matched: the windows may all be gone, but "the
+        // workspace I was on" is still meaningful and is the part a restart most visibly loses.
+        if !mapping.isEmpty {
+            try await applyFrozenWorld(persisted.world) { mapping[$0.id] }
+        }
     }
-    if let name = workspaceToFocusAtStartup(persisted: persisted.focusedWorkspace, existing: Workspace.all.map(\.name)) {
+    if let name = workspaceToFocusAtStartup(
+        remembered: focusedWorkspaceAtLaunch,
+        persisted: persisted?.focusedWorkspace,
+        existing: Workspace.all.map(\.name) + Array(workspaceNamesMentionedIn(config)),
+    ) {
         _ = Workspace.get(byName: name).focusWorkspace()
     }
 }
 
 /// The workspace to land on at startup, or nil to keep whatever startup already focused.
 ///
-/// A persisted name that no longer exists is ignored rather than recreated: the config may have
-/// dropped that workspace between runs, and materializing it would resurrect it as a side effect
-/// of a restart.
-func workspaceToFocusAtStartup(persisted: String?, existing: [String]) -> String? {
-    guard let persisted, existing.contains(persisted) else { return nil }
-    return persisted
+/// `remembered` outranks `persisted` because it is written on every workspace switch while the
+/// layout snapshot is debounced, so it is never the staler of the two.
+///
+/// `existing` is every workspace the config can account for — live ones plus the ones named only
+/// by a binding, which on `config-version = 2` are not objects until first visited. A name outside
+/// that set is ignored rather than recreated: the config really has dropped that workspace between
+/// runs, and materializing it would resurrect it as a side effect of a restart.
+func workspaceToFocusAtStartup(remembered: String? = nil, persisted: String?, existing: [String]) -> String? {
+    [remembered, persisted].compactMap { $0 }.first { existing.contains($0) }
 }
 
 /// Maps each persisted window id onto a live window: same id first, then app-bundle-id + title among

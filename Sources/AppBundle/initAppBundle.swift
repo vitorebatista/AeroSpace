@@ -10,6 +10,8 @@ import Foundation
         initTerminationHandler()
         unsafe _isCli = false
         initServerArgs()
+        // Must be read here: everything below focuses workspaces and overwrites the same key.
+        let focusedWorkspaceAtLaunch = storedFocusedWorkspace()
         if isDebug {
             await toggleReleaseServerIfDebug(.off)
             interceptTermination(SIGINT)
@@ -45,7 +47,7 @@ import Foundation
         )
         // After the refresh session above: the live windows exist by now, so they can be put back
         // where the previous run left them.
-        try await restorePersistedLayout()
+        try await restorePersistedLayout(focusedWorkspaceAtLaunch: focusedWorkspaceAtLaunch)
         try await runLightSession(.startup, .forceRun) {
             smartLayoutAtStartup()
             _ = try await config.afterStartupCommand.runCmdSeq(.defaultEnv, .emptyStdin)
