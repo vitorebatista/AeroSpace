@@ -2,15 +2,38 @@
 cd "$(dirname "$0")/.."
 source ./script/setup.sh
 
-build_version="0.0.0-SNAPSHOT"
+snapshot_version="0.0.0-SNAPSHOT"
+build_version="$snapshot_version"
 codesign_identity="aerospace-codesign-certificate"
+allow_adhoc=0
+
+# The certificate every published release is signed with. macOS stores the app's *designated
+# requirement* when the user grants Accessibility or Screen Recording and re-checks it on every
+# launch, so this leaf hash is effectively part of the app's identity to TCC: change it and every
+# user silently loses both grants. See "Signing identity" in dev-docs/fork-maintenance.md.
+release_cert_leaf="bb9c2ac177c6a90115bcf04c071e14cd1004c549"
+
 while test $# -gt 0; do
     case $1 in
         --build-version) build_version="$2"; shift 2;;
         --codesign-identity) codesign_identity="$2"; shift 2;;
+        --allow-adhoc) allow_adhoc=1; shift;;
         *) echo "Unknown option $1" > /dev/stderr; exit 1 ;;
     esac
 done
+
+# An ad-hoc signature has no certificate, so the designated requirement degrades to the literal
+# binary hash (`cdhash H"..."`), which changes with every build. macOS then treats each update as a
+# different app and drops the Accessibility and Screen Recording grants — and the dead TCC entry
+# blocks re-granting until the user runs `tccutil reset`. Releases v1.12-v1.15 shipped that way.
+# Fail fast rather than spend a full release build producing an artifact that must not be published.
+if test "$codesign_identity" == "-" && test "$allow_adhoc" == 0; then
+    echo "Refusing to build with an ad-hoc signature (--codesign-identity -)." > /dev/stderr
+    echo "It breaks the user's Accessibility and Screen Recording grants on every update." > /dev/stderr
+    echo "Sign with 'aerospace-codesign-certificate' (script/create-codesign-certificate.sh)," > /dev/stderr
+    echo "or pass --allow-adhoc for a throwaway build that will never be published (CI does that)." > /dev/stderr
+    exit 1
+fi
 
 #############
 ### BUILD ###
@@ -112,6 +135,39 @@ check-contains-hash .release/aerospace-edge
 
 codesign -v .release/AeroSpace-edge.app
 codesign -v .release/aerospace-edge
+
+# `codesign -v` passes happily on an ad-hoc signature, so it cannot catch the case above on its own
+# (this script has no `set -e` either: a failed `codesign -s` would otherwise sail through). Check
+# what actually matters to TCC instead — the designated requirement of the shipped artifacts.
+check-designated-requirement() {
+    local file="$1"
+    local dr
+    test "$allow_adhoc" == 1 && return 0 # throwaway build, opted in above
+    # codesign prints the ad-hoc case commented out ('# designated => cdhash H"..."'), because a
+    # hash pin is not a real requirement expression. Strip the marker so both forms are comparable.
+    dr="$(codesign -d -r- "$file" 2>/dev/null | sed -n 's/^#* *designated => //p')"
+
+    if [[ "$dr" == *'cdhash H"'* ]]; then
+        echo "!!! $file is ad-hoc signed !!!" > /dev/stderr
+        echo "    designated => $dr" > /dev/stderr
+        echo "Its designated requirement is the binary hash, so it changes with every build." > /dev/stderr
+        exit 1
+    fi
+
+    if test "$build_version" != "$snapshot_version" &&
+        [[ "$dr" != *"certificate leaf = H\"$release_cert_leaf\""* ]]; then
+        echo "!!! $file is signed by an unexpected certificate !!!" > /dev/stderr
+        echo "    designated => $dr" > /dev/stderr
+        echo "    expected    => certificate leaf = H\"$release_cert_leaf\"" > /dev/stderr
+        echo "Users' grants are pinned to the requirement previous releases shipped; publishing a" > /dev/stderr
+        echo "different one silently revokes them. Restore the backed-up .p12, or update" > /dev/stderr
+        echo "release_cert_leaf at the top of this script if the change is deliberate." > /dev/stderr
+        exit 1
+    fi
+}
+
+check-designated-requirement .release/AeroSpace-edge.app
+check-designated-requirement .release/aerospace-edge
 
 ############
 ### PACK ###

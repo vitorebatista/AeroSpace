@@ -55,12 +55,20 @@ jobs:
       - run: ./.github/gh-actions-runner-xcode-select.sh
       - run: brew install bash fish xcbeautify swiftly pandoc # pandoc: build-docs.sh builds the man pages
       - run: swiftly init --skip-install --assume-yes --verbose && swiftly install
+      - name: 'build-release.sh refuses to build ad-hoc without --allow-adhoc'
+        run: |
+          # Guards the guard: this must fail, and it fails fast (before any compilation).
+          if ./script/build-release.sh --codesign-identity - ; then
+            echo "build-release.sh accepted an ad-hoc signature without --allow-adhoc" >&2
+            exit 1
+          fi
       - name: './script/build-release.sh'
         run: |
-          # "-" means "Sign to run locally". There is no aerospace-codesign-certificate on GH Actions.
-          # CI-only: published releases must be signed with the certificate, or macOS drops the
-          # Accessibility grant on every upgrade (dev-docs/fork-maintenance.md).
-          ./script/build-release.sh --codesign-identity -
+          # "-" means "Sign to run locally". There is no aerospace-codesign-certificate on GH Actions,
+          # so CI opts out of the certificate requirement with --allow-adhoc. Published releases must
+          # NOT: an ad-hoc signature makes macOS drop the user's Accessibility and Screen Recording
+          # grants on every upgrade (dev-docs/fork-maintenance.md).
+          ./script/build-release.sh --codesign-identity - --allow-adhoc
           ./script/install-from-sources.sh --dont-rebuild
       - name: cat ./.release/xcodebuild.log
         if: ${{ always() }}
