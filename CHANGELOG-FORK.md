@@ -25,6 +25,25 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
+## v1.16.1 (2026-08-31)
+
+First patch release under the `1.MINOR[.PATCH]` scheme. One user-facing fix, one CI change, no
+new behavior.
+
+- **The workspace you left off on now survives an immediate quit.** 1.16 recorded the focused
+  workspace inside the layout snapshot, which is written on a two-second debounce — so quitting
+  right after switching workspaces, or crashing inside that window, lost the switch and brought
+  you back on the previous workspace. It is now written the moment focus crosses a workspace
+  boundary, and read back at launch before startup can overwrite it. Two narrower gaps close with
+  it: a workspace reachable only through its binding can be restored on `config-version = 2`,
+  where it is not a live object until first visited; and focus restore still runs when the layout
+  file is missing or written by an older version, instead of being skipped along with the window
+  replay.
+- **CI no longer builds on the macos-14 runner.** GitHub began deprecating that image on
+  2026-07-06, fails jobs on it during brownout windows through October, and retires it on
+  2026-11-02. `build-debug` now runs on `macos-15` and `macos-26`, matching `build-release`.
+  This drops a runner, not an OS: the deployment target is still macOS 13.
+
 ## v1.16 (2026-08-30)
 
 **Updates no longer cost you the Accessibility grant.** Releases are signed with a stable
