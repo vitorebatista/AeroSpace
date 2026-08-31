@@ -317,14 +317,33 @@ Release builds **must** use the self-signed `aerospace-codesign-certificate`
 (`dev-docs/development.md` step 2 creates it), not `--codesign-identity -`. An ad-hoc signature has no
 certificate, so its designated requirement is the literal binary hash
 (`# designated => cdhash H"..."`), which changes with every build — macOS TCC then treats each update
-as a different app and drops the user's Accessibility grant. Signing with the certificate gives a
-stable requirement (`identifier "vitorebatista.aerospace-edge" and certificate leaf = H"..."`), so
-the permission survives updates. Check with `codesign -d --verbose=4 -r- <app>`.
+as a different app and drops the user's **Accessibility and Screen Recording** grants. Signing with
+the certificate gives a stable requirement
+(`identifier "vitorebatista.aerospace-edge" and certificate leaf = H"..."`), so the permissions
+survive updates. Check with `codesign -d --verbose=4 -r- <app>`.
+
+**This is enforced.** `build-release.sh` refuses an ad-hoc identity outright (pass `--allow-adhoc`
+only for a throwaway build that will never be published — CI does), and for a versioned build it
+re-reads the designated requirement off the finished `.app` and CLI and fails unless it carries
+`release_cert_leaf`, the certificate hash pinned at the top of that script. `codesign -v` alone does
+not catch either case: it validates an ad-hoc signature happily.
 
 Back up the certificate + private key (export as `.p12` from Keychain Access). Losing it, or signing
-with a different one, costs users one more re-grant. The first release after switching from ad-hoc
-also re-prompts once; users can clear the stale entry with
-`tccutil reset Accessibility vitorebatista.aerospace-edge`.
+with a different one, costs users one more re-grant — if you deliberately move to a new certificate,
+update `release_cert_leaf` in `script/build-release.sh` in the same commit.
+
+**Recovering a user stuck on a stale grant.** Releases `v1.12`–`v1.15` shipped ad-hoc, so anyone who
+granted a permission on one of those has a TCC entry pinned to a dead hash. It does not just stop
+working: the entry still shows in System Settings, which *blocks* re-granting — the toggle does
+nothing and the app cannot be re-added. Clearing it is the only fix:
+
+```bash
+tccutil reset Accessibility vitorebatista.aerospace-edge
+tccutil reset ScreenCapture vitorebatista.aerospace-edge   # e.g. for `exec-and-forget screencapture`
+```
+
+Then re-trigger the permission prompt and approve it. Worth repeating in the release notes of the
+first release users upgrade to from `v1.15` or earlier.
 
 ## Creating the GitHub release
 ```bash
