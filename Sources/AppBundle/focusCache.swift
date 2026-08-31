@@ -253,6 +253,12 @@ private func updateLastNativeFocusedWindow(_ window: Window?) {
             lastKnownNativeFocusedWindowId = intendedFocus.windowId
             updateLastNativeFocusedWindow(intendedFocus)
         }
+        // macOS already ordered the app's window front before this callback ran, and orderFront
+        // constrains an offscreen frame back onto the screen - so the window we park in the hide
+        // corner is now drawn over the workspace the user is actually on. Refusing the workspace
+        // switch is only half the job; nothing else relayouts on this path, so the stray window
+        // would sit there until an unrelated refresh. Re-park it.
+        scheduleCancellableCompleteRefreshSession(.suppressedAppActivation)
         return
     }
 

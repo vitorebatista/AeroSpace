@@ -78,8 +78,8 @@ Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for A
   Previous: `v1.7` (fork PR #53, cut 2026-07-24) — first release with a
   fork-original feature: `focus-follows-app-activation = 'always'|'smart'` (suppresses
   cross-workspace focus stealing by self-activating apps; no upstream equivalent).
-  **`smart` has a known regression** (moved windows reappear on the current workspace) —
-  see CHANGELOG-FORK.md 1.7 "KNOWN ISSUE" for details/fix direction before touching it.
+  `smart`'s known regression (moved windows reappear on the current workspace) was fixed
+  2026-08-31 — see CHANGELOG-FORK.md 1.7 "KNOWN ISSUE" for the cause before touching it.
 - **Signing gotcha (hit on 1.7 install, fixed by signing with a certificate):** releases used to be
   signed ad-hoc, which invalidates the Accessibility grant on every upgrade; the app then resets its
   own TCC entry and exits at startup (`checkAccessibilityPermissions`), and the user must re-grant:

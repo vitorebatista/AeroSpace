@@ -336,13 +336,15 @@ safe features, and none were requested.
   suppresses cross-workspace workspace switches caused by apps activating themselves (focus
   stealing) unless the activation was preceded by a mouse click. No upstream equivalent;
   i3 precedent: `focus_on_window_activation`. (fork PR #53)
-- **KNOWN ISSUE with `smart` (field report 2026-07-24, unfixed):** windows moved to another
-  workspace can reappear on the current workspace. Suspected: the suppression heuristic can't
-  tell a keyboard-driven `move-node-to-workspace` (window left natively focused cross-workspace,
-  no click) from a focus steal, and after suppressing it never re-layouts the offender's
-  workspace, so a self-raised/re-positioned window gets re-filed into the visible workspace.
-  Keep the default `'always'` until fixed. Fix direction: exempt AeroSpace-initiated commands
-  from suppression + force-layout the offender's workspace after suppressing.
+- **KNOWN ISSUE with `smart` (field report 2026-07-24) — FIXED 2026-08-31:** windows belonging
+  to another workspace could reappear on the current one. Cause: macOS orders the activating
+  app's window front before AeroSpace's callback runs, and `orderFront` constrains an offscreen
+  frame back onto the screen — so the window parked in the hide corner became visible. `smart`
+  refused the workspace switch but never relayouted, so the stray window sat there until an
+  unrelated refresh. The suppression path now schedules a refresh session, which re-parks it.
+  The `'always'` default is unchanged and stays deliberate: `smart` suppresses every
+  cross-workspace activation without a recent click, including ones you asked for (`open -a`
+  from a script, a clicked notification banner), so it remains opt-in.
 
 ## v1.6 (2026-07-18)
 
