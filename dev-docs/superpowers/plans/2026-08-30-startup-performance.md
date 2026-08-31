@@ -28,11 +28,13 @@ Baseline numbers: [`dev-docs/benchmarks/2026-08-30-startup-performance.md`](../.
       launch duration — the time limit kills the target, so the trace duration is
       the time limit.
 
+- [x] Measure on the three-display machine with Points of Interest signposts,
+      alternating blocks. Result: 149 ms vs 163 ms median on the initial heavy
+      refresh, ~8%, p≈0.2 at n=7. Real but below the noise floor and below
+      perceptibility — see the benchmark record. Do not justify this branch on speed.
+
 ## Open
 
-- [ ] Re-measure on the three-display machine using Points of Interest signposts.
-      This is the only procedure that can see the refresh path; readiness/CPU/RSS
-      sampling is blind to it and its run-to-run spread exceeds the effect size.
 - [ ] `on-window-detected` matching reads each window's title over AX, once per
       candidate callback, inside the serial registration loop. If a config with
       many callbacks shows up in the signpost trace, that read is the next thing
