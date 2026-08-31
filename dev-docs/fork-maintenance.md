@@ -30,7 +30,12 @@ Maintainer runbook for the `vitorebatista/AeroSpace-edge` fork. All credit for A
   skipped: `c548c7f8` (`Monitor` → `MonitorInfo` rename, part of the "track upstream main" milestone)
   and `ae2aa7aa` (upstream-only PR-labelling CI) — and 17 new open PRs, of which it ported #2244,
   #2232, #2211, #2228 and #2225 as fork PRs #55–#59.
-- **Released:** `v1.16.1` (cut 2026-08-31) — fork-original, no backports. Merges fork PRs #71
+- **Released:** `v1.16.2` (cut 2026-08-31) — fork-original, no backports. Merges fork PR #74:
+  `focus-follows-app-activation = 'smart'` no longer leaves a self-activating app's window drawn on
+  the current workspace (macOS's `orderFront` pulls the corner-parked window back on screen; the
+  suppression path now schedules a refresh that re-parks it). Clears the "KNOWN ISSUE with `smart`"
+  recorded under 1.7. Default stays `'always'`.
+  Previous: `v1.16.1` (cut 2026-08-31) — fork-original, no backports. Merges fork PRs #71
   (the focused workspace is persisted the moment it changes rather than on the layout snapshot's
   debounce, so an immediate quit no longer loses the last switch; also restores workspaces that
   exist only in a binding, and restores focus even with no usable layout file) and #72 (drop the

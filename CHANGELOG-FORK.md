@@ -25,6 +25,24 @@ The upstream commit this fork is based on (`63e0976b`) is recorded here and in
 > older than 1.10 still reports its original `0.20.3-Beta-fork.N` version string internally —
 > only 1.10 was rebuilt under the new scheme.
 
+## v1.16.2 (2026-08-31)
+
+One user-facing fix, no new behavior. Fork-original, no backports.
+
+- **`focus-follows-app-activation = 'smart'` no longer leaves the app's window drawn on the
+  workspace you are on.** `smart` refuses the workspace switch when an app activates itself, but by
+  the time AeroSpace's callback runs macOS has already ordered that app's window front — and
+  `orderFront` constrains an offscreen frame back onto the screen, so the window parked in the hide
+  corner became visible over the workspace you were actually using. Refusing the switch was only
+  half the job: the suppression path re-focused the intended window and returned without a layout
+  pass, so the stray window sat there until an unrelated refresh happened along. It now schedules a
+  refresh session, which re-parks it. This is the **KNOWN ISSUE with `smart`** recorded under 1.7
+  from the 2026-07-24 field report, and its recorded fix direction ("force-layout the offender's
+  workspace after suppressing") is exactly what landed. (fork PR #74)
+  - The `'always'` default is unchanged and stays deliberate. `smart` suppresses every
+    cross-workspace activation without a recent click, including ones you asked for (`open -a` from
+    a script, a clicked notification banner), so it remains opt-in.
+
 ## v1.16.1 (2026-08-31)
 
 First patch release under the `1.MINOR[.PATCH]` scheme. One user-facing fix, one CI change, no
