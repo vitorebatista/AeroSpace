@@ -355,3 +355,16 @@ brew update && brew info --cask vitorebatista/tap/aerospace-edge   # parses the 
 ## CI
 `.github/workflows/build.yml` verifies builds across macOS versions once GitHub Actions is enabled on
 the fork. `close-third-party-issues.yml` is upstream-only tooling — safe to disable on the fork.
+
+**The runner matrix has diverged from upstream — don't let a sync put `macos-14` back.** GitHub began
+deprecating that image on 2026-07-06, fails jobs on it during brownouts through October, and retires
+it on 2026-11-02 ([runner-images#13518](https://github.com/actions/runner-images/issues/13518)).
+`build-debug` runs on `macos-15` and `macos-26`; `.github/gh-actions-runner-xcode-select.sh` no
+longer branches on the OS, because macos-14 was the only runner that could not take Xcode 26.
+
+Dropping the runner did not drop macOS 14 support: the deployment target is still 13.0
+(`project.yml`, `Package.swift`), and the `#available(macOS 14, *)` guards in `nativeActivation.swift`
+and `MenuBarLabel.swift` are runtime checks for users on 13, not build-time ones. Leave them.
+
+When macOS 27 reaches GA, add `macos-27` and expect `macos-15` to start the same clock — GitHub keeps
+only the latest two stable macOS images.
