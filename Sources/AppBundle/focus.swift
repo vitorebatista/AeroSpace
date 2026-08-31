@@ -74,6 +74,13 @@ private struct FrozenFocus: AeroAny, Equatable, Sendable {
     _focus = newFocus.frozen
     let status = newFocus.workspace.workspaceMonitor.setActiveWorkspace(newFocus.workspace)
 
+    // Remembered here rather than on the layout snapshot's debounce, so quitting straight after a
+    // switch still brings you back here. A false `status` means the workspace cannot be shown on
+    // that monitor, which makes it no place to restore into either.
+    if status, !serverArgs.isReadOnly, oldFocus.workspace != newFocus.workspace {
+        storeFocusedWorkspace(newFocus.workspace.name)
+    }
+
     newFocus.windowOrNil?.markAsMostRecentChild()
     // Update global focus sequence for recent window tracking
     if let window = newFocus.windowOrNil {
