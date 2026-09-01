@@ -103,6 +103,9 @@ enum SettingHelpTopic: String, CaseIterable {
     case barPopupBorderColor
     case barChipStrip
     case barItems
+    case barProfiles
+    case barProfileWorkspaces
+    case barProfileVisibility
     case sketchybarStatus
     case sketchybarReload
     case menuBarStyle
@@ -248,6 +251,37 @@ enum SettingHelpTopic: String, CaseIterable {
                     "Build the bar from the catalog, in the order you drag them into.",
                     "Each list is one of sketchybar's three positions, and a list's order is the order its items are drawn in. An item's own settings are under it. Items that need a helper binary are listed but cannot be added yet.",
                     ["item", "item.id", "item.cluster"],
+                )
+            case .barProfiles:
+                help(
+                    "Give a group of workspaces its own set of bar items.",
+                    "A profile owns workspaces and changes which items are drawn while one of them is focused. Items are still declared once, above — a profile only lists the exceptions, so the clock is never repeated per profile. Switching is pushed by AeroSpace-edge itself the moment focus crosses into another profile's workspace; the generated config holds no profile logic. A workspace no profile names belongs to every profile and draws everything.",
+                    ["profile", "profile.name"],
+                    examples: [
+                        "[[profile]]",
+                        "name = 'Work'",
+                        "workspaces = ['1', '2', 'C']",
+                    ],
+                )
+            case .barProfileWorkspaces:
+                help(
+                    "List the workspaces this profile owns.",
+                    "Comma-separated workspace names, matched exactly as they are written in ~/.aerospace.toml. A workspace listed by two profiles belongs to the first one. While the profile is active the workspaces item lists only these, so the bar shows the group rather than every workspace on the machine.",
+                    ["profile.workspaces"],
+                    examples: [
+                        "1, 2, 3, C, S",
+                        "media, chat",
+                    ],
+                )
+            case .barProfileVisibility:
+                help(
+                    "Choose which items this profile draws.",
+                    "Every item is drawn unless a profile hides it, and a hidden item is written to that profile's hide list. Showing an item in one profile makes it opt-in everywhere: it then appears only in the profiles that list it under show, which is how an item can belong to a single profile without every other one having to hide it. Turning off the last profile that showed an item makes it ordinary again, and it goes back to being drawn everywhere.",
+                    ["profile.show", "profile.hide"],
+                    examples: [
+                        "show = ['cpu']",
+                        "hide = ['weather', 'network']",
+                    ],
                 )
             case .sketchybarStatus:
                 appPref(

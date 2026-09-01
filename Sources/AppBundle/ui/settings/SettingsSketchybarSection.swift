@@ -10,6 +10,9 @@ struct SettingsSketchybarSection: View {
     /// an insertion, and nothing about a row survives one identifiably, so the set is dropped
     /// whenever the list changes rather than left pointing at a different item.
     @State private var expanded: Set<Int> = []
+    /// Which profiles are open, by position in `draft.profiles`. Same reasoning, and the same
+    /// reset, as `expanded`.
+    @State private var expandedProfiles: Set<Int> = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -19,10 +22,14 @@ struct SettingsSketchybarSection: View {
                 barGroup
                 coloursGroup
                 itemsGroup
+                profilesGroup
                 statusGroup
             }
         }
-        .onChange(of: model.loadGeneration) { _ in expanded = [] }
+        .onChange(of: model.loadGeneration) { _ in
+            expanded = []
+            expandedProfiles = []
+        }
     }
 
     /// Writes are dropped while a save is in flight, for the same reason `SettingsView` drops
@@ -322,6 +329,134 @@ struct SettingsSketchybarSection: View {
     private static func availabilityNote(_ item: BarCatalogItem) -> String? {
         guard case .unavailable(let note) = item.availability else { return nil }
         return note
+    }
+
+    // MARK: - Profiles
+
+    private var profilesGroup: some View {
+        SettingsGroup("Profiles", footer: "A profile owns workspaces and decides which items the bar draws while one of them is focused. AeroSpace-edge pushes the switch itself the moment focus crosses over — sketchybar's config holds no profile logic. While this window is open the bar shows every item, whichever profile you are in; it goes back to the profile on the next workspace change.") {
+            SettingHelpLabel(title: "Profiles", topic: .barProfiles)
+            if model.draft.profiles.isEmpty {
+                Text("No profiles. Every workspace shows the same bar.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                ForEach(model.draft.profiles.indices, id: \.self) { index in profileRow(index) }
+            }
+            HStack {
+                Spacer()
+                Button("Add profile") {
+                    draft.wrappedValue.addProfile()
+                    expandedProfiles = []
+                    onEdit()
+                }
+                .disabled(model.isSaving)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func profileRow(_ index: Int) -> some View {
+        let profile = model.draft.profiles.getOrNil(atIndex: index) ?? BarProfile()
+        DisclosureGroup(isExpanded: profileExpansion(of: index)) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Name").foregroundStyle(.secondary)
+                    TextField("Name", text: profileText(index, \.name))
+                }
+                HStack {
+                    SettingHelpLabel(title: "Workspaces", topic: .barProfileWorkspaces)
+                    TextField("comma-separated", text: profileList(index, \.workspaces))
+                }
+                Divider()
+                SettingHelpLabel(title: "Items drawn", topic: .barProfileVisibility)
+                if itemIds.isEmpty {
+                    Text("Add items above and they show up here.").font(.caption).foregroundStyle(.secondary)
+                } else {
+                    // One switch per catalog id, not per entry: two `custom` items share an id,
+                    // so a profile shows or hides both. Splitting them would need an identity
+                    // `bar.toml` does not give an item.
+                    ForEach(itemIds, id: \.self) { id in
+                        Toggle(isOn: itemVisibility(id, inProfileAt: index)) {
+                            Text(BarCatalog.item(id: id)?.displayName ?? id)
+                        }
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        } label: {
+            HStack {
+                Text(profile.name.isEmpty ? "Unnamed profile" : profile.name)
+                Text(profile.workspaces.isEmpty ? "no workspaces" : profile.workspaces.joined(separator: " "))
+                    .font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button(role: .destructive) {
+                    guard model.draft.profiles.indices.contains(index) else { return }
+                    draft.wrappedValue.profiles.remove(at: index)
+                    expandedProfiles = []
+                    onEdit()
+                } label: {
+                    Image(systemName: "minus.circle.fill")
+                }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Remove \(profile.name.isEmpty ? "profile" : profile.name)")
+            }
+        }
+    }
+
+    /// The catalog ids on the bar, deduplicated, in the order the items are drawn in.
+    private var itemIds: [String] {
+        var seen: Set<String> = []
+        return model.draft.items.map(\.id).filter { seen.insert($0).inserted }
+    }
+
+    private func profileExpansion(of index: Int) -> Binding<Bool> {
+        Binding(
+            get: { expandedProfiles.contains(index) },
+            set: { isExpanded in
+                if isExpanded { expandedProfiles.insert(index) } else { expandedProfiles.remove(index) }
+            },
+        )
+    }
+
+    private func profileText(_ index: Int, _ path: WritableKeyPath<BarProfile, String>) -> Binding<String> {
+        Binding(
+            get: { model.draft.profiles.getOrNil(atIndex: index)?[keyPath: path] ?? "" },
+            set: { value in
+                guard !model.isSaving, model.draft.profiles.indices.contains(index) else { return }
+                model.draft.profiles[index][keyPath: path] = value
+                onEdit()
+            },
+        )
+    }
+
+    /// A profile's list keys are edited as one comma-separated field, so the docs say
+    /// comma-separated and the placeholder does too.
+    private func profileList(_ index: Int, _ path: WritableKeyPath<BarProfile, [String]>) -> Binding<String> {
+        Binding(
+            get: { (model.draft.profiles.getOrNil(atIndex: index)?[keyPath: path] ?? []).joined(separator: ", ") },
+            set: { text in
+                guard !model.isSaving, model.draft.profiles.indices.contains(index) else { return }
+                model.draft.profiles[index][keyPath: path] = text
+                    .split(separator: ",")
+                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                    .filter { !$0.isEmpty }
+                onEdit()
+            },
+        )
+    }
+
+    private func itemVisibility(_ id: String, inProfileAt index: Int) -> Binding<Bool> {
+        Binding(
+            get: {
+                guard let profile = model.draft.profiles.getOrNil(atIndex: index) else { return true }
+                return model.draft.isItemVisible(id, in: profile)
+            },
+            set: { visible in
+                guard !model.isSaving else { return }
+                model.draft.setItemVisible(id, inProfileAt: index, visible)
+                onEdit()
+            },
+        )
     }
 
     // MARK: - Status

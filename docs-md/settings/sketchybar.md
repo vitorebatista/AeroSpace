@@ -28,10 +28,10 @@ While sketchybar is running your edits *are* pushed to the bar on screen as you 
 [Live preview](#live-preview) — but never to a file.
 
 Regions of `bar.toml` this page did not touch — comments, key order, keys it does not model —
-come back byte for byte, in the same way `~/.aerospace-edge.toml` does. The one exception is
-the `[[item]]` region: an item edit is a change to an ordered array, so that region is
-regenerated whole and comments inside it are not preserved. Keys inside `[item.settings]`
-survive regardless, including keys this release does not recognise.
+come back byte for byte, in the same way `~/.aerospace-edge.toml` does. The exceptions are the
+`[[item]]` and `[[profile]]` regions: an edit to either is a change to an ordered array, so the
+region is regenerated whole and comments inside it are not preserved. Keys inside
+`[item.settings]` survive regardless, including keys this release does not recognise.
 
 If `bar.toml` does not parse, the page shows the parser's message and refuses to save. Writing
 a defaulted form over a file that could not be read would destroy it. Fix the file in an
@@ -181,6 +181,67 @@ A few worth knowing:
 **Keys this release does not recognise are kept.** A key written by a newer AeroSpace-edge, or
 by your own hand, is listed under the item as unrecognised and written back unchanged rather
 than dropped. The same is true of an entire item whose `id` is not in the catalog.
+
+## Profiles
+
+A profile is a named group of workspaces with its own set of bar items. Focus a workspace the
+profile owns and the bar becomes that profile's bar.
+
+```toml
+[[profile]]
+name = 'Work'
+workspaces = ['1', '2', 'C']
+hide = ['weather']
+
+[[profile]]
+name = 'Play'
+workspaces = ['9']
+show = ['cpu']
+```
+
+Items are still declared once, in `[[item]]`. A profile lists only the exceptions, so a shared
+item such as the clock is never repeated per profile.
+
+### Workspaces
+
+`profile.workspaces` — the workspaces this profile owns, typed **comma-separated** and stored
+as a TOML list. Names are matched exactly as they are written in `~/.aerospace-edge.toml`.
+
+A workspace listed by two profiles belongs to the first one written. A workspace **no** profile
+names belongs to every profile: its bar draws everything any profile would draw.
+
+While a profile is active the **Workspaces** item lists only that profile's workspaces, so the
+bar shows the group rather than every workspace on the machine.
+
+### Items drawn
+
+One switch per item, writing `profile.show` and `profile.hide`.
+
+- Every item is drawn unless a profile **hides** it. Turning a switch off writes the item to
+  that profile's `hide`.
+- **Showing** an item in one profile makes it opt-in *everywhere*: it then appears only in the
+  profiles that list it under `show`. That is how an item belongs to a single profile without
+  every other profile having to hide it.
+- Turning off the last profile that showed an item makes it an ordinary item again, and it goes
+  back to being drawn everywhere.
+
+Two items with the same `id` — two `custom` scripts, say — share one switch. `bar.toml` gives an
+item no identity beyond its id.
+
+### How switching works
+
+AeroSpace-edge already knows which workspace is focused, so it pushes the switch itself: when
+focus crosses into a workspace another profile owns, it sends one sketchybar command turning
+the differing items' `drawing` on and off. The generated `sketchybarrc` contains **no profile
+logic and no dispatcher script**, and a Lua config's usual workspace-event subscription and
+active-profile state machine are not needed.
+
+The generated file always describes the *shared* bar — the generator cannot know which
+workspace is focused — and the active profile is pushed over the top of it at startup and on
+every crossing.
+
+While the Settings window is open the bar shows every item, whichever profile you are in, so
+you can see what you are editing. It returns to the profile on the next workspace change.
 
 ## Status
 

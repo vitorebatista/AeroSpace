@@ -128,7 +128,7 @@ version 2. See [Config version migration](migration.md).
 | `exec.*` | [Exec](exec.md) |
 | `mode.*.binding` | [Keybindings](keybindings.md) |
 | `on-window-detected` | [Window Rules](window-rules.md) |
-| `bar.*`, `item.*` (in `bar.toml`) | [Sketchybar](sketchybar.md) |
+| `bar.*`, `item.*`, `profile.*` (in `bar.toml`) | [Sketchybar](sketchybar.md) |
 | `after-startup-command`, `on-focus-changed`, `on-mode-changed`, `on-focused-monitor-changed`, `exec-on-workspace-change` | [Callbacks](callbacks.md) |
 
 ## When Settings can't edit normally
