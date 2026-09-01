@@ -38,6 +38,7 @@ struct BarTomlDocument {
 
     private static func isBarTable(_ name: String) -> Bool { name == "bar" || name.hasPrefix("bar.") }
     private static func isItemTable(_ name: String) -> Bool { name == "item" || name.hasPrefix("item.") }
+    private static func isProfileTable(_ name: String) -> Bool { name == "profile" || name.hasPrefix("profile.") }
 
     /// The TOML spelling of every modelled key, in emission order. One list per table, so
     /// the reader, the surgical writer, and the generator cannot disagree about a name.
@@ -100,7 +101,43 @@ extension BarTomlDocument {
             draft.colors[keyPath: path] = try Self.string(colors, key, draft.colors[keyPath: path], path: "bar.colors.\(key)")
         }
         draft.items = try parseItems(root)
+        draft.profiles = try Self.parseProfiles(root)
         return draft
+    }
+
+    private static func parseProfiles(_ root: [String: Any]) throws -> [BarProfile] {
+        guard let raw = root["profile"] else { return [] }
+        guard let array = raw as? [Any] else {
+            throw BarTomlError.semantic("'profile' must be a list of [[profile]] tables, got \(typeName(raw))")
+        }
+        return try array.enumerated().map { index, element in
+            let path = "profile[\(index)]"
+            guard let table = element as? [String: Any] else {
+                throw BarTomlError.semantic("\(path) must be a table, got \(typeName(element))")
+            }
+            guard let name = table["name"] as? String, !name.isEmpty else {
+                throw BarTomlError.semantic("\(path) must have a non-empty string 'name'")
+            }
+            return BarProfile(
+                name: name,
+                workspaces: try stringArray(table, "workspaces", path: path),
+                show: try stringArray(table, "show", path: path),
+                hide: try stringArray(table, "hide", path: path),
+            )
+        }
+    }
+
+    private static func stringArray(_ table: [String: Any], _ key: String, path: String) throws -> [String] {
+        guard let raw = table[key] else { return [] }
+        guard let values = raw as? [Any] else {
+            throw BarTomlError.semantic("\(path).\(key) must be a list of strings, got \(typeName(raw))")
+        }
+        return try values.enumerated().map { index, value in
+            guard let text = value as? String else {
+                throw BarTomlError.semantic("\(path).\(key)[\(index)] must be a string, got \(typeName(value))")
+            }
+            return text
+        }
     }
 
     private func parseItems(_ root: [String: Any]) throws -> [BarItem] {
@@ -222,6 +259,7 @@ extension BarTomlDocument {
         }
         applyBar(draft, original)
         applyItems(draft, original)
+        applyProfiles(draft, original)
     }
 
     private mutating func applyBar(_ draft: BarDraft, _ original: BarDraft) {
@@ -256,6 +294,15 @@ extension BarTomlDocument {
         guard draft.items != original.items else { return }
         document.remove(key: "item") // an inline `item = [{ ... }]` would duplicate the generated [[item]] tables
         document.replaceTables(matching: Self.isItemTable, with: Self.itemsText(draft), name: "item")
+    }
+
+    /// Regenerated wholesale for the same reason the item region is: a profile edit is a
+    /// change to an ordered array, and neither a reorder nor an insertion leaves a comment
+    /// inside the region with anything to reattach to.
+    private mutating func applyProfiles(_ draft: BarDraft, _ original: BarDraft) {
+        guard draft.profiles != original.profiles else { return }
+        document.remove(key: "profile") // an inline `profile = [{ ... }]` would duplicate the generated tables
+        document.replaceTables(matching: Self.isProfileTable, with: Self.profilesText(draft), name: "profile")
     }
 
     private func topLevelKeys(matching predicate: (String) -> Bool) -> [String] {
@@ -309,6 +356,20 @@ extension BarTomlDocument {
         text += "\n[bar.colors]\n"
         for (key, path) in colorKeys { text += "\(key) = \(TomlValue.of(draft.colors[keyPath: path]))\n" }
         return text
+    }
+
+    private static func profilesText(_ draft: BarDraft) -> String {
+        draft.profiles.map { profile in
+            var text = "[[profile]]\n"
+            text += "name = \(TomlValue.of(profile.name))\n"
+            // Written even when empty: an empty `workspaces` is a profile that owns nothing
+            // and the line is the only hint of where the workspaces go.
+            text += "workspaces = \(TomlValue.array(profile.workspaces.map { TomlValue.of($0) }))\n"
+            for (key, ids) in [("show", profile.show), ("hide", profile.hide)] where !ids.isEmpty {
+                text += "\(key) = \(TomlValue.array(ids.map { TomlValue.of($0) }))\n"
+            }
+            return text
+        }.joined(separator: "\n")
     }
 
     private static func itemsText(_ draft: BarDraft) -> String {

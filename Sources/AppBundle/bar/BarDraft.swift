@@ -23,8 +23,34 @@ struct BarDraft: Equatable, Sendable {
     /// entries sharing that cluster; there is no index field to keep consistent, and a
     /// drag in the UI is a reordering of this array.
     var items: [BarItem] = []
+    /// Every `[[profile]]`, in document order. The first one naming a workspace owns it.
+    var profiles: [BarProfile] = []
+    /// Which profile the bar is showing right now. Focus state, not file state: it is
+    /// resolved from the focused workspace, never read from or written to `bar.toml`.
+    ///
+    /// It lives on the draft so that a profile switch is the same push as an edit — two
+    /// drafts differing only in this field diff into exactly the show/hide commands, and
+    /// `BarLiveDiff` needs no profile-specific path.
+    var activeProfileName: String?
 
     func items(in cluster: BarCluster) -> [BarItem] { items.filter { $0.cluster == cluster } }
+}
+
+/// A named group of workspaces with per-item visibility overrides.
+///
+/// Items are declared once, globally, in `items`. A profile only lists the exceptions, so
+/// a shared item such as the clock is never repeated per profile.
+struct BarProfile: Equatable, Sendable {
+    var name: String = ""
+    /// The workspaces this profile owns. A workspace no profile names belongs to every
+    /// profile.
+    var workspaces: [String] = []
+    /// Item ids this profile draws. Naming an item here makes it opt-in *everywhere*: it is
+    /// then hidden in every profile that does not name it. That is what lets one item belong
+    /// to one profile without every other profile having to list it under `hide`.
+    var show: [String] = []
+    /// Item ids this profile hides that would otherwise be drawn.
+    var hide: [String] = []
 }
 
 struct BarGeometry: Equatable, Sendable {

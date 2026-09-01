@@ -143,7 +143,7 @@ enum BarConfigGenerator {
                 occurrences[item.id] = count
                 let base = BarCatalog.sketchybarName(for: item.id)
                 let name = count == 1 ? base : "\(base).\(count)"
-                switch emit(item, name: name, colors: draft.colors, helpers: helpers) {
+                switch emit(item, name: name, draft: draft, helpers: helpers) {
                     case .skipped(let comment):
                         plan.entries.append(.skipped(comment))
                     case .emitted(let entity):
@@ -254,7 +254,7 @@ enum BarConfigGenerator {
     private static func emit(
         _ item: BarItem,
         name: String,
-        colors: BarColors,
+        draft: BarDraft,
         helpers: BarHelperPaths,
     ) -> Emission {
         guard let catalog = BarCatalog.item(id: item.id) else {
@@ -263,9 +263,10 @@ enum BarConfigGenerator {
         if case .unavailable = catalog.availability {
             return .skipped("# \(name): needs a helper binary that ships in a later release, not generated")
         }
-        guard let program = program(for: item, catalog: catalog, colors: colors, helpers: helpers) else {
+        guard var program = program(for: item, catalog: catalog, draft: draft, helpers: helpers) else {
             return .skipped("# \(name): no script path set, not generated")
         }
+        program.properties = visibility(program.properties, of: item, draft: draft)
 
         return .emitted(BarPlanEntity(
             name: name,
@@ -277,12 +278,34 @@ enum BarConfigGenerator {
         ))
     }
 
+    /// Applies the active profile's verdict on an item.
+    ///
+    /// Nothing at all when the draft declares no profiles, so a bar that does not use them
+    /// generates exactly the bytes it always did.
+    ///
+    /// A hidden item keeps every property key it had, because dropping a key is what forces
+    /// `BarLiveDiff` to rebuild an item rather than `--set` it — the difference between a
+    /// profile switch that flickers and one that does not. Its `script` is neutered instead:
+    /// `mode`, `floats` and `secure-input` each set `drawing` from their own condition and
+    /// would otherwise put themselves back on screen within a tick.
+    private static func visibility(
+        _ properties: [BarArgument],
+        of item: BarItem,
+        draft: BarDraft,
+    ) -> [BarArgument] {
+        guard !draft.profiles.isEmpty else { return properties }
+        let visible = draft.isItemVisible(item.id)
+        return properties.map { visible || $0.key != "script" ? $0 : BarArgument("script", ":") }
+            + [BarArgument("drawing", visible ? "on" : "off")]
+    }
+
     private static func program(
         for item: BarItem,
         catalog: BarCatalogItem,
-        colors: BarColors,
+        draft: BarDraft,
         helpers: BarHelperPaths,
     ) -> Program? {
+        let colors = draft.colors
         let cli = shellArg(helpers.aerospaceCli)
         var program = Program()
         program.properties = iconProperties(item, catalog)
@@ -294,7 +317,13 @@ enum BarConfigGenerator {
                 var body = "\(cli) list-workspaces --monitor \(monitor)\(empty)"
                     + " --format '%{workspace}|%{workspace-is-focused}'"
                     + " | while IFS='|' read -r w f; do"
-                    + " if [ \"$f\" = true ]; then printf '[%s]' \"$w\"; else printf '%s' \"$w\"; fi;"
+                // The active profile owns a set of workspaces, and its bar lists only those.
+                // Each pattern is quoted, which is what makes a `case` arm match a workspace
+                // name containing a glob character literally rather than as a pattern.
+                if let owned = draft.activeProfile?.workspaces, !owned.isEmpty {
+                    body += " case \"$w\" in \(owned.map { shellArg($0) }.joined(separator: "|"))) ;; *) continue ;; esac;"
+                }
+                body += " if [ \"$f\" = true ]; then printf '[%s]' \"$w\"; else printf '%s' \"$w\"; fi;"
                 if bool(item, catalog, "show-app-icons"), let map = helpers.appFontIconMap {
                     body += " \(cli) list-windows --workspace \"$w\" --format '%{app-name}'"
                         + " | sort -u | while IFS= read -r a; do \(shellArg(map)) \"$a\"; done;"

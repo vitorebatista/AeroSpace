@@ -282,6 +282,7 @@ public final class BarSettingsModel: ObservableObject {
     private func discardLivePreview() async {
         await suspendLivePushes()
         guard hasLiveEdits else { return }
+        BarProfileController.shared.invalidate()
         let backend = self.backend
         do {
             try await Task.detached { try backend.discardLiveChanges() }.value
@@ -312,6 +313,10 @@ public final class BarSettingsModel: ObservableObject {
     }
 
     private func applyToBackend(reloadOnly: Bool) async -> BarSettingsStatus {
+        // A reload renders the no-profile bar, whichever profile the focused workspace is in.
+        // The controller re-pushes on the next workspace change rather than this model
+        // reaching for the focus.
+        BarProfileController.shared.invalidate()
         let saved = reloadOnly ? "" : "Saved \(configUrl.lastPathComponent). "
         guard backend.isAvailable else {
             return .saved(saved + "sketchybar isn't installed, so nothing renders yet.")

@@ -203,6 +203,7 @@ extension Workspace {
         workspace: newWorkspace,
         prevWorkspace: oldWorkspace,
     ))
+    BarProfileController.shared.workspaceDidChange(to: newWorkspace)
     if let exec = config.execOnWorkspaceChange.first {
         let process = Process()
         process.executableURL = URL(filePath: exec)

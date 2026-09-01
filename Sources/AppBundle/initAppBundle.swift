@@ -48,6 +48,10 @@ import Foundation
         // After the refresh session above: the live windows exist by now, so they can be put back
         // where the previous run left them.
         try await restorePersistedLayout(focusedWorkspaceAtLaunch: focusedWorkspaceAtLaunch)
+        // The generated sketchybar config renders the no-profile bar, so the profile owning
+        // the workspace we start on has to be pushed once; `checkOnFocusChangedCallbacks`
+        // deliberately does nothing during startup.
+        BarProfileController.shared.workspaceDidChange(to: focus.workspace.name)
         try await runLightSession(.startup, .forceRun) {
             smartLayoutAtStartup()
             _ = try await config.afterStartupCommand.runCmdSeq(.defaultEnv, .emptyStdin)

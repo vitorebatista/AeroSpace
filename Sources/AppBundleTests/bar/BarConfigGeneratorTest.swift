@@ -48,6 +48,23 @@ final class BarConfigGeneratorTest: XCTestCase {
         try assertGolden("all-clusters", draft, helpers: helpers)
     }
 
+    /// A bar with profiles. The generated file is always the *shared* bar — the one a
+    /// workspace no profile names gets — because the generator cannot know which workspace is
+    /// focused. AeroSpace-edge pushes the active profile over the top of it.
+    func testProfilesGenerateTheSharedBar() throws {
+        var draft = BarDraft()
+        draft.items = [
+            BarItem(id: "workspaces", cluster: .left),
+            BarItem(id: "cpu", cluster: .right),
+            BarItem(id: "weather", cluster: .right),
+        ]
+        draft.profiles = [
+            BarProfile(name: "Work", workspaces: ["1", "2"], show: ["cpu"], hide: ["weather"]),
+            BarProfile(name: "Play", workspaces: ["9"]),
+        ]
+        try assertGolden("profiles", draft, helpers: helpers)
+    }
+
     func testCustomItemsAndItemsThatCannotBeGenerated() throws {
         var draft = BarDraft()
         draft.items = [
