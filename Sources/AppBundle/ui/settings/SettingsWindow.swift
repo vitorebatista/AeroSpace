@@ -225,7 +225,7 @@ struct SettingsView: View {
             case .menuBar:
                 MenuBarSection(viewModel: viewModel)
             case .sketchybar:
-                SettingsSketchybarSection(model: barModel)
+                SettingsSketchybarSection(model: barModel, configModel: model)
             case .application:
                 ApplicationSection()
         }
@@ -275,7 +275,7 @@ struct SettingsView: View {
                     Label("Saved and reloaded", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
                 }
                 Spacer()
-                Button("Revert") { if editsSketchybar { Task { await barModel.revert() } } else { model.revert() } }
+                Button("Revert") { revert() }
                     .disabled(!isDirty || isSaving)
                 Button("Save") { requestSave() }
                     .keyboardShortcut(.defaultAction)
@@ -301,15 +301,37 @@ struct SettingsView: View {
     /// Which document the footer acts on. The Sketchybar destination edits bar.toml; every
     /// other one edits the AeroSpace config.
     private var editsSketchybar: Bool { selection == .sketchybar }
-    private var isDirty: Bool { editsSketchybar ? barModel.isDirty : model.isDirty }
+    /// The Sketchybar page counts the config draft too: a theme sets the window border colour,
+    /// which lives there, and Save has to be reachable for it.
+    private var isDirty: Bool { editsSketchybar ? (barModel.isDirty || model.isDirty) : model.isDirty }
     private var isSaving: Bool { model.isSaving || barModel.isSaving }
 
     private func requestSave() {
         guard !isSaving else { return }
         if editsSketchybar {
-            Task { await barModel.save() }
+            Task {
+                if barModel.isDirty { await barModel.save() }
+                // A theme writes seven colours to bar.toml and one to the AeroSpace config.
+                // Leaving either behind puts half a theme on disk, which is worse than none.
+                if model.isDirty { requestConfigSave() }
+            }
             return
         }
+        requestConfigSave()
+    }
+
+    /// Undoes whatever Save on this destination would have written, which on the Sketchybar
+    /// page is both files when a theme has touched the border colour.
+    private func revert() {
+        if editsSketchybar {
+            Task { await barModel.revert() }
+            if model.isDirty { model.revert() }
+        } else {
+            model.revert()
+        }
+    }
+
+    private func requestConfigSave() {
         if model.externallyModified {
             showOverwriteAlert = true
         } else {

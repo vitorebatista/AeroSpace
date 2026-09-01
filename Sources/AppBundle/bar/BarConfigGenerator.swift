@@ -12,12 +12,20 @@ struct BarHelperPaths: Equatable, Sendable {
     /// given as `$1`. `nil` when the font (and its map) is not installed, in which case
     /// `show-app-icons` degrades to plain workspace names rather than to blank glyphs.
     var appFontIconMap: String?
-    // The bundled helper the privileged items need has no field here yet: it does not
-    // ship until stage 4, and a path nothing reads is a path nothing keeps correct.
+    /// Where each external tool was found. A tool with no entry is not installed, and every
+    /// item needing it is left out of the config with a comment naming what to install — the
+    /// same treatment a `custom` item with no script path gets. A map rather than a field per
+    /// tool, so adding one is a catalog change and not a generator change.
+    var externalTools: [BarExternalTool: String]
 
-    init(aerospaceCli: String, appFontIconMap: String? = nil) {
+    init(
+        aerospaceCli: String,
+        appFontIconMap: String? = nil,
+        externalTools: [BarExternalTool: String] = [:],
+    ) {
         self.aerospaceCli = aerospaceCli
         self.appFontIconMap = appFontIconMap
+        self.externalTools = externalTools
     }
 }
 
@@ -260,8 +268,8 @@ enum BarConfigGenerator {
         guard let catalog = BarCatalog.item(id: item.id) else {
             return .skipped("# \(name): no catalog entry, not generated")
         }
-        if case .unavailable = catalog.availability {
-            return .skipped("# \(name): needs a helper binary that ships in a later release, not generated")
+        if let tool = catalog.externalTool, helpers.externalTools[tool] == nil {
+            return .skipped("# \(name): needs the \(tool.rawValue) command (\(tool.installHint)), not generated")
         }
         guard var program = program(for: item, catalog: catalog, draft: draft, helpers: helpers) else {
             return .skipped("# \(name): no script path set, not generated")
@@ -455,6 +463,64 @@ enum BarConfigGenerator {
                     BarArgument("script", body),
                 ]
 
+            case "volume":
+                // Event-driven: sketchybar raises `volume_change` itself, so there is no timer
+                // and the item costs nothing between changes.
+                let read = "osascript -e 'set s to (get volume settings)'"
+                    + " -e '(output volume of s as text) & \"|\" & (output muted of s as text)'"
+                let label = bool(item, catalog, "show-percentage") ? " label=\"$v%\"" : " label.drawing=off"
+                let muted = catalog.icons.getOrNil(atIndex: 1)?.name ?? "speaker.slash"
+                let unmuted = catalog.icons.first?.name ?? "speaker.wave.2"
+                var body = "case \"$SENDER\" in mouse.clicked)"
+                    + " osascript -e 'set volume output muted (not (output muted of (get volume settings)))';;"
+                    + " mouse.scrolled)"
+                    + " v=$(osascript -e 'output volume of (get volume settings)');"
+                    + " \(scrollTarget(item, catalog, minimum: 0))"
+                    + " osascript -e \"set volume output volume $n\";;"
+                    + " esac; "
+                body += "s=$(\(read)); v=${s%|*}; m=${s#*|};"
+                    + " if [ \"$m\" = true ]; then i=\(shellArg(muted)); else i=\(shellArg(unmuted)); fi;"
+                    + " sketchybar --set $NAME icon=$i\(label)"
+                program.properties.append(BarArgument("script", body))
+                program.events = ["volume_change", "mouse.clicked", "mouse.scrolled"]
+
+            case "brightness":
+                // The only catalog item that needs a tool macOS does not ship. `emit` has
+                // already refused the item when it is missing, so the path is known good here.
+                let cli = shellArg(helpers.externalTools[.brightness] ?? BarExternalTool.brightness.rawValue)
+                // `brightness -l` prints a line per display; the first display's level is the
+                // one the item follows, as a float that is scaled to whole percent.
+                let read = "\(cli) -l 2>/dev/null | awk '/brightness/ {printf \"%d\", $NF*100; exit}'"
+                let label = bool(item, catalog, "show-percentage") ? " label=\"$b%\"" : " label.drawing=off"
+                var body = "if [ \"$SENDER\" = mouse.scrolled ]; then b=$(\(read));"
+                    // Never all the way to zero: a display at 0 is a display the user cannot
+                    // find the item on to scroll back up.
+                    + " \(scrollTarget(item, catalog, minimum: 1, of: "b"))"
+                    + " \(cli) \"$(awk -v n=\"$n\" 'BEGIN {printf \"%.2f\", n/100}')\"; fi; "
+                body += "b=$(\(read)); sketchybar --set $NAME\(label)"
+                program.properties += [
+                    BarArgument("update_freq", int(item, catalog, "update-freq")),
+                    BarArgument("script", body),
+                ]
+                program.events = ["mouse.scrolled"]
+
+            case "bluetooth":
+                let cli = shellArg(helpers.externalTools[.blueutil] ?? BarExternalTool.blueutil.rawValue)
+                let label = bool(item, catalog, "show-label") ? " label=\"$l\"" : " label.drawing=off"
+                let off = bool(item, catalog, "hide-when-off")
+                    ? "sketchybar --set $NAME drawing=off"
+                    : "l=off; sketchybar --set $NAME drawing=on\(label)"
+                let body = "p=$(\(cli) -p 2>/dev/null);"
+                    + " if [ \"$p\" = 1 ]; then l=on; sketchybar --set $NAME drawing=on\(label);"
+                    + " else \(off); fi"
+                program.properties += [
+                    BarArgument("update_freq", int(item, catalog, "update-freq")),
+                    BarArgument("script", body),
+                    // The toggle is the reason this item takes a tool at all: nothing without
+                    // one, or without a private framework, can turn the radio on and off.
+                    BarArgument("click_script", "\(cli) -p toggle"),
+                ]
+
             case "apple-menu":
                 let front = "tell application \"System Events\" to tell (first process whose frontmost is true)"
                 let click: String = switch string(item, catalog, "click-action") {
@@ -504,6 +570,26 @@ enum BarConfigGenerator {
                 return nil
         }
         return program
+    }
+
+    /// The shell that works out the 0–100 level a scroll should move `variable` to, leaving it
+    /// in `n`.
+    ///
+    /// `$SCROLL_DELTA` is read for its sign only. sketchybar reports the raw wheel delta, and
+    /// that differs by an order of magnitude between a mouse and a trackpad, so following its
+    /// magnitude would make the item unusable on one of the two. How far a notch goes is the
+    /// `step` setting's business.
+    private static func scrollTarget(
+        _ item: BarItem,
+        _ catalog: BarCatalogItem,
+        minimum: Int,
+        of variable: String = "v",
+    ) -> String {
+        let step = int(item, catalog, "step")
+        return "d=${SCROLL_DELTA%%.*}; [ -z \"$\(variable)\" ] && \(variable)=0; n=$\(variable);"
+            + " if [ \"$d\" -gt 0 ] 2>/dev/null; then n=$((\(variable) + \(step)));"
+            + " elif [ \"$d\" -lt 0 ] 2>/dev/null; then n=$((\(variable) - \(step))); fi;"
+            + " [ \"$n\" -gt 100 ] && n=100; [ \"$n\" -lt \(minimum) ] && n=\(minimum);"
     }
 
     private static func iconProperties(_ item: BarItem, _ catalog: BarCatalogItem) -> [BarArgument] {

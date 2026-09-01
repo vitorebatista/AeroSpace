@@ -108,24 +108,23 @@ final class BarCatalogTest: XCTestCase {
         }
     }
 
-    func testPrivilegedItemsAreVisibleButDisabledAndEverythingElseIsAvailable() {
-        for item in BarCatalog.items {
-            if item.requirement == .helperBinary {
-                guard case .unavailable(let note) = item.availability else {
-                    XCTFail("\(item.id) needs a helper binary that does not ship yet, so it must be listed as unavailable")
-                    continue
-                }
-                XCTAssertFalse(note.isEmpty, "\(item.id) must explain why it is disabled")
-            } else {
-                XCTAssertEqual(item.availability, .available, "\(item.id) has no unshipped dependency")
-            }
+    /// Nothing is bundled, so an item that needs a tool macOS does not ship has to name it and
+    /// say how to install it. Anything else must not claim a dependency it does not have.
+    func testEveryExternalToolCarriesAnInstallHint() {
+        for tool in BarExternalTool.allCases {
+            XCTAssertFalse(tool.installHint.isEmpty, "\(tool.rawValue) must say how to install it")
         }
         XCTAssertEqual(
             BarCatalog.items(in: .privileged).map(\.id),
             ["volume", "brightness", "bluetooth"],
-            "the privileged group is the set awaiting the helper binary",
+            "the privileged group is the set that reaches past AeroSpace and the shell",
         )
-        XCTAssertFalse(BarCatalog.items.filter { !$0.isAvailable }.isEmpty)
+        // Volume goes through AppleScript and costs no install; the other two reach past what
+        // macOS exposes to a shell, and each names exactly one tool.
+        XCTAssertNil(BarCatalog.item(id: "volume")?.externalTool)
+        XCTAssertEqual(BarCatalog.item(id: "brightness")?.externalTool, .brightness)
+        XCTAssertEqual(BarCatalog.item(id: "bluetooth")?.externalTool, .blueutil)
+        XCTAssertEqual(Set(BarCatalog.items.compactMap(\.externalTool)), Set(BarExternalTool.allCases))
     }
 
     func testCatalogCoversEveryGroupTheSpecNames() {

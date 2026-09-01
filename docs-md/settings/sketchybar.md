@@ -79,6 +79,22 @@ Space between the bar's own edge and its first and last item. Left and right are
 
 ## Colours
 
+### Theme
+
+**Apply theme** sets all seven colours below at once, and the focused window's border with
+them. Themes shipped: **Default**, **Tokyo Night**, **Gruvbox Dark**, **Nord**,
+**Catppuccin Mocha**, **Light**.
+
+A theme is a palette, not a stored setting. There is no `theme` key in `bar.toml`: which theme
+is in effect is worked out from the colours, so the row reads **Custom** the moment you change
+one of them and nothing goes on claiming a theme it no longer matches.
+
+The window border is the one part of a theme that is **not** in `bar.toml` —
+`focused-window-border-color` belongs to your AeroSpace config. **Save on this page therefore
+writes both files.** Half a theme on disk is worse than none, so Save and Revert here act on
+whichever of the two has unsaved changes. If you have edits pending on other Settings pages,
+those are saved too.
+
 Every colour is a `0xAARRGGBB` string — alpha, red, green, blue — which is sketchybar's own
 spelling and the same one `focused-window-border-color` uses. The colour well writes back
 exactly that representation. A value the picker cannot represent stays a plain text field
@@ -147,7 +163,7 @@ per-monitor = true
 |---|---|---|
 | AeroSpace | `workspaces`, `front-app`, `mode`, `floats` | the `aerospace-edge` CLI |
 | System | `battery`, `clock`, `cpu`, `network`, `weather` | shell built-ins and `/usr/sbin` tools |
-| Privileged | `volume`, `brightness`, `bluetooth` | a bundled helper binary — **not in this release** |
+| Privileged | `volume`, `brightness`, `bluetooth` | AppleScript; `brightness`; `blueutil` |
 | macOS | `apple-menu`, `secure-input` | AppleScript |
 | Escape hatch | `custom` | a script of your own |
 
@@ -159,9 +175,41 @@ one. It is the way back to a sunken float.
 `custom` is why a fixed catalog is not a ceiling: it takes a script path, an update frequency
 and a list of events, and is generated as an ordinary sketchybar item.
 
-**Privileged items are listed but disabled.** They need a helper binary that ships in a later
-release. They stay in the picker so their place in the bar is known, rather than being
-silently missing; hovering one explains why it will not take a click.
+### Items that need a command
+
+Three items reach past what AeroSpace-edge and a shell can answer on their own.
+
+| Item | Needs | Install | Without it |
+|---|---|---|---|
+| `volume` | nothing — AppleScript | — | always works |
+| `brightness` | the `brightness` command | `brew install brightness` | a comment in the generated config |
+| `bluetooth` | the `blueutil` command | `brew install blueutil` | a comment in the generated config |
+
+**Nothing is bundled.** Shipping an executable inside the app would put a second binary through
+codesigning and the fork's release pinning for one item's worth of capability, so these are
+ordinary Homebrew installs, found on `PATH` the same way sketchybar itself is. The **Status**
+group lists any that are missing, with the command that installs them.
+
+An item whose command is missing is **still addable**: `bar.toml` travels between machines, and
+the one that renders it may not be the one you are editing on. It simply does not reach the
+generated config — a comment naming the tool goes where the item would have been, exactly as it
+does for a `custom` item with no script path.
+
+- **Volume** reads and sets the output volume through AppleScript. Click toggles mute; scroll
+  changes the level by `step`. It follows sketchybar's own `volume_change` event, so it costs
+  nothing between changes.
+- **Brightness** goes through the `brightness` command over the ordinary hardware range.
+  Scroll changes it by `step`, never below 1% — a display at zero is a display you cannot find
+  the item on to scroll back up. There is no brightness event, so it polls on `update-freq`.
+- **Bluetooth** shows the controller's power state and toggles the radio on click. It needs
+  `blueutil` for both: the power state used to be readable from
+  `/Library/Preferences/com.apple.Bluetooth`, and on current macOS that key is simply gone.
+  `system_profiler SPBluetoothDataType` still answers and takes over a second, which is not a
+  price a bar item can pay on a timer.
+
+A scroll is read for its **direction only**. sketchybar reports the raw wheel delta, and that
+differs by an order of magnitude between a mouse and a trackpad; how far one notch goes is the
+item's `step`.
 
 ### Item settings
 
@@ -252,6 +300,9 @@ Not config options — nothing here touches your TOML.
 Whether sketchybar is installed, and the path of the `bar.toml` this page writes. Without
 sketchybar the page still edits and saves; it just tells you that nothing renders yet. Install
 it with `brew install sketchybar`.
+
+Any [item command](#items-that-need-a-command) that is not installed is listed here with the
+command that installs it.
 
 ### Live preview
 

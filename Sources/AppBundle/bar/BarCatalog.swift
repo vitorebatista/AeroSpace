@@ -83,19 +83,39 @@ struct BarSettingKey: Equatable, Sendable {
     }
 }
 
+/// A command-line tool an item shells out to that macOS does not ship.
+///
+/// Resolved on `PATH` the same way sketchybar and the AeroSpace CLI are, and never bundled:
+/// shipping an executable inside the app would put a second binary through codesigning and
+/// the fork's release pinning for one item's worth of capability. Missing, the item is left
+/// out of the generated config with a comment saying what to install, exactly as a `custom`
+/// item with no script path is.
+enum BarExternalTool: String, CaseIterable, Sendable {
+    case brightness
+    /// Bluetooth's power state used to be readable from
+    /// `/Library/Preferences/com.apple.Bluetooth`, and on current macOS the key is simply not
+    /// there any more. `system_profiler SPBluetoothDataType` still answers, and takes over a
+    /// second, which is not a price a bar item can pay on a timer. `blueutil` answers
+    /// immediately and can also toggle the radio, which nothing without a private framework
+    /// can.
+    case blueutil
+
+    /// The command that installs it, shown on the item and in the Status group.
+    var installHint: String {
+        switch self {
+            case .brightness: "brew install brightness"
+            case .blueutil: "brew install blueutil"
+        }
+    }
+}
+
 /// What has to exist on the machine for an item to produce anything.
 enum BarItemRequirement: Equatable, Sendable {
     case aerospaceCli
     case shell
-    /// A bundled helper binary that does not ship yet. See `BarCatalogItem.availability`.
-    case helperBinary
     case appleScript
     case userScript
-}
-
-enum BarItemAvailability: Equatable, Sendable {
-    case available
-    case unavailable(note: String)
+    case externalTool(BarExternalTool)
 }
 
 enum BarItemGroup: String, CaseIterable, Sendable {
@@ -126,16 +146,13 @@ struct BarCatalogItem: Equatable, Identifiable, Sendable {
     let settings: [BarSettingKey]
     let requirement: BarItemRequirement
 
-    /// Derived rather than declared, so an item cannot be listed in a state this release cannot
-    /// honour: the helper binary the privileged items need lands in a later stage, and until it
-    /// does they are shown disabled rather than left out of the picker.
-    var availability: BarItemAvailability {
-        requirement == .helperBinary
-            ? .unavailable(note: "Needs a helper binary that ships in a later release. The item is listed so its place in the bar is known, but it cannot be added yet.")
-            : .available
+    /// The tool this item needs beyond what macOS ships, if any. Whether it is actually
+    /// installed is not the catalog's to know — the catalog is compiled in and pure, and the
+    /// resolved paths reach the generator through `BarHelperPaths`.
+    var externalTool: BarExternalTool? {
+        if case .externalTool(let tool) = requirement { return tool }
+        return nil
     }
-
-    var isAvailable: Bool { availability == .available }
 
     func setting(_ key: String) -> BarSettingKey? { settings.first { $0.key == key } }
 }
@@ -350,7 +367,7 @@ enum BarCatalog {
         BarCatalogItem(
             id: "volume",
             displayName: "Volume",
-            summary: "Output volume, with a slider in the popup.",
+            summary: "Output volume. Click to mute, scroll to change it.",
             group: .privileged,
             defaultCluster: .right,
             icons: [
@@ -359,9 +376,9 @@ enum BarCatalog {
             ],
             settings: [
                 .bool("show-percentage", "Show percentage", "Draw the level as a number beside the icon.", default: true),
-                .bool("show-slider", "Show slider", "Open a slider when the item is clicked.", default: true),
+                .int("step", "Scroll step", "Percentage points a scroll over the item changes the volume by.", min: 1, max: 50, default: 5),
             ],
-            requirement: .helperBinary,
+            requirement: .appleScript,
         ),
         BarCatalogItem(
             id: "brightness",
@@ -376,13 +393,14 @@ enum BarCatalog {
             settings: [
                 .bool("show-percentage", "Show percentage", "Draw the level as a number beside the icon.", default: false),
                 .int("step", "Scroll step", "Percentage points a scroll over the item changes brightness by.", min: 1, max: 50, default: 5),
+                .int("update-freq", "Update every", "Seconds between reads. Brightness raises no event, so the item polls.", min: 1, max: 3600, default: 5),
             ],
-            requirement: .helperBinary,
+            requirement: .externalTool(.brightness),
         ),
         BarCatalogItem(
             id: "bluetooth",
             displayName: "Bluetooth",
-            summary: "Bluetooth power state and connected devices.",
+            summary: "Bluetooth power state. Click to toggle the radio.",
             group: .privileged,
             defaultCluster: .right,
             icons: [
@@ -390,10 +408,11 @@ enum BarCatalog {
                 BarIcon(name: "antenna.radiowaves.left.and.right", displayName: "Antenna", font: .sfSymbols),
             ],
             settings: [
-                .bool("show-battery", "Show device battery", "Draw the charge of connected devices that report one.", default: true),
-                .bool("hide-when-off", "Hide when off", "Remove the item while Bluetooth is powered down.", default: true),
+                .bool("show-label", "Show state", "Draw on or off beside the icon.", default: false),
+                .bool("hide-when-off", "Hide when off", "Stop drawing the item while Bluetooth is powered down.", default: true),
+                .int("update-freq", "Update every", "Seconds between reads of the controller's power state.", min: 1, max: 3600, default: 5),
             ],
-            requirement: .helperBinary,
+            requirement: .externalTool(.blueutil),
         ),
         BarCatalogItem(
             id: "apple-menu",

@@ -55,7 +55,12 @@ sketchybar --set aerospace.clock \
     update_freq=30 \
     script='sketchybar --set $NAME label="$(date +'\''%a %d %b %H:%M'\'')"'
 
-# aerospace.volume: needs a helper binary that ships in a later release, not generated
+sketchybar --add item aerospace.volume right
+sketchybar --set aerospace.volume \
+    icon=speaker.wave.2 \
+    icon.font='SF Pro:Semibold:14.0' \
+    script='case "$SENDER" in mouse.clicked) osascript -e '\''set volume output muted (not (output muted of (get volume settings)))'\'';; mouse.scrolled) v=$(osascript -e '\''output volume of (get volume settings)'\''); d=${SCROLL_DELTA%%.*}; [ -z "$v" ] && v=0; n=$v; if [ "$d" -gt 0 ] 2>/dev/null; then n=$((v + 5)); elif [ "$d" -lt 0 ] 2>/dev/null; then n=$((v - 5)); fi; [ "$n" -gt 100 ] && n=100; [ "$n" -lt 0 ] && n=0; osascript -e "set volume output volume $n";; esac; s=$(osascript -e '\''set s to (get volume settings)'\'' -e '\''(output volume of s as text) & "|" & (output muted of s as text)'\''); v=${s%|*}; m=${s#*|}; if [ "$m" = true ]; then i=speaker.slash; else i=speaker.wave.2; fi; sketchybar --set $NAME icon=$i label="$v%"'
+sketchybar --subscribe aerospace.volume volume_change mouse.clicked mouse.scrolled
 
 sketchybar --add item aerospace.custom right
 sketchybar --set aerospace.custom \

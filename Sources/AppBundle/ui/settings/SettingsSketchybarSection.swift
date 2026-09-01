@@ -6,6 +6,9 @@ import SwiftUI
 @MainActor
 struct SettingsSketchybarSection: View {
     @ObservedObject var model: BarSettingsModel
+    /// The AeroSpace config, for the one control that reaches into it: a theme sets the
+    /// focused window's border colour, and that key is not in `bar.toml`.
+    @ObservedObject var configModel: SettingsModel
     /// Which rows are open, by position in `draft.items`. Positions move under a reorder and
     /// an insertion, and nothing about a row survives one identifiably, so the set is dropped
     /// whenever the list changes rather than left pointing at a different item.
@@ -73,7 +76,9 @@ struct SettingsSketchybarSection: View {
     }
 
     private var coloursGroup: some View {
-        SettingsGroup("Colours", footer: "Stored as 0xAARRGGBB, sketchybar's own spelling. A value the picker can't represent stays a text field rather than being rewritten.") {
+        SettingsGroup("Colours", footer: "Stored as 0xAARRGGBB, sketchybar's own spelling. A value the picker can't represent stays a text field rather than being rewritten. A theme sets all seven at once, and the focused window's border with them — that one key lives in your AeroSpace config, and Save here writes both files.") {
+            themeRow
+            Divider()
             colourRow("Background", .barBackgroundColor, draft.colors.background)
             colourRow("Border", .barBorderColor, draft.colors.border)
             colourRow("Label", .barLabelColor, draft.colors.label)
@@ -82,6 +87,38 @@ struct SettingsSketchybarSection: View {
             colourRow("Popup background", .barPopupBackgroundColor, draft.colors.popupBackground)
             colourRow("Popup border", .barPopupBorderColor, draft.colors.popupBorder)
         }
+    }
+
+    /// "Custom" is not a theme, it is the absence of one, so it is a case the picker can show
+    /// but not be set to. Selecting it would have to mean *something*, and there is nothing for
+    /// it to mean.
+    private var themeRow: some View {
+        HStack {
+            SettingHelpLabel(title: "Theme", topic: .barTheme)
+            Spacer()
+            Text(BarThemeCatalog.matching(model.draft.colors)?.name ?? "Custom")
+                .font(.caption).foregroundStyle(.secondary)
+            Menu("Apply theme") {
+                ForEach(BarThemeCatalog.themes) { theme in
+                    Button(theme.name) { apply(theme) }
+                }
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .disabled(model.isSaving)
+        }
+    }
+
+    private func apply(_ theme: BarTheme) {
+        guard !model.isSaving, !configModel.isSaving else { return }
+        model.draft.colors = theme.colors
+        onEdit()
+        // The border colour is the half of the theme that is not in bar.toml. It is put in the
+        // config draft here and written by the footer's Save, which saves both files while this
+        // destination is selected — half a theme on disk is worse than none.
+        guard configModel.draft.focusedWindowBorderColor != theme.windowBorderColor else { return }
+        configModel.draft.focusedWindowBorderColor = theme.windowBorderColor
+        configModel.isDirty = true
     }
 
     @ViewBuilder
@@ -107,7 +144,7 @@ struct SettingsSketchybarSection: View {
     private var itemsGroup: some View {
         SettingsGroup("Items", footer: "One list per position on the bar. Drag a chip or a list row to reorder — that order is the order the items are drawn in, and it is the order they are written to bar.toml.") {
             SettingHelpLabel(title: "Layout", topic: .barChipStrip)
-            BarChipStrip(draft: draft, onEdit: { expanded = []; onEdit() })
+            BarChipStrip(draft: draft, onEdit: { expanded = []; onEdit() }, missingTools: model.missingTools)
             Divider()
             SettingHelpLabel(title: "Bar items", topic: .barItems)
             ForEach(BarCluster.allCases, id: \.self) { cluster in clusterList(cluster) }
@@ -158,10 +195,9 @@ struct SettingsSketchybarSection: View {
                             expanded = []
                             onEdit()
                         }
-                        .disabled(!item.isAvailable)
-                        // Unavailable items stay listed so their place in the bar is known; the
-                        // note is the only thing that says why the row won't take a click.
-                        .help(Self.availabilityNote(item) ?? item.summary)
+                        // Still addable when its tool is missing: bar.toml is portable, and the
+                        // machine that renders it may not be the one editing it.
+                        .help(Self.toolNote(item) ?? item.summary)
                     }
                 }
             }
@@ -326,9 +362,9 @@ struct SettingsSketchybarSection: View {
         }
     }
 
-    private static func availabilityNote(_ item: BarCatalogItem) -> String? {
-        guard case .unavailable(let note) = item.availability else { return nil }
-        return note
+    private static func toolNote(_ item: BarCatalogItem) -> String? {
+        guard let tool = item.externalTool else { return nil }
+        return "\(item.summary)\n\nNeeds the \(tool.rawValue) command: \(tool.installHint)"
     }
 
     // MARK: - Profiles
@@ -482,6 +518,14 @@ struct SettingsSketchybarSection: View {
                 Text("Config file").foregroundStyle(.secondary)
                 Spacer()
                 Text(model.configUrl.path).font(.caption.monospaced()).textSelection(.enabled)
+            }
+            ForEach(model.missingTools, id: \.self) { tool in
+                HStack {
+                    Label("\(tool.rawValue) isn't installed", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption).foregroundStyle(.orange)
+                    Spacer()
+                    Text(tool.installHint).font(.caption.monospaced()).textSelection(.enabled)
+                }
             }
             if model.willCreateConfig {
                 Text("Saving will create this file.").font(.caption).foregroundStyle(.secondary)

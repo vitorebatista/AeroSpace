@@ -101,6 +101,7 @@ enum SettingHelpTopic: String, CaseIterable {
     case barAccentColor
     case barPopupBackgroundColor
     case barPopupBorderColor
+    case barTheme
     case barChipStrip
     case barItems
     case barProfiles
@@ -240,6 +241,21 @@ enum SettingHelpTopic: String, CaseIterable {
                 barColor("Set the popup background colour.", "The fill behind the panel an item opens when it is clicked.", "bar.colors.popup-background")
             case .barPopupBorderColor:
                 barColor("Set the popup outline colour.", "The outline of the panel an item opens when it is clicked.", "bar.colors.popup-border")
+            case .barTheme:
+                help(
+                    "Set all seven bar colours, and the window border, at once.",
+                    "A theme is a palette, not a saved setting: applying one writes the seven colours below, so the row reads Custom the moment you change any of them and nothing goes on claiming a theme it no longer matches. It also sets focused-window-border-color, which is in your AeroSpace config rather than bar.toml — Save on this page writes both files, because half a theme on disk is worse than none.",
+                    [
+                        "bar.colors.background",
+                        "bar.colors.border",
+                        "bar.colors.label",
+                        "bar.colors.icon",
+                        "bar.colors.accent",
+                        "bar.colors.popup-background",
+                        "bar.colors.popup-border",
+                        "focused-window-border-color",
+                    ],
+                )
             case .barChipStrip:
                 help(
                     "Drag a chip between the three positions, or within one, to place an item.",

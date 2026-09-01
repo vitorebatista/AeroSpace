@@ -15,6 +15,10 @@ final class BarConfigGeneratorTest: XCTestCase {
         aerospaceCli: "/opt/homebrew/bin/aerospace-edge",
         appFontIconMap: "/opt/homebrew/share/sketchybar-app-font/icon_map.sh",
     )
+    private let helpersWithTools = BarHelperPaths(
+        aerospaceCli: "/opt/homebrew/bin/aerospace-edge",
+        externalTools: [.brightness: "/opt/homebrew/bin/brightness", .blueutil: "/opt/homebrew/bin/blueutil"],
+    )
 
     func testEmptyBar() throws {
         try assertGolden("empty-bar", BarDraft(), helpers: helpers)
@@ -192,16 +196,79 @@ final class BarConfigGeneratorTest: XCTestCase {
         }
     }
 
-    func testPrivilegedItemsAreSkippedWithAnExplanationRatherThanEmitted() {
+    /// An item whose tool is not installed is a comment naming the tool, not a broken item on
+    /// screen. The items that need nothing beyond macOS are emitted regardless.
+    func testAnItemWhoseToolIsMissingIsSkippedWithTheInstallCommand() {
         var draft = BarDraft()
         draft.items = BarCatalog.items(in: .privileged).map { BarItem(id: $0.id, cluster: .right) }
         let generated = BarConfigGenerator.generate(draft, helpers: helpers)
-        XCTAssertFalse(generated.contains("--add"))
-        for item in BarCatalog.items(in: .privileged) {
-            XCTAssertTrue(
-                generated.contains("# \(BarCatalog.sketchybarName(for: item.id)): needs a helper binary"),
-                "\(item.id) must say why it is missing",
-            )
+        XCTAssertTrue(generated.contains("# aerospace.brightness: needs the brightness command (brew install brightness)"), generated)
+        XCTAssertTrue(generated.contains("# aerospace.bluetooth: needs the blueutil command (brew install blueutil)"), generated)
+        XCTAssertFalse(generated.contains("--add item aerospace.brightness"), generated)
+        XCTAssertFalse(generated.contains("--add item aerospace.bluetooth"), generated)
+        // Volume costs no install, so it is emitted whatever else is missing.
+        XCTAssertTrue(generated.contains("--add item aerospace.volume"), generated)
+    }
+
+    func testTheItemsThatNeedAToolAreEmittedOnceItIsFound() throws {
+        var draft = BarDraft()
+        draft.items = [
+            BarItem(id: "brightness", cluster: .right, settings: ["show-percentage": .bool(true)]),
+            BarItem(id: "bluetooth", cluster: .right, settings: ["show-label": .bool(true)]),
+        ]
+        try assertGolden("external-tools", draft, helpers: helpersWithTools)
+    }
+
+    /// Every script the generator emits is handed to `sh` on the user's machine, and a script
+    /// that does not parse is a silently blank item. `sh -n` proves it parses without running
+    /// a line of it, which is the one thing about generated shell a test can cheaply prove.
+    ///
+    /// Run over both settings of every switch, because most of them change the script's
+    /// structure rather than a value in it.
+    func testEveryGeneratedScriptParsesAsShell() throws {
+        try assertScriptsParse(everyItem(invertingSwitches: false))
+        try assertScriptsParse(everyItem(invertingSwitches: true))
+    }
+
+    /// One of every catalog item, with a script path so `custom` is emitted and the tools
+    /// resolved so nothing is skipped.
+    private func everyItem(invertingSwitches: Bool) -> BarDraft {
+        var draft = BarDraft()
+        draft.items = BarCatalog.items.map { catalog in
+            var settings: OrderedDictionary<String, BarSettingValue> = ["script": .string("/tmp/status.sh --oneline")]
+            for key in catalog.settings {
+                guard case .bool(let value) = key.defaultValue else { continue }
+                settings[key.key] = .bool(invertingSwitches ? !value : value)
+            }
+            return BarItem(id: catalog.id, cluster: catalog.defaultCluster, settings: settings)
+        }
+        return draft
+    }
+
+    private func assertScriptsParse(
+        _ draft: BarDraft,
+        file: StaticString = #filePath,
+        line: UInt = #line,
+    ) throws {
+        let scripts = BarConfigGenerator.plan(draft, helpers: helpersWithTools).entities
+            .flatMap(\.properties)
+            .filter { $0.key == "script" || $0.key == "click_script" }
+            .map(\.value)
+        XCTAssertFalse(scripts.isEmpty, "No scripts were generated at all", file: file, line: line)
+        for script in scripts {
+            let process = Process()
+            process.executableURL = URL(filePath: "/bin/sh")
+            process.arguments = ["-n"]
+            let input = Pipe()
+            let errors = Pipe()
+            process.standardInput = input
+            process.standardError = errors
+            try process.run()
+            input.fileHandleForWriting.write(Data(script.utf8))
+            try input.fileHandleForWriting.close()
+            let message = String(decoding: errors.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            process.waitUntilExit()
+            XCTAssertEqual(process.terminationStatus, 0, "sh can't parse:\n\(script)\n\(message)", file: file, line: line)
         }
     }
 

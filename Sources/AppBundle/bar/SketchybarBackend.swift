@@ -204,7 +204,22 @@ struct SketchybarBackend: BarBackend {
     /// convention worth guessing at. Absent, `show-app-icons` degrades to plain names, which
     /// is what the catalog documents.
     static func resolvedHelpers() -> BarHelperPaths {
-        BarHelperPaths(aerospaceCli: locateAerospaceCli()?.path ?? aeroSpaceCliName)
+        BarHelperPaths(aerospaceCli: locateAerospaceCli()?.path ?? aeroSpaceCliName, externalTools: locateExternalTools())
+    }
+
+    /// Where each catalog tool was found. Absent from the map means not installed, which the
+    /// generator turns into a comment and the Settings page into an install hint — neither
+    /// guesses, and neither has to be told which tools exist.
+    static func locateExternalTools(
+        fileManager: FileManager = .default,
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+    ) -> [BarExternalTool: String] {
+        var found: [BarExternalTool: String] = [:]
+        for tool in BarExternalTool.allCases {
+            // Assigning nil removes the key, so the map holds exactly what was found.
+            found[tool] = locate(tool.rawValue, fileManager: fileManager, environment: environment)?.path
+        }
+        return found
     }
 
     /// Stage into a sibling temp file and rename over the target, so a crash or a full

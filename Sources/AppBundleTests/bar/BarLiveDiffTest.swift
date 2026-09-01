@@ -176,11 +176,11 @@ final class BarLiveDiffTest: XCTestCase {
     }
 
     func testItemsTheGeneratorSkipsAreNeverAdded() {
-        // A privileged item, an unknown id and a `custom` with no script are all comments in
-        // the generated config. Adding one live would put something on screen that the next
-        // save would silently delete.
+        // An item whose tool is not installed, an unknown id and a `custom` with no script are
+        // all comments in the generated config. Adding one live would put something on screen
+        // that the next save would silently delete.
         let next = draft([
-            BarItem(id: "volume", cluster: .right),
+            BarItem(id: "brightness", cluster: .right),
             BarItem(id: "not-a-catalog-item", cluster: .right),
             BarItem(id: "custom", cluster: .right, settings: ["script": .string("")]),
         ])

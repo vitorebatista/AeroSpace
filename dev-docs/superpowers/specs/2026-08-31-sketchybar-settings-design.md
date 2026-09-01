@@ -189,7 +189,7 @@ it accepts, and its runtime requirement.
 | --- | --- | --- |
 | AeroSpace | `workspaces`, `front-app`, `mode`, `floats` | the `aerospace` CLI |
 | System | `battery`, `clock`, `cpu`, `network`, `weather` | shell built-ins and `/usr/sbin` tools |
-| Privileged | `volume`, `brightness`, `bluetooth` | a bundled helper binary (stage 4) |
+| Privileged | `volume`, `brightness`, `bluetooth` | AppleScript, or a Homebrew command (stage 4) |
 | macOS | `apple-menu`, `secure-input` | AppleScript |
 | Escape hatch | `custom` | a user-supplied script path |
 
@@ -210,6 +210,17 @@ can emit the right `icon.font`, and the page can warn when a required font is no
 **Privileged items are unavailable until stage 4** and are listed in the catalog as such:
 visible in the picker, disabled, with a popover explaining that they need a helper binary
 that ships in a later release. They are not silently missing.
+
+**As built, stage 4 bundles nothing.** Shipping an executable inside the app bundle would put
+a second binary through codesigning and the pinned designated requirement `build-release.sh`
+enforces, for one item's worth of capability. Instead `volume` turned out to need nothing but
+AppleScript, and `brightness` and `bluetooth` name an ordinary Homebrew command (`brightness`,
+`blueutil`) resolved on `PATH` the way sketchybar and the CLI already are. An item whose
+command is absent stays addable — `bar.toml` is portable and the machine that renders it may
+not be the one editing it — and is emitted as a comment naming the install, exactly as a
+`custom` item with no script path is. `bluetooth` needs its command for reading as well as
+toggling: `/Library/Preferences/com.apple.Bluetooth`'s `ControllerPowerState` no longer exists
+on current macOS, and `system_profiler` takes over a second to answer the same question.
 
 ## The backend boundary
 

@@ -13,6 +13,9 @@ import SwiftUI
 struct BarChipStrip: View {
     @Binding var draft: BarDraft
     let onEdit: () -> Void
+    /// Catalog tools this machine does not have. A chip needing one is drawn as not rendering,
+    /// which is the same thing the generated config will say about it.
+    var missingTools: [BarExternalTool] = []
 
     /// The zone the drag is currently over, so it can say it will take the drop. Positions in
     /// `items` are the chips' identity, so nothing finer than the zone is worth highlighting.
@@ -76,9 +79,9 @@ struct BarChipStrip: View {
     private func chip(_ position: Int) -> some View {
         let item = draft.items.getOrNil(atIndex: position)
         let catalogItem = item.flatMap { BarCatalog.item(id: $0.id) }
-        // A privileged item needs a helper binary that ships in stage 4. It is drawn distinctly
-        // rather than hidden, so its place in the bar is visible before it can render.
-        let isPending = catalogItem?.requirement == .helperBinary || catalogItem == nil
+        // An item this release does not know, or one whose tool is not installed. Drawn
+        // distinctly rather than hidden, so its place in the bar is visible before it renders.
+        let isPending = catalogItem.map { $0.externalTool.map(missingTools.contains) ?? false } ?? true
         let name = catalogItem?.displayName ?? item?.id ?? ""
         HStack(spacing: 4) {
             if let symbol = catalogItem?.icons.first(where: { $0.font == .sfSymbols })?.name {
@@ -121,7 +124,7 @@ struct BarChipStrip: View {
         guard let catalogItem else {
             return "\(id) isn't in this release's catalog. It is kept exactly as written."
         }
-        if case .unavailable(let note) = catalogItem.availability { return note }
-        return catalogItem.summary
+        guard let tool = catalogItem.externalTool else { return catalogItem.summary }
+        return "\(catalogItem.summary)\n\nNeeds the \(tool.rawValue) command: \(tool.installHint)"
     }
 }

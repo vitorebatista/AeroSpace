@@ -48,7 +48,10 @@ public final class BarSettingsModel: ObservableObject {
     // This is the one place a real renderer is wired in: pass it as `backend:` here and the
     // page, the status readout and Save all follow, because nothing above the protocol knows
     // sketchybar exists.
-    public static let shared = BarSettingsModel(backend: SketchybarBackend())
+    public static let shared = BarSettingsModel(
+        backend: SketchybarBackend(),
+        missingTools: BarExternalTool.allCases.filter { SketchybarBackend.locateExternalTools()[$0] == nil },
+    )
 
     @Published var draft = BarDraft()
     @Published private(set) var mode: BarSettingsMode = .form
@@ -72,6 +75,10 @@ public final class BarSettingsModel: ObservableObject {
     @Published private(set) var livePreview: BarLivePreview
 
     let configUrl: URL
+    /// Catalog tools that are not installed. Items needing one are still addable — the file is
+    /// portable and the machine that renders it may not be this one — but the page says what to
+    /// install and the generated config leaves a comment where the item would have gone.
+    let missingTools: [BarExternalTool]
     private let backend: any BarBackend
     private let fileManager: FileManager
     private let textReader: (URL) -> String?
@@ -105,8 +112,10 @@ public final class BarSettingsModel: ObservableObject {
         textReader: @escaping (URL) -> String? = { try? String(contentsOf: $0, encoding: .utf8) },
         atomicWriter: ((Data, URL, Int?) throws -> Void)? = nil,
         directoryCreator: ((URL) throws -> Void)? = nil,
+        missingTools: [BarExternalTool] = [],
     ) {
         self.configUrl = configUrl
+        self.missingTools = missingTools
         self.backend = backend
         livePreview = backend.isAvailable ? .live : .unavailable
         self.fileManager = fileManager
