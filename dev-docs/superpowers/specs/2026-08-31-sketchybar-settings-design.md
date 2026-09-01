@@ -171,6 +171,14 @@ global and declared once; `show` and `hide` list only the exceptions, so shared 
 as the clock are never repeated per profile. A workspace named by no profile belongs to
 every profile.
 
+**As built,** the two lists are not symmetric, which is what makes both load-bearing. Every
+item is drawn unless a profile hides it. Naming an item in *any* profile's `show` makes it
+opt-in everywhere: it then appears only in the profiles that name it. Without that rule an
+item wanted on exactly one bar would have to be listed under `hide` in every other profile
+and `show` would be redundant. A workspace no profile names draws what any profile would —
+the union — which is also what the generated `sketchybarrc` describes, since the generator
+cannot know which workspace is focused.
+
 ## The catalog
 
 The catalog is a fixed table compiled into the app, versioned with the generator. Each entry
