@@ -44,7 +44,7 @@ public final class BarSettingsModel: ObservableObject {
     // This is the one place a real renderer is wired in: pass it as `backend:` here and the
     // page, the status readout and Save all follow, because nothing above the protocol knows
     // sketchybar exists.
-    public static let shared = BarSettingsModel()
+    public static let shared = BarSettingsModel(backend: SketchybarBackend())
 
     @Published var draft = BarDraft()
     @Published private(set) var mode: BarSettingsMode = .form

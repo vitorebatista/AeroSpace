@@ -1,3 +1,4 @@
+import Common
 import Foundation
 
 enum SketchybarBackendError: Error, LocalizedError {
@@ -52,7 +53,7 @@ struct SketchybarBackend: BarBackend {
 
     init(
         configUrl: URL = SketchybarBackend.defaultConfigUrl,
-        helpers: BarHelperPaths,
+        helpers: BarHelperPaths = SketchybarBackend.resolvedHelpers(),
         binaryLocator: @escaping @Sendable () -> URL? = { SketchybarBackend.locateSketchybar() },
         fileExists: @escaping @Sendable (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path) },
         fileReader: @escaping @Sendable (URL) throws -> Data = { try Data(contentsOf: $0) },
@@ -134,14 +135,41 @@ struct SketchybarBackend: BarBackend {
         fileManager: FileManager = .default,
         environment: [String: String] = ProcessInfo.processInfo.environment,
     ) -> URL? {
-        var candidates = ["/opt/homebrew/bin/sketchybar", "/usr/local/bin/sketchybar"]
+        locate("sketchybar", fileManager: fileManager, environment: environment)
+    }
+
+    /// The app bundle does not ship the CLI — Homebrew installs it beside the cask — so the
+    /// generated config has to name it by absolute path, found the same way sketchybar is.
+    static func locateAerospaceCli(
+        fileManager: FileManager = .default,
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+    ) -> URL? {
+        locate(aeroSpaceCliName, fileManager: fileManager, environment: environment)
+    }
+
+    private static func locate(
+        _ binary: String,
+        fileManager: FileManager,
+        environment: [String: String],
+    ) -> URL? {
+        var candidates = ["/opt/homebrew/bin/\(binary)", "/usr/local/bin/\(binary)"]
         for directory in (environment["PATH"] ?? "").split(separator: ":") where !directory.isEmpty {
-            candidates.append("\(directory)/sketchybar")
+            candidates.append("\(directory)/\(binary)")
         }
         return candidates
             .lazy
             .map { URL(filePath: $0) }
             .first { fileManager.isExecutableFile(atPath: $0.path) }
+    }
+
+    /// What the generator needs from the world, resolved once at construction.
+    ///
+    /// `appFontIconMap` stays `nil`: the map that turns an application name into a
+    /// `sketchybar-app-font` glyph is a script the user supplies, and there is no location
+    /// convention worth guessing at. Absent, `show-app-icons` degrades to plain names, which
+    /// is what the catalog documents.
+    static func resolvedHelpers() -> BarHelperPaths {
+        BarHelperPaths(aerospaceCli: locateAerospaceCli()?.path ?? aeroSpaceCliName)
     }
 
     /// Stage into a sibling temp file and rename over the target, so a crash or a full
