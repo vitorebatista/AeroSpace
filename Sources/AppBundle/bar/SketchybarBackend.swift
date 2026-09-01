@@ -9,9 +9,10 @@ enum SketchybarBackendError: Error, LocalizedError {
     /// `apply` has one return value to say it with.
     case reloadFailed(outcome: BarApplyOutcome, underlying: any Error)
     case notInstalled
-    /// Placeholder while stage 2's diff engine is unwritten. A page that catches this shows
-    /// the chips without moving the real bar, which is the documented degraded preview.
-    case liveEditingUnavailable
+    /// A live push that sketchybar rejected. The bar is now in a state that matches neither
+    /// draft, and the way back is `discardLiveChanges`, not a second diff from a baseline
+    /// that is no longer what is on screen.
+    case livePushFailed(any Error)
 
     var errorDescription: String? {
         switch self {
@@ -24,8 +25,9 @@ enum SketchybarBackendError: Error, LocalizedError {
                     "Run `sketchybar --reload` to pick it up."
             case .notInstalled:
                 "sketchybar is not installed, so there is nothing to reload."
-            case .liveEditingUnavailable:
-                "Live preview isn't available yet. Your edits are kept — Save applies them."
+            case .livePushFailed(let error):
+                "Can't update the running bar: \(error.localizedDescription). " +
+                    "Revert to put it back to the last saved bar."
         }
     }
 }
@@ -54,7 +56,9 @@ struct SketchybarBackend: BarBackend {
     private let directoryCreator: @Sendable (URL) throws -> Void
     private let backupCreator: @Sendable (URL) throws -> URL
     private let atomicWriter: @Sendable (Data, URL, Int?) throws -> Void
-    private let reloader: @Sendable (URL) throws -> Void
+    /// Every sketchybar invocation, reload and live push alike, goes through here, so a test
+    /// observes the exact argument vector and never spawns a process.
+    private let commandRunner: @Sendable (URL, [String]) throws -> Void
 
     init(
         configUrl: URL = SketchybarBackend.defaultConfigUrl,
@@ -69,7 +73,9 @@ struct SketchybarBackend: BarBackend {
         atomicWriter: @escaping @Sendable (Data, URL, Int?) throws -> Void = {
             try SketchybarBackend.writeAtomically($0, to: $1, permissions: $2)
         },
-        reloader: @escaping @Sendable (URL) throws -> Void = { try SketchybarBackend.reload(binary: $0) },
+        commandRunner: @escaping @Sendable (URL, [String]) throws -> Void = {
+            try SketchybarBackend.run(binary: $0, arguments: $1)
+        },
     ) {
         self.configUrl = configUrl
         self.helpers = helpers
@@ -79,7 +85,7 @@ struct SketchybarBackend: BarBackend {
         self.directoryCreator = directoryCreator
         self.backupCreator = backupCreator
         self.atomicWriter = atomicWriter
-        self.reloader = reloader
+        self.commandRunner = commandRunner
     }
 
     var isAvailable: Bool { binaryLocator() != nil }
@@ -113,7 +119,7 @@ struct SketchybarBackend: BarBackend {
             throw SketchybarBackendError.reloadFailed(outcome: outcome, underlying: SketchybarBackendError.notInstalled)
         }
         do {
-            try reloader(binary)
+            try reload(binary)
         } catch {
             // Deliberately no rollback: the config on disk is the one the user asked for,
             // and reverting it to a stale version to match a process that failed to
@@ -124,17 +130,28 @@ struct SketchybarBackend: BarBackend {
     }
 
     func applyLive(from previous: BarDraft, to next: BarDraft) throws {
-        // Stage 2 replaces this with a diff of `previous` against `next` emitted as the
-        // narrowest set of `--reorder` / `--add` / `--remove` / `--set` / `--bar` commands.
-        throw SketchybarBackendError.liveEditingUnavailable
+        let commands = BarLiveDiff.commands(from: previous, to: next, helpers: helpers)
+        // A drag that lands where it started must not cost a process.
+        guard !commands.isEmpty else { return }
+        guard let binary = binaryLocator() else { throw SketchybarBackendError.notInstalled }
+        do {
+            // One invocation for the whole diff: sketchybar applies an argument vector before
+            // it redraws, so the bar never shows a half-applied drag. Nothing is written —
+            // the live bar is scratch state and `bar.toml` stays the last saved draft.
+            try commandRunner(binary, commands.flatMap { $0 })
+        } catch {
+            throw SketchybarBackendError.livePushFailed(error)
+        }
     }
 
     func discardLiveChanges() throws {
         // Live editing never writes, so the file is still the last saved state and reloading
         // it is the whole restore. Nothing to undo command-by-command.
         guard let binary = binaryLocator() else { throw SketchybarBackendError.notInstalled }
-        try reloader(binary)
+        try reload(binary)
     }
+
+    private func reload(_ binary: URL) throws { try commandRunner(binary, ["--reload"]) }
 
     /// Whether the file at `url` is one we wrote. Only the header is inspected — a file we
     /// cannot read, or one that is not UTF-8, is by definition not ours and is backed up.
@@ -216,17 +233,17 @@ struct SketchybarBackend: BarBackend {
         }
     }
 
-    static func reload(binary: URL) throws {
+    static func run(binary: URL, arguments: [String]) throws {
         let process = Process()
         process.executableURL = binary
-        process.arguments = ["--reload"]
+        process.arguments = arguments
         try process.run()
         process.waitUntilExit()
         guard process.terminationStatus == 0 else {
             throw SketchybarBackendError.writeFailed(
                 binary,
                 CocoaError(.executableLoad, userInfo: [
-                    NSLocalizedDescriptionKey: "sketchybar --reload exited with \(process.terminationStatus)",
+                    NSLocalizedDescriptionKey: "sketchybar \(arguments.first ?? "") exited with \(process.terminationStatus)",
                 ]),
             )
         }

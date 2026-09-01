@@ -13,15 +13,17 @@ final class SketchybarBackendTest: XCTestCase {
     private enum Failure: Error, Equatable {
         case backup
         case write
-        case reload
+        case command
     }
 
     /// Records every side effect the backend was allowed to have.
     private final class Recorder: @unchecked Sendable {
         var written: [(Data, URL, Int?)] = []
         var backedUp: [URL] = []
-        var reloaded = 0
+        var commands: [[String]] = []
         var directoriesCreated: [URL] = []
+
+        var reloaded: Int { commands.count(where: { $0 == ["--reload"] }) }
     }
 
     func testAnAbsentFileIsCreated() throws {
@@ -94,7 +96,7 @@ final class SketchybarBackendTest: XCTestCase {
 
     func testAReloadFailureReportsTheOutcomeAndLeavesTheFilesAlone() {
         let recorder = Recorder()
-        let backend = makeBackend(recorder, existing: "require('bar')\n", reloadError: Failure.reload)
+        let backend = makeBackend(recorder, existing: "require('bar')\n", commandError: Failure.command)
 
         XCTAssertThrowsError(try backend.apply(BarDraft())) { error in
             guard case SketchybarBackendError.reloadFailed(let outcome, let underlying) = error else {
@@ -103,7 +105,7 @@ final class SketchybarBackendTest: XCTestCase {
             // The config on disk is correct, so the page still has to be told the user's
             // config was moved aside and where it went.
             XCTAssertEqual(outcome, .replacedUserConfig(backup: self.backupUrl))
-            XCTAssertEqual(underlying as? Failure, .reload)
+            XCTAssertEqual(underlying as? Failure, .command)
         }
         XCTAssertEqual(recorder.written.count, 1, "a failed reload must not roll the file back")
         XCTAssertEqual(recorder.backedUp, [configUrl])
@@ -168,7 +170,7 @@ final class SketchybarBackendTest: XCTestCase {
             directoryCreator: { _ in },
             backupCreator: { [backupUrl] url in recorder.backedUp.append(url); return backupUrl },
             atomicWriter: { data, url, permissions in recorder.written.append((data, url, permissions)) },
-            reloader: { _ in recorder.reloaded += 1 },
+            commandRunner: { _, arguments in recorder.commands.append(arguments) },
         )
         XCTAssertEqual(try backend.apply(BarDraft()), .replacedUserConfig(backup: backupUrl))
     }
@@ -192,6 +194,81 @@ final class SketchybarBackendTest: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: first.path))
     }
 
+    // MARK: - Live preview
+
+    func testALivePushRunsTheDiffAndWritesNothing() throws {
+        let recorder = Recorder()
+        var next = BarDraft()
+        next.items = [BarItem(id: "clock", cluster: .right)]
+
+        try makeBackend(recorder, existing: nil).applyLive(from: BarDraft(), to: next)
+
+        XCTAssertTrue(recorder.written.isEmpty, "the live bar is scratch state, never a file")
+        XCTAssertTrue(recorder.backedUp.isEmpty)
+        XCTAssertEqual(recorder.reloaded, 0, "a reload would throw the preview away")
+        XCTAssertEqual(
+            recorder.commands,
+            [BarLiveDiff.commands(from: BarDraft(), to: next, helpers: helpers).flatMap { $0 }],
+            "the whole diff goes out as one invocation, so the bar never shows it half applied",
+        )
+    }
+
+    func testALivePushOfNoChangeSpawnsNothing() throws {
+        let recorder = Recorder()
+        var draft = BarDraft()
+        draft.items = [BarItem(id: "clock", cluster: .right)]
+
+        try makeBackend(recorder, existing: nil).applyLive(from: draft, to: draft)
+
+        XCTAssertTrue(recorder.commands.isEmpty, "a drag that lands where it started costs nothing")
+    }
+
+    func testALiveRunnerFailureIsReported() {
+        let recorder = Recorder()
+        var next = BarDraft()
+        next.geometry.height = 44
+        let backend = makeBackend(recorder, existing: nil, commandError: Failure.command)
+
+        XCTAssertThrowsError(try backend.applyLive(from: BarDraft(), to: next)) { error in
+            guard case SketchybarBackendError.livePushFailed(let underlying) = error else {
+                return XCTFail("expected a live push failure, got \(error)")
+            }
+            XCTAssertEqual(underlying as? Failure, .command)
+        }
+        XCTAssertTrue(recorder.written.isEmpty)
+    }
+
+    func testALivePushWithoutSketchybarSaysSoAndWritesNothing() {
+        let recorder = Recorder()
+        var next = BarDraft()
+        next.geometry.height = 44
+        let backend = makeBackend(recorder, existing: nil, binary: nil)
+
+        XCTAssertThrowsError(try backend.applyLive(from: BarDraft(), to: next)) { error in
+            guard case SketchybarBackendError.notInstalled = error else {
+                return XCTFail("expected a not-installed failure, got \(error)")
+            }
+        }
+        XCTAssertTrue(recorder.written.isEmpty)
+    }
+
+    func testDiscardingLiveChangesReloadsTheFileOnDisk() throws {
+        let recorder = Recorder()
+        try makeBackend(recorder, existing: nil).discardLiveChanges()
+
+        XCTAssertEqual(recorder.commands, [["--reload"]], "the saved file is the restore")
+        XCTAssertTrue(recorder.written.isEmpty)
+    }
+
+    func testDiscardingLiveChangesWithoutSketchybarSaysSo() {
+        let recorder = Recorder()
+        XCTAssertThrowsError(try makeBackend(recorder, existing: nil, binary: nil).discardLiveChanges()) { error in
+            guard case SketchybarBackendError.notInstalled = error else {
+                return XCTFail("expected a not-installed failure, got \(error)")
+            }
+        }
+    }
+
     // MARK: -
 
     private func makeBackend(
@@ -200,7 +277,7 @@ final class SketchybarBackendTest: XCTestCase {
         binary: URL? = URL(filePath: "/opt/homebrew/bin/sketchybar"),
         backupError: Failure? = nil,
         writeError: Failure? = nil,
-        reloadError: Failure? = nil,
+        commandError: Failure? = nil,
     ) -> SketchybarBackend {
         let backupUrl = backupUrl
         return SketchybarBackend(
@@ -219,9 +296,9 @@ final class SketchybarBackendTest: XCTestCase {
                 if let writeError { throw writeError }
                 recorder.written.append((data, url, permissions))
             },
-            reloader: { _ in
-                if let reloadError { throw reloadError }
-                recorder.reloaded += 1
+            commandRunner: { _, arguments in
+                if let commandError { throw commandError }
+                recorder.commands.append(arguments)
             },
         )
     }
