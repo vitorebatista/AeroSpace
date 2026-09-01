@@ -73,7 +73,10 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
             case .windowRules: "macwindow.badge.plus"
             case .callbacks: "arrow.triangle.branch"
             case .menuBar: "menubar.rectangle"
-            case .sketchybar: "menubar.rectangle"
+            // Not "menubar.rectangle": that is the Menu Bar destination's, and two sidebar rows
+            // with one icon are two rows the eye cannot tell apart. Three groups reads as the
+            // left/center/right clusters this page arranges items into.
+            case .sketchybar: "rectangle.3.group"
             case .application: "gearshape.2"
         }
     }
