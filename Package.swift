@@ -78,6 +78,7 @@ let package = Package(
             ],
             resources: [
                 .copy("config/fixtures"),
+                .copy("bar/golden"),
             ],
             swiftSettings: swiftSettings,
         ),
