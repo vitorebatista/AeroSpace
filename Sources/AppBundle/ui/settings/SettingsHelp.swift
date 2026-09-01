@@ -42,6 +42,22 @@ struct SettingHelpContent: Equatable {
     var tooltip: String {
         examples.isEmpty ? summary : summary + "\n\nExamples:\n" + examples.joined(separator: "\n")
     }
+
+    /// Help for one key of an item's `[item.settings]` table.
+    ///
+    /// These controls exist per catalog entry, not per `SettingHelpTopic` case, so a static
+    /// topic per key would be a second copy of the catalog to keep in step by hand. The help
+    /// comes from the same declaration the control itself is built from — including the
+    /// examples, which is why `BarSettingKey` carries them.
+    static func barItemSetting(_ item: BarCatalogItem, _ key: BarSettingKey) -> SettingHelpContent {
+        SettingHelpContent(
+            summary: key.summary,
+            details: "Set on the \(item.displayName) item, under its [item.settings] table in bar.toml. Default: \(key.defaultValue.toml).",
+            tomlKeys: ["item.settings.\(key.key)"],
+            visual: nil,
+            examples: key.examples,
+        )
+    }
 }
 
 enum SettingHelpTopic: String, CaseIterable {
@@ -72,6 +88,22 @@ enum SettingHelpTopic: String, CaseIterable {
     case keyNotationOverrides
     case inheritEnvVars
     case envVarOverrides
+    case barHeight
+    case barMargin
+    case barYOffset
+    case barCornerRadius
+    case barBorderWidth
+    case barPadding
+    case barBackgroundColor
+    case barBorderColor
+    case barLabelColor
+    case barIconColor
+    case barAccentColor
+    case barPopupBackgroundColor
+    case barPopupBorderColor
+    case barItems
+    case sketchybarStatus
+    case sketchybarReload
     case menuBarStyle
     case menuBarItemPosition
     case openConfig
@@ -178,6 +210,48 @@ enum SettingHelpTopic: String, CaseIterable {
                 )
             case .inheritEnvVars:
                 help("Pass the launching process environment to commands.", "When disabled, exec-and-forget starts with only the explicit overrides below plus AeroSpace-provided variables. This can remove PATH and other shell-dependent values.", ["exec.inherit-env-vars"])
+            case .barHeight:
+                help("Set how tall the bar is.", "Points, as sketchybar measures them. Item heights follow the bar; this is the space they get.", ["bar.height"])
+            case .barMargin:
+                help("Inset the bar from the screen edges.", "Points of empty space left of, right of, and around the bar. A non-zero margin is what makes the bar look detached rather than glued to the top of the screen.", ["bar.margin"])
+            case .barYOffset:
+                help("Move the bar down from the top of the screen.", "Points. Combined with a margin and a corner radius this is what produces a floating bar; zero puts it flush against the menu bar.", ["bar.y-offset"])
+            case .barCornerRadius:
+                help("Round the bar's corners.", "Points. Zero gives square corners. Only visible when the bar is inset by a margin.", ["bar.corner-radius"])
+            case .barBorderWidth:
+                help("Set the bar's outline thickness.", "Points, drawn in the border colour. Zero removes the outline.", ["bar.border-width"])
+            case .barPadding:
+                help("Pad the bar's contents from its own edges.", "Points between the bar's edge and the first and last item. Left and right are independent.", ["bar.padding-left", "bar.padding-right"])
+            case .barBackgroundColor:
+                barColor("Set the bar's background colour.", "The fill behind every item. Alpha below ff makes the desktop show through.", "bar.colors.background")
+            case .barBorderColor:
+                barColor("Set the bar's outline colour.", "Drawn at the border width above. Nothing is drawn when that width is zero.", "bar.colors.border")
+            case .barLabelColor:
+                barColor("Set the default text colour.", "Every item's label unless the item overrides it.", "bar.colors.label")
+            case .barIconColor:
+                barColor("Set the default icon colour.", "Every item's icon glyph unless the item overrides it.", "bar.colors.icon")
+            case .barAccentColor:
+                barColor("Set the highlight colour.", "Used for the parts of an item that have to stand out — the focused workspace, a warning state.", "bar.colors.accent")
+            case .barPopupBackgroundColor:
+                barColor("Set the popup background colour.", "The fill behind the panel an item opens when it is clicked.", "bar.colors.popup-background")
+            case .barPopupBorderColor:
+                barColor("Set the popup outline colour.", "The outline of the panel an item opens when it is clicked.", "bar.colors.popup-border")
+            case .barItems:
+                help(
+                    "Build the bar from the catalog, in the order you drag them into.",
+                    "Each list is one of sketchybar's three positions, and a list's order is the order its items are drawn in. An item's own settings are under it. Items that need a helper binary are listed but cannot be added yet.",
+                    ["item", "item.id", "item.cluster"],
+                )
+            case .sketchybarStatus:
+                appPref(
+                    "Whether sketchybar is installed, and which file this page writes.",
+                    "sketchybar stays a separate Homebrew install that AeroSpace-edge configures rather than replaces. Without it the page still edits and saves; nothing renders until it is installed. bar.toml is the source of truth and is hand-editable; sketchybar's own config is generated from it and overwritten on every save.",
+                )
+            case .sketchybarReload:
+                appPref(
+                    "Regenerate sketchybar's config from the last save and reload it.",
+                    "Save already does this. Use it after starting sketchybar by hand, or when something else has overwritten its config. It uses the saved bar.toml, not unsaved edits.",
+                )
             case .menuBarStyle:
                 appPref(
                     "Choose how workspaces are drawn in the menu bar.",
@@ -236,6 +310,21 @@ enum SettingHelpTopic: String, CaseIterable {
         ]
     }
 
+    /// A `bar.toml` colour. Every one of them is typed as `0xAARRGGBB`, so they all need the
+    /// same worked examples and none of them gets a hand-written variation of them.
+    private func barColor(_ summary: String, _ details: String, _ key: String) -> SettingHelpContent {
+        help(
+            summary,
+            details + " Stored as 0xAARRGGBB: alpha, red, green, blue. The colour well writes back exactly that spelling.",
+            [key],
+            examples: [
+                "0xb3202020  near-black at 70% alpha",
+                "0xffeeeeee  opaque near-white",
+                "0xff717ebb  the default accent",
+            ],
+        )
+    }
+
     /// A control that is not a config key: app preferences and immediate actions. They still get
     /// the same popover, minus the TOML block.
     private func appPref(_ summary: String, _ details: String, examples: [String] = []) -> SettingHelpContent {
@@ -256,8 +345,19 @@ enum SettingHelpTopic: String, CaseIterable {
 @MainActor
 struct SettingHelpLabel: View {
     let title: String
-    let topic: SettingHelpTopic
+    let content: SettingHelpContent
     @State private var isPresented = false
+
+    init(title: String, topic: SettingHelpTopic) {
+        self.title = title
+        content = topic.content
+    }
+
+    /// For the controls the catalog generates — see `SettingHelpContent.barItemSetting`.
+    init(title: String, content: SettingHelpContent) {
+        self.title = title
+        self.content = content
+    }
 
     var body: some View {
         HStack(spacing: 5) {
@@ -268,13 +368,13 @@ struct SettingHelpLabel: View {
                     .imageScale(.small)
             }
             .buttonStyle(.plain)
-            .help(topic.content.tooltip)
+            .help(content.tooltip)
             .accessibilityLabel("About \(title)")
             .popover(isPresented: $isPresented, arrowEdge: .trailing) {
-                SettingHelpPopover(title: title, content: topic.content)
+                SettingHelpPopover(title: title, content: content)
             }
         }
-        .help(topic.content.tooltip)
+        .help(content.tooltip)
     }
 }
 

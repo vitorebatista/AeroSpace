@@ -73,6 +73,7 @@ nav:
       - settings/window-rules.md
       - settings/callbacks.md
       - settings/menu-bar.md
+      - settings/sketchybar.md
       - settings/application.md
       - settings/migration.md
   - Comparison: comparison.md

@@ -13,6 +13,7 @@ public func getSettingsWindow(model: SettingsModel, viewModel: TrayMenuModel) ->
                 // Without this an accessory-mode app's window can't receive keyboard input
                 NSApp.setActivationPolicy(.accessory)
                 model.load()
+                BarSettingsModel.shared.load()
             }
     }
     .windowResizability(.contentMinSize)
@@ -31,6 +32,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
     case windowRules = "Window Rules"
     case callbacks = "Callbacks"
     case menuBar = "Menu Bar"
+    case sketchybar = "Sketchybar"
     case application = "Application"
 
     var id: String { rawValue }
@@ -51,6 +53,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
             case .windowRules: "window-rules"
             case .callbacks: "callbacks"
             case .menuBar: "menu-bar"
+            case .sketchybar: "sketchybar"
             case .application: "application"
         }
         return URL(string: "https://vitorebatista.github.io/AeroSpace-edge/settings/\(page)/")!
@@ -70,6 +73,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
             case .windowRules: "macwindow.badge.plus"
             case .callbacks: "arrow.triangle.branch"
             case .menuBar: "menubar.rectangle"
+            case .sketchybar: "menubar.rectangle"
             case .application: "gearshape.2"
         }
     }
@@ -78,6 +82,9 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
 @MainActor
 struct SettingsView: View {
     @StateObject private var model: SettingsModel
+    /// The Sketchybar destination edits a different file, so it has its own model. The footer
+    /// is shared: Save and Revert act on whichever document the selected destination edits.
+    @StateObject private var barModel: BarSettingsModel = .shared
     @ObservedObject var viewModel: TrayMenuModel
     @State private var selection: SettingsCategory = .general
     @State private var showOverwriteAlert = false
@@ -112,7 +119,7 @@ struct SettingsView: View {
                             .padding()
                         }
                     }
-                    .disabled(model.isSaving)
+                    .disabled(isSaving)
             }
             Divider()
             footer
@@ -211,6 +218,8 @@ struct SettingsView: View {
                 )
             case .menuBar:
                 MenuBarSection(viewModel: viewModel)
+            case .sketchybar:
+                SettingsSketchybarSection(model: barModel)
             case .application:
                 ApplicationSection()
         }
@@ -250,17 +259,21 @@ struct SettingsView: View {
             }
             HStack {
                 Button("Check for Updates…") { Task { await runCheckForUpdatesFlow() } }
-                    .disabled(model.isSaving)
-                if model.willCreateConfig {
+                    .disabled(isSaving)
+                if editsSketchybar {
+                    // The Sketchybar page reports its own file's state in its Status group.
+                    EmptyView()
+                } else if model.willCreateConfig {
                     Text("Saving will create ~/\(configDotfileName)").font(.caption).foregroundStyle(.secondary)
                 } else if case .saved = model.status {
                     Label("Saved and reloaded", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
                 }
                 Spacer()
-                Button("Revert") { model.revert() }.disabled(!model.isDirty || model.isSaving)
+                Button("Revert") { if editsSketchybar { barModel.revert() } else { model.revert() } }
+                    .disabled(!isDirty || isSaving)
                 Button("Save") { requestSave() }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(!model.isDirty || model.isSaving)
+                    .disabled(!isDirty || isSaving)
             }
         }
         .padding()
@@ -279,8 +292,18 @@ struct SettingsView: View {
         }
     }
 
+    /// Which document the footer acts on. The Sketchybar destination edits bar.toml; every
+    /// other one edits the AeroSpace config.
+    private var editsSketchybar: Bool { selection == .sketchybar }
+    private var isDirty: Bool { editsSketchybar ? barModel.isDirty : model.isDirty }
+    private var isSaving: Bool { model.isSaving || barModel.isSaving }
+
     private func requestSave() {
-        guard !model.isSaving else { return }
+        guard !isSaving else { return }
+        if editsSketchybar {
+            Task { await barModel.save() }
+            return
+        }
         if model.externallyModified {
             showOverwriteAlert = true
         } else {

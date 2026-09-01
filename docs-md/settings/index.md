@@ -11,6 +11,11 @@ The window has two kinds of control:
 - **Configuration controls** (everything else) build a *draft*. Nothing is written until you
   press **Save**.
 
+*Sketchybar* is the one destination that edits a different file: it builds a draft like any
+other configuration page, but Save writes `~/.config/aerospace/bar.toml`, not your AeroSpace
+config. Everything below about validation and rewriting describes the AeroSpace config;
+[Sketchybar](sketchybar.md) documents its own file.
+
 Each page in this section mirrors one destination in the window's sidebar, in the same
 order, so "where do I change this?" has a one-line answer everywhere.
 
@@ -28,6 +33,7 @@ order, so "where do I change this?" has a one-line answer everywhere.
 | [Window Rules](window-rules.md) | Raw `[[on-window-detected]]` TOML |
 | [Callbacks](callbacks.md) | Raw lifecycle callback TOML |
 | [Menu Bar](menu-bar.md) | How workspaces are drawn in the menu-bar item (no TOML) |
+| [Sketchybar](sketchybar.md) | The status bar built from the item catalog (writes `bar.toml`, not your AeroSpace config) |
 | [Application](application.md) | Config-file actions, crash reports, version info (no TOML) |
 
 !!! note "About the screenshots"
@@ -122,6 +128,7 @@ version 2. See [Config version migration](migration.md).
 | `exec.*` | [Exec](exec.md) |
 | `mode.*.binding` | [Keybindings](keybindings.md) |
 | `on-window-detected` | [Window Rules](window-rules.md) |
+| `bar.*`, `item.*` (in `bar.toml`) | [Sketchybar](sketchybar.md) |
 | `after-startup-command`, `on-focus-changed`, `on-mode-changed`, `on-focused-monitor-changed`, `exec-on-workspace-change` | [Callbacks](callbacks.md) |
 
 ## When Settings can't edit normally
