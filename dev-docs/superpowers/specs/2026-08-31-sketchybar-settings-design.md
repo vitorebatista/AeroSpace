@@ -203,13 +203,51 @@ can emit the right `icon.font`, and the page can warn when a required font is no
 visible in the picker, disabled, with a popover explaining that they need a helper binary
 that ships in a later release. They are not silently missing.
 
-## Generation
+## The backend boundary
+
+Everything above this line — `bar.toml`, the catalog, item settings, the Settings page,
+the help topics, the documentation — is independent of how the bar is actually drawn. Only
+the renderer differs. That boundary is made explicit rather than left implicit:
+
+```
+BarDraft ──▶ BarBackend
+              ├─ SketchybarBackend   generate a config, --reload, live push
+              └─ (a native renderer, if one is ever warranted)
+```
+
+`BarBackend` is the protocol the Settings page talks to. It answers whether it is available,
+applies a saved draft, and — for stage 2 — applies an individual mutation for live preview.
+It is the only component that knows sketchybar exists.
+
+This is not a prediction that a native bar will be built. It is an acknowledgement that the
+question is open, that the evidence to settle it does not exist yet, and that the cost of
+keeping it open is one protocol declaration. Two observations frame the eventual decision:
+
+- Stages 1 and 2 are largely overhead that exists only because there is a foreign process to
+  configure. Config generation, the marker header, takeover, item namespacing, live-push
+  IPC and scratch-state reconciliation would all be deleted by a native renderer, and the
+  hardest problem in this design — preview fidelity — would not exist, because the preview
+  would be the renderer.
+- Against that: a *configurable* bar is a substantially larger product than a fixed one, and
+  it would make AeroSpace-edge permanently a status-bar project as well as a window manager,
+  in a fork whose maintenance case rests on staying cheap to sync with upstream.
+
+**The trigger to revisit is a catalog item sketchybar cannot express.** That is evidence.
+Until one appears, a native renderer is a rewrite justified by taste, and the boundary below
+costs nothing to maintain in the meantime.
+
+One argument that does *not* survive stage 1 and should not be reached for later: memory.
+The generated config is `sh`, so SbarLua never loads and the Lua interpreter process — the
+largest single process in a hand-written Lua setup — disappears as soon as this ships.
+Sketchybar itself is comparatively small.
+
+## Generation: the sketchybar backend
 
 `BarConfigGenerator` is a pure function from a parsed `BarDraft` to the bytes of
-`sketchybarrc`. It performs no I/O, reads no environment, and resolves no paths itself —
-absolute paths to bundled helpers are passed in. This is what makes it testable against
-golden files, and it is the component that carries the most risk of silent breakage, so it
-is the component that must be trivially testable.
+`sketchybarrc`, and is the substance of `SketchybarBackend`. It performs no I/O, reads no
+environment, and resolves no paths itself — absolute paths to bundled helpers are passed in.
+This is what makes it testable against golden files, and it is the component that carries
+the most risk of silent breakage, so it is the component that must be trivially testable.
 
 Emission order is fixed and deterministic:
 
@@ -330,7 +368,9 @@ Stage 2 and stage 3 carry a manual verification checklist instead.
 
 ## Out of scope
 
-- **Replacing sketchybar.** AeroSpace-edge does not gain a bar renderer.
+- **Replacing sketchybar.** No stage in this document draws a bar. `BarBackend` keeps a
+  native renderer possible without committing to one; see "The backend boundary" for the
+  evidence that would justify revisiting it.
 - **Importing an existing config.** Parsing a user's Lua or shell config into `bar.toml` is
   not attempted. Takeover backs the old config up; it does not read it.
 - **Wallpaper.** The stage 4 theme switcher covers bar colors and the window-border color.
