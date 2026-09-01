@@ -6,6 +6,7 @@ final class SettingsHelpTest: XCTestCase {
     /// actions. Everything else must name the TOML key it writes.
     private static let appPreferenceTopics: Set<SettingHelpTopic> = [
         .menuBarStyle, .menuBarItemPosition, .openConfig, .reloadConfig, .crashReports, .versionInfo,
+        .sketchybarStatus, .sketchybarReload,
     ]
 
     func testAppPreferencesAreExactlyTheTopicsWithoutTomlKeys() {

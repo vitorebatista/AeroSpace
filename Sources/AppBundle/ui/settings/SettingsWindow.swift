@@ -13,7 +13,11 @@ public func getSettingsWindow(model: SettingsModel, viewModel: TrayMenuModel) ->
                 // Without this an accessory-mode app's window can't receive keyboard input
                 NSApp.setActivationPolicy(.accessory)
                 model.load()
+                BarSettingsModel.shared.load()
             }
+            // Live editing leaves the running bar in a state that matches no file, so closing
+            // with unsaved edits has to put the last saved bar back.
+            .onDisappear { Task { await BarSettingsModel.shared.windowDidClose() } }
     }
     .windowResizability(.contentMinSize)
 }
@@ -31,6 +35,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
     case windowRules = "Window Rules"
     case callbacks = "Callbacks"
     case menuBar = "Menu Bar"
+    case sketchybar = "Sketchybar"
     case application = "Application"
 
     var id: String { rawValue }
@@ -51,6 +56,7 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
             case .windowRules: "window-rules"
             case .callbacks: "callbacks"
             case .menuBar: "menu-bar"
+            case .sketchybar: "sketchybar"
             case .application: "application"
         }
         return URL(string: "https://vitorebatista.github.io/AeroSpace-edge/settings/\(page)/")!
@@ -70,6 +76,10 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
             case .windowRules: "macwindow.badge.plus"
             case .callbacks: "arrow.triangle.branch"
             case .menuBar: "menubar.rectangle"
+            // Not "menubar.rectangle": that is the Menu Bar destination's, and two sidebar rows
+            // with one icon are two rows the eye cannot tell apart. Three groups reads as the
+            // left/center/right clusters this page arranges items into.
+            case .sketchybar: "rectangle.3.group"
             case .application: "gearshape.2"
         }
     }
@@ -78,6 +88,9 @@ enum SettingsCategory: String, CaseIterable, Identifiable {
 @MainActor
 struct SettingsView: View {
     @StateObject private var model: SettingsModel
+    /// The Sketchybar destination edits a different file, so it has its own model. The footer
+    /// is shared: Save and Revert act on whichever document the selected destination edits.
+    @StateObject private var barModel: BarSettingsModel = .shared
     @ObservedObject var viewModel: TrayMenuModel
     @State private var selection: SettingsCategory = .general
     @State private var showOverwriteAlert = false
@@ -112,7 +125,7 @@ struct SettingsView: View {
                             .padding()
                         }
                     }
-                    .disabled(model.isSaving)
+                    .disabled(isSaving)
             }
             Divider()
             footer
@@ -211,6 +224,8 @@ struct SettingsView: View {
                 )
             case .menuBar:
                 MenuBarSection(viewModel: viewModel)
+            case .sketchybar:
+                SettingsSketchybarSection(model: barModel, configModel: model)
             case .application:
                 ApplicationSection()
         }
@@ -250,17 +265,21 @@ struct SettingsView: View {
             }
             HStack {
                 Button("Check for Updates…") { Task { await runCheckForUpdatesFlow() } }
-                    .disabled(model.isSaving)
-                if model.willCreateConfig {
+                    .disabled(isSaving)
+                if editsSketchybar {
+                    // The Sketchybar page reports its own file's state in its Status group.
+                    EmptyView()
+                } else if model.willCreateConfig {
                     Text("Saving will create ~/\(configDotfileName)").font(.caption).foregroundStyle(.secondary)
                 } else if case .saved = model.status {
                     Label("Saved and reloaded", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
                 }
                 Spacer()
-                Button("Revert") { model.revert() }.disabled(!model.isDirty || model.isSaving)
+                Button("Revert") { revert() }
+                    .disabled(!isDirty || isSaving)
                 Button("Save") { requestSave() }
                     .keyboardShortcut(.defaultAction)
-                    .disabled(!model.isDirty || model.isSaving)
+                    .disabled(!isDirty || isSaving)
             }
         }
         .padding()
@@ -279,8 +298,40 @@ struct SettingsView: View {
         }
     }
 
+    /// Which document the footer acts on. The Sketchybar destination edits bar.toml; every
+    /// other one edits the AeroSpace config.
+    private var editsSketchybar: Bool { selection == .sketchybar }
+    /// The Sketchybar page counts the config draft too: a theme sets the window border colour,
+    /// which lives there, and Save has to be reachable for it.
+    private var isDirty: Bool { editsSketchybar ? (barModel.isDirty || model.isDirty) : model.isDirty }
+    private var isSaving: Bool { model.isSaving || barModel.isSaving }
+
     private func requestSave() {
-        guard !model.isSaving else { return }
+        guard !isSaving else { return }
+        if editsSketchybar {
+            Task {
+                if barModel.isDirty { await barModel.save() }
+                // A theme writes seven colours to bar.toml and one to the AeroSpace config.
+                // Leaving either behind puts half a theme on disk, which is worse than none.
+                if model.isDirty { requestConfigSave() }
+            }
+            return
+        }
+        requestConfigSave()
+    }
+
+    /// Undoes whatever Save on this destination would have written, which on the Sketchybar
+    /// page is both files when a theme has touched the border colour.
+    private func revert() {
+        if editsSketchybar {
+            Task { await barModel.revert() }
+            if model.isDirty { model.revert() }
+        } else {
+            model.revert()
+        }
+    }
+
+    private func requestConfigSave() {
         if model.externallyModified {
             showOverwriteAlert = true
         } else {

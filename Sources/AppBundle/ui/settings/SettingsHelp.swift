@@ -42,6 +42,22 @@ struct SettingHelpContent: Equatable {
     var tooltip: String {
         examples.isEmpty ? summary : summary + "\n\nExamples:\n" + examples.joined(separator: "\n")
     }
+
+    /// Help for one key of an item's `[item.settings]` table.
+    ///
+    /// These controls exist per catalog entry, not per `SettingHelpTopic` case, so a static
+    /// topic per key would be a second copy of the catalog to keep in step by hand. The help
+    /// comes from the same declaration the control itself is built from — including the
+    /// examples, which is why `BarSettingKey` carries them.
+    static func barItemSetting(_ item: BarCatalogItem, _ key: BarSettingKey) -> SettingHelpContent {
+        SettingHelpContent(
+            summary: key.summary,
+            details: "Set on the \(item.displayName) item, under its [item.settings] table in bar.toml. Default: \(key.defaultValue.toml).",
+            tomlKeys: ["item.settings.\(key.key)"],
+            visual: nil,
+            examples: key.examples,
+        )
+    }
 }
 
 enum SettingHelpTopic: String, CaseIterable {
@@ -72,6 +88,27 @@ enum SettingHelpTopic: String, CaseIterable {
     case keyNotationOverrides
     case inheritEnvVars
     case envVarOverrides
+    case barHeight
+    case barMargin
+    case barYOffset
+    case barCornerRadius
+    case barBorderWidth
+    case barPadding
+    case barBackgroundColor
+    case barBorderColor
+    case barLabelColor
+    case barIconColor
+    case barAccentColor
+    case barPopupBackgroundColor
+    case barPopupBorderColor
+    case barTheme
+    case barChipStrip
+    case barItems
+    case barProfiles
+    case barProfileWorkspaces
+    case barProfileVisibility
+    case sketchybarStatus
+    case sketchybarReload
     case menuBarStyle
     case menuBarItemPosition
     case openConfig
@@ -178,6 +215,100 @@ enum SettingHelpTopic: String, CaseIterable {
                 )
             case .inheritEnvVars:
                 help("Pass the launching process environment to commands.", "When disabled, exec-and-forget starts with only the explicit overrides below plus AeroSpace-provided variables. This can remove PATH and other shell-dependent values.", ["exec.inherit-env-vars"])
+            case .barHeight:
+                help("Set how tall the bar is.", "Points, as sketchybar measures them. Item heights follow the bar; this is the space they get.", ["bar.height"])
+            case .barMargin:
+                help("Inset the bar from the screen edges.", "Points of empty space left of, right of, and around the bar. A non-zero margin is what makes the bar look detached rather than glued to the top of the screen.", ["bar.margin"])
+            case .barYOffset:
+                help("Move the bar down from the top of the screen.", "Points. Combined with a margin and a corner radius this is what produces a floating bar; zero puts it flush against the menu bar.", ["bar.y-offset"])
+            case .barCornerRadius:
+                help("Round the bar's corners.", "Points. Zero gives square corners. Only visible when the bar is inset by a margin.", ["bar.corner-radius"])
+            case .barBorderWidth:
+                help("Set the bar's outline thickness.", "Points, drawn in the border colour. Zero removes the outline.", ["bar.border-width"])
+            case .barPadding:
+                help("Pad the bar's contents from its own edges.", "Points between the bar's edge and the first and last item. Left and right are independent.", ["bar.padding-left", "bar.padding-right"])
+            case .barBackgroundColor:
+                barColor("Set the bar's background colour.", "The fill behind every item. Alpha below ff makes the desktop show through.", "bar.colors.background")
+            case .barBorderColor:
+                barColor("Set the bar's outline colour.", "Drawn at the border width above. Nothing is drawn when that width is zero.", "bar.colors.border")
+            case .barLabelColor:
+                barColor("Set the default text colour.", "Every item's label unless the item overrides it.", "bar.colors.label")
+            case .barIconColor:
+                barColor("Set the default icon colour.", "Every item's icon glyph unless the item overrides it.", "bar.colors.icon")
+            case .barAccentColor:
+                barColor("Set the highlight colour.", "Used for the parts of an item that have to stand out — the focused workspace, a warning state.", "bar.colors.accent")
+            case .barPopupBackgroundColor:
+                barColor("Set the popup background colour.", "The fill behind the panel an item opens when it is clicked.", "bar.colors.popup-background")
+            case .barPopupBorderColor:
+                barColor("Set the popup outline colour.", "The outline of the panel an item opens when it is clicked.", "bar.colors.popup-border")
+            case .barTheme:
+                help(
+                    "Set all seven bar colours, and the window border, at once.",
+                    "A theme is a palette, not a saved setting: applying one writes the seven colours below, so the row reads Custom the moment you change any of them and nothing goes on claiming a theme it no longer matches. It also sets focused-window-border-color, which is in your AeroSpace config rather than bar.toml — Save on this page writes both files, because half a theme on disk is worse than none.",
+                    [
+                        "bar.colors.background",
+                        "bar.colors.border",
+                        "bar.colors.label",
+                        "bar.colors.icon",
+                        "bar.colors.accent",
+                        "bar.colors.popup-background",
+                        "bar.colors.popup-border",
+                        "focused-window-border-color",
+                    ],
+                )
+            case .barChipStrip:
+                help(
+                    "Drag a chip between the three positions, or within one, to place an item.",
+                    "The strip is a schematic of the bar, not a picture of it: it says which items sit left, centre and right and in what order, and it edits the same list the rows below do. While sketchybar is running, the bar at the top of the screen follows the drag — that is the preview, so there is nothing here to drift out of sync with it. A dashed chip needs a helper binary that ships in a later release, or is an item this release doesn't recognise; either way it won't render yet.",
+                    ["item.cluster"],
+                )
+            case .barItems:
+                help(
+                    "Build the bar from the catalog, in the order you drag them into.",
+                    "Each list is one of sketchybar's three positions, and a list's order is the order its items are drawn in. An item's own settings are under it. Items that need a helper binary are listed but cannot be added yet.",
+                    ["item", "item.id", "item.cluster"],
+                )
+            case .barProfiles:
+                help(
+                    "Give a group of workspaces its own set of bar items.",
+                    "A profile owns workspaces and changes which items are drawn while one of them is focused. Items are still declared once, above — a profile only lists the exceptions, so the clock is never repeated per profile. Switching is pushed by AeroSpace-edge itself the moment focus crosses into another profile's workspace; the generated config holds no profile logic. A workspace no profile names belongs to every profile and draws everything.",
+                    ["profile", "profile.name"],
+                    examples: [
+                        "[[profile]]",
+                        "name = 'Work'",
+                        "workspaces = ['1', '2', 'C']",
+                    ],
+                )
+            case .barProfileWorkspaces:
+                help(
+                    "List the workspaces this profile owns.",
+                    "Comma-separated workspace names, matched exactly as they are written in ~/.aerospace.toml. A workspace listed by two profiles belongs to the first one. While the profile is active the workspaces item lists only these, so the bar shows the group rather than every workspace on the machine.",
+                    ["profile.workspaces"],
+                    examples: [
+                        "1, 2, 3, C, S",
+                        "media, chat",
+                    ],
+                )
+            case .barProfileVisibility:
+                help(
+                    "Choose which items this profile draws.",
+                    "Every item is drawn unless a profile hides it, and a hidden item is written to that profile's hide list. Showing an item in one profile makes it opt-in everywhere: it then appears only in the profiles that list it under show, which is how an item can belong to a single profile without every other one having to hide it. Turning off the last profile that showed an item makes it ordinary again, and it goes back to being drawn everywhere.",
+                    ["profile.show", "profile.hide"],
+                    examples: [
+                        "show = ['cpu']",
+                        "hide = ['weather', 'network']",
+                    ],
+                )
+            case .sketchybarStatus:
+                appPref(
+                    "Whether sketchybar is installed, and which file this page writes.",
+                    "sketchybar stays a separate Homebrew install that AeroSpace-edge configures rather than replaces. Without it the page still edits and saves; nothing renders until it is installed. bar.toml is the source of truth and is hand-editable; sketchybar's own config is generated from it and overwritten on every save.",
+                )
+            case .sketchybarReload:
+                appPref(
+                    "Regenerate sketchybar's config from the last save and reload it.",
+                    "Save already does this. Use it after starting sketchybar by hand, or when something else has overwritten its config. It uses the saved bar.toml, not unsaved edits.",
+                )
             case .menuBarStyle:
                 appPref(
                     "Choose how workspaces are drawn in the menu bar.",
@@ -236,6 +367,21 @@ enum SettingHelpTopic: String, CaseIterable {
         ]
     }
 
+    /// A `bar.toml` colour. Every one of them is typed as `0xAARRGGBB`, so they all need the
+    /// same worked examples and none of them gets a hand-written variation of them.
+    private func barColor(_ summary: String, _ details: String, _ key: String) -> SettingHelpContent {
+        help(
+            summary,
+            details + " Stored as 0xAARRGGBB: alpha, red, green, blue. The colour well writes back exactly that spelling.",
+            [key],
+            examples: [
+                "0xb3202020  near-black at 70% alpha",
+                "0xffeeeeee  opaque near-white",
+                "0xff717ebb  the default accent",
+            ],
+        )
+    }
+
     /// A control that is not a config key: app preferences and immediate actions. They still get
     /// the same popover, minus the TOML block.
     private func appPref(_ summary: String, _ details: String, examples: [String] = []) -> SettingHelpContent {
@@ -256,8 +402,19 @@ enum SettingHelpTopic: String, CaseIterable {
 @MainActor
 struct SettingHelpLabel: View {
     let title: String
-    let topic: SettingHelpTopic
+    let content: SettingHelpContent
     @State private var isPresented = false
+
+    init(title: String, topic: SettingHelpTopic) {
+        self.title = title
+        content = topic.content
+    }
+
+    /// For the controls the catalog generates — see `SettingHelpContent.barItemSetting`.
+    init(title: String, content: SettingHelpContent) {
+        self.title = title
+        self.content = content
+    }
 
     var body: some View {
         HStack(spacing: 5) {
@@ -268,13 +425,13 @@ struct SettingHelpLabel: View {
                     .imageScale(.small)
             }
             .buttonStyle(.plain)
-            .help(topic.content.tooltip)
+            .help(content.tooltip)
             .accessibilityLabel("About \(title)")
             .popover(isPresented: $isPresented, arrowEdge: .trailing) {
-                SettingHelpPopover(title: title, content: topic.content)
+                SettingHelpPopover(title: title, content: content)
             }
         }
-        .help(topic.content.tooltip)
+        .help(content.tooltip)
     }
 }
 
