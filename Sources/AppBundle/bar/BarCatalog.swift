@@ -42,13 +42,6 @@ enum BarSettingType: Equatable, Sendable {
     case enumeration([String])
 }
 
-enum BarSettingValue: Equatable, Sendable {
-    case bool(Bool)
-    case int(Int)
-    case string(String)
-    case stringList([String])
-}
-
 /// One key an item accepts in its `[item.settings]` table.
 struct BarSettingKey: Equatable, Sendable {
     let key: String
@@ -82,7 +75,7 @@ struct BarSettingKey: Equatable, Sendable {
     }
 
     static func stringList(_ key: String, _ displayName: String, _ summary: String, default value: [String], examples: [String]) -> Self {
-        Self(key: key, displayName: displayName, summary: summary, type: .stringList, defaultValue: .stringList(value), examples: examples)
+        Self(key: key, displayName: displayName, summary: summary, type: .stringList, defaultValue: .array(value.map { .string($0) }), examples: examples)
     }
 
     static func choice(_ key: String, _ displayName: String, _ summary: String, cases: [String], default value: String) -> Self {

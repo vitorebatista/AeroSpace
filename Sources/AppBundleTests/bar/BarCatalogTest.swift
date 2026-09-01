@@ -67,8 +67,13 @@ final class BarCatalogTest: XCTestCase {
                 XCTAssertFalse(setting.summary.isEmpty, "\(at) needs a summary")
 
                 switch (setting.type, setting.defaultValue) {
-                    case (.bool, .bool), (.string, .string), (.stringList, .stringList):
+                    case (.bool, .bool), (.string, .string):
                         break
+                    case (.stringList, .array(let values)):
+                        XCTAssertTrue(
+                            values.allSatisfy { if case .string = $0 { true } else { false } },
+                            "\(at) declares a string list but defaults to a non-string element",
+                        )
                     case (.int(let min, let max), .int(let value)):
                         XCTAssertLessThan(min, max, "\(at) has an empty range")
                         XCTAssertTrue((min ... max).contains(value), "\(at) defaults to \(value), outside \(min)...\(max)")
