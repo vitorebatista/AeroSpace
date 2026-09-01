@@ -16,16 +16,6 @@ enum BarSettingsStatus: Equatable {
     case saved(String)
 }
 
-/// The backend a page falls back to when no renderer is wired in. It never claims to be
-/// available, so the page still edits and saves and says plainly that nothing will render.
-struct UnavailableBarBackend: BarBackend {
-    var isAvailable: Bool { false }
-
-    func apply(_ draft: BarDraft) throws -> BarApplyOutcome {
-        throw BarSettingsError("No bar backend is available.")
-    }
-}
-
 struct BarSettingsError: Error, LocalizedError, Equatable {
     let message: String
     init(_ message: String) { self.message = message }

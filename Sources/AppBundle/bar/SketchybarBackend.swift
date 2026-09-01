@@ -9,6 +9,9 @@ enum SketchybarBackendError: Error, LocalizedError {
     /// `apply` has one return value to say it with.
     case reloadFailed(outcome: BarApplyOutcome, underlying: any Error)
     case notInstalled
+    /// Placeholder while stage 2's diff engine is unwritten. A page that catches this shows
+    /// the chips without moving the real bar, which is the documented degraded preview.
+    case liveEditingUnavailable
 
     var errorDescription: String? {
         switch self {
@@ -21,6 +24,8 @@ enum SketchybarBackendError: Error, LocalizedError {
                     "Run `sketchybar --reload` to pick it up."
             case .notInstalled:
                 "sketchybar is not installed, so there is nothing to reload."
+            case .liveEditingUnavailable:
+                "Live preview isn't available yet. Your edits are kept — Save applies them."
         }
     }
 }
@@ -116,6 +121,19 @@ struct SketchybarBackend: BarBackend {
             throw SketchybarBackendError.reloadFailed(outcome: outcome, underlying: error)
         }
         return outcome
+    }
+
+    func applyLive(from previous: BarDraft, to next: BarDraft) throws {
+        // Stage 2 replaces this with a diff of `previous` against `next` emitted as the
+        // narrowest set of `--reorder` / `--add` / `--remove` / `--set` / `--bar` commands.
+        throw SketchybarBackendError.liveEditingUnavailable
+    }
+
+    func discardLiveChanges() throws {
+        // Live editing never writes, so the file is still the last saved state and reloading
+        // it is the whole restore. Nothing to undo command-by-command.
+        guard let binary = binaryLocator() else { throw SketchybarBackendError.notInstalled }
+        try reloader(binary)
     }
 
     /// Whether the file at `url` is one we wrote. Only the header is inspected — a file we

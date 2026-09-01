@@ -321,9 +321,22 @@ private final class FakeBarBackend: BarBackend, @unchecked Sendable {
     }
 
     var applied: [BarDraft] { lock.withLock { appliedDrafts } }
+    var livePushes: [(previous: BarDraft, next: BarDraft)] { lock.withLock { liveEdits } }
+    var discardCount: Int { lock.withLock { discards } }
+
+    private var liveEdits: [(previous: BarDraft, next: BarDraft)] = []
+    private var discards = 0
 
     func apply(_ draft: BarDraft) throws -> BarApplyOutcome {
         lock.withLock { appliedDrafts.append(draft) }
         return try result.get()
+    }
+
+    func applyLive(from previous: BarDraft, to next: BarDraft) throws {
+        lock.withLock { liveEdits.append((previous, next)) }
+    }
+
+    func discardLiveChanges() throws {
+        lock.withLock { discards += 1 }
     }
 }
