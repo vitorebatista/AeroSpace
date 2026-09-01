@@ -141,6 +141,150 @@ final class BarSettingsModelTest: XCTestCase {
         assertEquals(backend.applied.last?.geometry.height, 41)
     }
 
+    // MARK: - Live preview
+
+    func testEachEditIsPushedFromWhatIsOnScreenAndOnlyASuccessAdvancesTheBaseline() async {
+        let backend = FakeBarBackend()
+        let model = makeModel(backend: backend)
+        model.load()
+
+        model.draft.geometry.height = 40
+        model.markEdited()
+        await model.flushLivePreview()
+        model.draft.geometry.height = 41
+        model.markEdited()
+        await model.flushLivePreview()
+
+        assertEquals(backend.livePushes.count, 2)
+        assertEquals(backend.livePushes.first?.previous.geometry.height, BarGeometry().height)
+        assertEquals(backend.livePushes.first?.next.geometry.height, 40)
+        // The second diff starts from what the first push put on screen, not from the file.
+        assertEquals(backend.livePushes.last?.previous.geometry.height, 40)
+        assertEquals(backend.livePushes.last?.next.geometry.height, 41)
+        assertEquals(model.livePreview, .live)
+    }
+
+    func testAFailedPushKeepsTheDraftAndDoesNotAdvanceTheBaseline() async {
+        let backend = FakeBarBackend(liveResult: .failure(ExpectedFailure.live))
+        let model = makeModel(backend: backend)
+        model.load()
+
+        model.draft.geometry.height = 40
+        model.markEdited()
+        await model.flushLivePreview()
+        model.draft.geometry.height = 41
+        model.markEdited()
+        await model.flushLivePreview()
+
+        // Both diffs start from the file: nothing reached the screen, so the baseline never moved.
+        assertEquals(backend.livePushes.map { $0.previous.geometry.height }, [BarGeometry().height, BarGeometry().height])
+        assertEquals(model.draft.geometry.height, 41, additionalMsg: "A preview failure must never touch the user's edit")
+        assertEquals(model.isDirty, true)
+        guard case .failed = model.livePreview else { return XCTFail("Expected a failed preview, got \(model.livePreview)") }
+    }
+
+    func testAnUnavailableBackendNeverPushes() async {
+        let backend = FakeBarBackend(isAvailable: false)
+        let model = makeModel(backend: backend)
+        model.load()
+
+        model.draft.geometry.height = 40
+        model.markEdited()
+        await model.flushLivePreview()
+
+        assertEquals(backend.livePushes.count, 0)
+        assertEquals(backend.discardCount, 0)
+        assertEquals(model.livePreview, .unavailable)
+        assertEquals(model.isDirty, true, additionalMsg: "The chips still drag with nothing to push to")
+    }
+
+    func testNothingIsPushedWhenTheDraftDidNotChange() async {
+        let backend = FakeBarBackend()
+        let model = makeModel(backend: backend)
+        model.load()
+
+        model.markEdited()
+        await model.flushLivePreview()
+
+        assertEquals(backend.livePushes.count, 0)
+    }
+
+    func testABurstOfEditsIsCoalescedIntoOnePushOfTheFinalState() async {
+        let backend = FakeBarBackend()
+        let model = makeModel(backend: backend)
+        model.load()
+
+        for height in 33 ... 40 {
+            model.draft.geometry.height = height
+            model.markEdited()
+        }
+        await model.flushLivePreview()
+
+        assertEquals(backend.livePushes.count, 1, additionalMsg: "Eight frames of a drag must not be eight processes")
+        assertEquals(backend.livePushes.last?.next.geometry.height, 40)
+
+        // And the coalescing is a window, not a one-shot: a later edit still reaches the bar.
+        model.draft.geometry.height = 41
+        model.markEdited()
+        await model.flushLivePreview()
+        assertEquals(backend.livePushes.count, 2)
+        assertEquals(backend.livePushes.last?.next.geometry.height, 41)
+    }
+
+    func testRevertDiscardsTheLivePreviewAndReloadsTheFile() async {
+        let backend = FakeBarBackend()
+        let model = makeModel(files: FakeBarFiles(contents: existingFile), backend: backend)
+        model.load()
+
+        model.draft.geometry.height = 44
+        model.markEdited()
+        await model.flushLivePreview()
+        await model.revert()
+
+        assertEquals(backend.discardCount, 1)
+        assertEquals(model.draft.geometry.height, 32)
+        assertEquals(model.isDirty, false)
+    }
+
+    func testClosingTheWindowWithUnsavedEditsDiscardsTheLivePreview() async {
+        let backend = FakeBarBackend()
+        let model = makeModel(backend: backend)
+        model.load()
+
+        model.draft.geometry.height = 44
+        model.markEdited()
+        await model.flushLivePreview()
+        await model.windowDidClose()
+
+        assertEquals(backend.discardCount, 1)
+    }
+
+    func testNothingIsDiscardedWhenNothingWasEverPushed() async {
+        let backend = FakeBarBackend()
+        let model = makeModel(backend: backend)
+        model.load()
+
+        await model.revert()
+        await model.windowDidClose()
+
+        assertEquals(backend.discardCount, 0)
+    }
+
+    func testSavingReconcilesTheScratchStateWithoutDiscarding() async {
+        let backend = FakeBarBackend()
+        let model = makeModel(backend: backend)
+        model.load()
+
+        model.draft.geometry.height = 44
+        model.markEdited()
+        await model.flushLivePreview()
+        await model.save()
+
+        // The save writes the file and reapplies it, so there is nothing left to put back.
+        assertEquals(backend.discardCount, 0)
+        assertEquals(backend.applied.last?.geometry.height, 44)
+    }
+
     // MARK: - Takeover
 
     func testTheTakeoverNoticeOutlivesLaterEditsAndOnlyDismissClearsIt() async {
@@ -183,6 +327,44 @@ final class BarSettingsModelTest: XCTestCase {
 
         assertEquals(draft.items.map(\.id), ["clock", "battery", "workspaces"])
         assertEquals(draft.positions(in: .right), [0, 1])
+    }
+
+    func testAChipDropMovesAnItemIntoAnotherClusterAtTheDroppedSeat() {
+        var draft = BarDraft()
+        draft.add(catalog("workspaces"), to: .left)
+        draft.add(catalog("mode"), to: .left)
+        draft.add(catalog("clock"), to: .right)
+
+        // Dropped onto the clock chip: it lands before it.
+        draft.moveItem(at: 1, to: .right, before: 2)
+
+        assertEquals(draft.items(in: .left).map(\.id), ["workspaces"])
+        assertEquals(draft.items(in: .right).map(\.id), ["mode", "clock"])
+    }
+
+    func testAChipDroppedOnEmptySpaceAppendsToThatCluster() {
+        var draft = BarDraft()
+        draft.add(catalog("workspaces"), to: .left)
+        draft.add(catalog("mode"), to: .left)
+        draft.add(catalog("clock"), to: .right)
+
+        draft.moveItem(at: 0, to: .left, before: nil)
+        assertEquals(draft.items(in: .left).map(\.id), ["mode", "workspaces"])
+
+        draft.moveItem(at: 2, to: .center, before: nil)
+        assertEquals(draft.items(in: .center).map(\.id), ["clock"])
+        assertEquals(draft.items(in: .right).map(\.id), [])
+    }
+
+    func testAChipDroppedOnItselfChangesNothing() {
+        var draft = BarDraft()
+        draft.add(catalog("workspaces"), to: .left)
+        draft.add(catalog("mode"), to: .left)
+        let before = draft
+
+        draft.moveItem(at: 1, to: .left, before: 1)
+
+        assertEquals(draft, before)
     }
 
     func testRemoveTakesTheEntryAtTheClusterOffset() {
@@ -232,6 +414,7 @@ final class BarSettingsModelTest: XCTestCase {
     private enum ExpectedFailure: Error {
         case write
         case apply
+        case live
     }
 
     private var existingFile: String {
@@ -312,12 +495,18 @@ private final class FakeBarFiles: @unchecked Sendable {
 private final class FakeBarBackend: BarBackend, @unchecked Sendable {
     let isAvailable: Bool
     private let result: Result<BarApplyOutcome, any Error>
+    private let liveResult: Result<Void, any Error>
     private let lock = NSLock()
     private var appliedDrafts: [BarDraft] = []
 
-    init(isAvailable: Bool = true, result: Result<BarApplyOutcome, any Error> = .success(.updated)) {
+    init(
+        isAvailable: Bool = true,
+        result: Result<BarApplyOutcome, any Error> = .success(.updated),
+        liveResult: Result<Void, any Error> = .success(()),
+    ) {
         self.isAvailable = isAvailable
         self.result = result
+        self.liveResult = liveResult
     }
 
     var applied: [BarDraft] { lock.withLock { appliedDrafts } }
@@ -334,6 +523,7 @@ private final class FakeBarBackend: BarBackend, @unchecked Sendable {
 
     func applyLive(from previous: BarDraft, to next: BarDraft) throws {
         lock.withLock { liveEdits.append((previous, next)) }
+        try liveResult.get()
     }
 
     func discardLiveChanges() throws {

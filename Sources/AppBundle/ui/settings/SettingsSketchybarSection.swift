@@ -98,7 +98,10 @@ struct SettingsSketchybarSection: View {
     // MARK: - Items
 
     private var itemsGroup: some View {
-        SettingsGroup("Items", footer: "One list per position on the bar. Drag inside a list to reorder it — that order is the order the items are drawn in, and it is the order they are written to bar.toml.") {
+        SettingsGroup("Items", footer: "One list per position on the bar. Drag a chip or a list row to reorder — that order is the order the items are drawn in, and it is the order they are written to bar.toml.") {
+            SettingHelpLabel(title: "Layout", topic: .barChipStrip)
+            BarChipStrip(draft: draft, onEdit: { expanded = []; onEdit() })
+            Divider()
             SettingHelpLabel(title: "Bar items", topic: .barItems)
             ForEach(BarCluster.allCases, id: \.self) { cluster in clusterList(cluster) }
         }
@@ -336,6 +339,11 @@ struct SettingsSketchybarSection: View {
                 }
             }
             HStack {
+                Text("Live preview").foregroundStyle(.secondary)
+                Spacer()
+                livePreviewLine
+            }
+            HStack {
                 Text("Config file").foregroundStyle(.secondary)
                 Spacer()
                 Text(model.configUrl.path).font(.caption.monospaced()).textSelection(.enabled)
@@ -351,6 +359,23 @@ struct SettingsSketchybarSection: View {
                 Button("Reload") { Task { await model.reloadBar() } }
                     .disabled(!model.isBackendAvailable || model.isSaving)
             }
+        }
+    }
+
+    /// What the running bar is doing with the edits. A failure here is a readout and nothing
+    /// more: the chips keep dragging and the draft is untouched.
+    @ViewBuilder
+    private var livePreviewLine: some View {
+        switch model.livePreview {
+            case .live:
+                Label("Edits move the running bar as you drag", systemImage: "bolt.fill")
+                    .font(.caption).foregroundStyle(.green)
+            case .unavailable:
+                Label("Not live — edits show here, not on screen", systemImage: "bolt.slash")
+                    .font(.caption).foregroundStyle(.secondary)
+            case .failed(let message):
+                Label("Preview unavailable: \(message)", systemImage: "bolt.slash.fill")
+                    .font(.caption).foregroundStyle(.orange).textSelection(.enabled)
         }
     }
 

@@ -15,6 +15,9 @@ public func getSettingsWindow(model: SettingsModel, viewModel: TrayMenuModel) ->
                 model.load()
                 BarSettingsModel.shared.load()
             }
+            // Live editing leaves the running bar in a state that matches no file, so closing
+            // with unsaved edits has to put the last saved bar back.
+            .onDisappear { Task { await BarSettingsModel.shared.windowDidClose() } }
     }
     .windowResizability(.contentMinSize)
 }
@@ -272,7 +275,7 @@ struct SettingsView: View {
                     Label("Saved and reloaded", systemImage: "checkmark.circle.fill").font(.caption).foregroundStyle(.green)
                 }
                 Spacer()
-                Button("Revert") { if editsSketchybar { barModel.revert() } else { model.revert() } }
+                Button("Revert") { if editsSketchybar { Task { await barModel.revert() } } else { model.revert() } }
                     .disabled(!isDirty || isSaving)
                 Button("Save") { requestSave() }
                     .keyboardShortcut(.defaultAction)

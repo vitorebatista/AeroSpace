@@ -16,6 +16,20 @@ enum BarSettingsStatus: Equatable {
     case saved(String)
 }
 
+/// Whether the bar on screen is following the draft, and what to say when it is not.
+///
+/// A preview that cannot be drawn is never a reason to touch the user's edits, so every case
+/// here is a readout — none of them stops the strip from dragging or the page from saving.
+enum BarLivePreview: Equatable {
+    /// Nothing to push to. The chips still drag; only the push is skipped.
+    case unavailable
+    /// The running bar is being edited in place as the draft changes.
+    case live
+    /// The last push failed. The draft and the baseline are untouched, so the next push
+    /// re-diffs from what is actually on screen.
+    case failed(String)
+}
+
 struct BarSettingsError: Error, LocalizedError, Equatable {
     let message: String
     init(_ message: String) { self.message = message }
@@ -53,6 +67,9 @@ public final class BarSettingsModel: ObservableObject {
     /// rows are expanded — can tell a Revert from its own edits. Same signal, and the same
     /// reason, as `SettingsModel.loadGeneration`.
     @Published private(set) var loadGeneration = 0
+    /// Whether edits are reaching the bar at the top of the screen. The Status group reports it;
+    /// nothing else depends on it.
+    @Published private(set) var livePreview: BarLivePreview
 
     let configUrl: URL
     private let backend: any BarBackend
@@ -64,6 +81,22 @@ public final class BarSettingsModel: ObservableObject {
     /// `draft` as `load()` read it. `apply` compares against it so a region the user never
     /// went near is left byte-for-byte alone.
     private var loadedDraft = BarDraft()
+    /// What is currently ON SCREEN, which is the only correct `from` for `applyLive`. Advanced
+    /// by a push that succeeded and by nothing else: diffing from a state the bar never reached
+    /// would re-add items that are already there.
+    private var liveBaseline = BarDraft()
+    /// Whether the running bar has been moved off the last saved file at all. Set when a push is
+    /// attempted rather than when one succeeds — a push that failed part-way through still left
+    /// scratch state behind, and that has to be restored too.
+    private var hasLiveEdits = false
+    private var livePushTask: Task<Void, Never>?
+    private var isLivePushPending = false
+    /// Set while a save or a restore owns the bar, so the preview loop stops instead of racing
+    /// them for the same process.
+    private var isLivePushSuspended = false
+    /// The coalescing window. A drag emits a change per frame and every push spawns a process,
+    /// so everything arriving during a push and during this interval becomes one further push.
+    private static let livePushInterval = Duration.milliseconds(60)
 
     init(
         configUrl: URL = BarSettingsModel.defaultConfigUrl,
@@ -75,6 +108,7 @@ public final class BarSettingsModel: ObservableObject {
     ) {
         self.configUrl = configUrl
         self.backend = backend
+        livePreview = backend.isAvailable ? .live : .unavailable
         self.fileManager = fileManager
         self.textReader = textReader
         self.atomicWriter = atomicWriter ?? {
@@ -105,6 +139,7 @@ public final class BarSettingsModel: ObservableObject {
         guard !isSaving else { return }
         isDirty = true
         status = nil
+        scheduleLivePush()
     }
 
     func dismissTakeoverNotice() { takeoverBackupUrl = nil }
@@ -121,6 +156,10 @@ public final class BarSettingsModel: ObservableObject {
             case .success(let loaded):
                 draft = loaded
                 loadedDraft = loaded
+                // Every caller reaches a load with the bar showing what is on disk: the window
+                // opens on it, Revert restores it first, and Save reapplies it afterwards.
+                liveBaseline = loaded
+                hasLiveEdits = false
                 mode = .form
             case .failure(let error):
                 // Keep the last good draft rather than showing defaults that were never in
@@ -130,7 +169,18 @@ public final class BarSettingsModel: ObservableObject {
         }
     }
 
-    func revert() { load() }
+    /// Revert throws the live preview away before reloading: the running bar is in a state that
+    /// matches no file, and this model is the only thing that knows it.
+    func revert() async {
+        await discardLivePreview()
+        load()
+    }
+
+    /// The window closed with edits that were pushed but never saved. The bar is put back;
+    /// there is no draft left on screen to reload.
+    func windowDidClose() async {
+        await discardLivePreview()
+    }
 
     /// Writes `bar.toml`, then hands the draft to the backend, which generates the renderer's
     /// own config and reloads it.
@@ -143,6 +193,9 @@ public final class BarSettingsModel: ObservableObject {
         isSaving = true
         defer { isSaving = false }
         status = nil
+        // No discard: the save writes the files and reapplies them, which reconciles whatever
+        // the preview did to the bar with what is now on disk.
+        await suspendLivePushes()
 
         var working = document
         // A file that does not exist yet has no region to preserve, and a surgical apply
@@ -175,7 +228,87 @@ public final class BarSettingsModel: ObservableObject {
         guard !isSaving else { return }
         isSaving = true
         defer { isSaving = false }
+        await suspendLivePushes()
         status = await applyToBackend(reloadOnly: true)
+        // The bar now shows the saved file again, whatever the preview had made of it.
+        liveBaseline = loadedDraft
+        hasLiveEdits = false
+    }
+
+    // MARK: - Live preview
+
+    /// Pushes the draft to the running bar so the user watches the real thing move instead of a
+    /// mock of it. Coalesced rather than immediate — see `livePushInterval`.
+    private func scheduleLivePush() {
+        guard backend.isAvailable, mode == .form else { return }
+        isLivePushPending = true
+        guard livePushTask == nil else { return } // a running loop will pick this up
+        livePushTask = Task { [weak self] in await self?.runLivePushes() }
+    }
+
+    private func runLivePushes() async {
+        defer { livePushTask = nil }
+        while isLivePushPending, !isLivePushSuspended {
+            isLivePushPending = false
+            await pushLive()
+            // Everything the drag emits during the push and during this sleep collapses into the
+            // next iteration, so a burst costs two processes rather than one per frame — and the
+            // loop only ends once nothing further has arrived, which is what makes the last state
+            // the one left on screen.
+            try? await Task.sleep(for: Self.livePushInterval)
+        }
+    }
+
+    private func pushLive() async {
+        let previous = liveBaseline
+        let next = draft
+        guard previous != next else { return }
+        let backend = self.backend
+        hasLiveEdits = true
+        do {
+            // `applyLive` runs sketchybar, so it is kept off the MainActor for the same reason
+            // `apply` is: the window stays live while the bar moves.
+            try await Task.detached { try backend.applyLive(from: previous, to: next) }.value
+            liveBaseline = next
+            livePreview = .live
+        } catch {
+            // The draft and the baseline are deliberately untouched. A preview that cannot be
+            // drawn is a message, not a reason to undo what the user just did.
+            livePreview = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Throws the scratch state away and puts the last saved bar back.
+    private func discardLivePreview() async {
+        await suspendLivePushes()
+        guard hasLiveEdits else { return }
+        let backend = self.backend
+        do {
+            try await Task.detached { try backend.discardLiveChanges() }.value
+            hasLiveEdits = false
+            liveBaseline = loadedDraft
+            livePreview = backend.isAvailable ? .live : .unavailable
+        } catch {
+            // The bar is still in scratch state, so the flag stays: a later Revert or close
+            // gets to try again.
+            livePreview = .failed(error.localizedDescription)
+        }
+    }
+
+    /// Stops the preview loop before a save or a restore takes the same bar over. Both spawn a
+    /// sketchybar process, and a push landing between them would be a diff from a baseline that
+    /// is about to stop being true.
+    private func suspendLivePushes() async {
+        isLivePushSuspended = true
+        await livePushTask?.value
+        isLivePushPending = false
+        isLivePushSuspended = false
+    }
+
+    /// Awaits the debounced push, trailing one included. Only the tests need it — the UI never
+    /// waits for a preview, which is the whole point of the coalescing loop.
+    func flushLivePreview() async {
+        await livePushTask?.value
     }
 
     private func applyToBackend(reloadOnly: Bool) async -> BarSettingsStatus {
@@ -275,6 +408,22 @@ extension BarDraft {
             settings: OrderedDictionary(uniqueKeysWithValues: catalogItem.settings.map { ($0.key, $0.defaultValue) }),
         )
         items.insert(item, at: positions(in: cluster).last.map { $0 + 1 } ?? items.count)
+    }
+
+    /// Moves one entry so it lands in `cluster` immediately before the entry at `before` — or at
+    /// the end of that cluster when `before` is nil. This is what a chip drop is: the strip and
+    /// the lists edit the same array, so neither can end up showing an order the other does not.
+    mutating func moveItem(at position: Int, to cluster: BarCluster, before: Int?) {
+        guard items.indices.contains(position) else { return }
+        var item = items[position]
+        item.cluster = cluster
+        var destination = before.flatMap { items.indices.contains($0) ? $0 : nil }
+            ?? positions(in: cluster).last.map { $0 + 1 }
+            ?? items.count
+        items.remove(at: position)
+        // Removing first shifts everything after the old seat down by one.
+        if destination > position { destination -= 1 }
+        items.insert(item, at: destination)
     }
 
     mutating func remove(in cluster: BarCluster, atOffsets offsets: IndexSet) {

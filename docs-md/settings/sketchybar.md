@@ -22,8 +22,10 @@ between machines and is meaningful on any of them. It is **not** part of your Ae
 — it has its own `version` integer and its own schema, so a new catalog item is never a change
 to the window manager's config language. `XDG_CONFIG_HOME` is honoured if it is set.
 
-Everything on this page except the status readout and **Reload** writes a `bar.toml` key.
+Everything on this page except the status readouts and **Reload** writes a `bar.toml` key.
 Nothing is written until you press **Save** in the window footer; **Revert** re-reads the file.
+While sketchybar is running your edits *are* pushed to the bar on screen as you make them — see
+[Live preview](#live-preview) — but never to a file.
 
 Regions of `bar.toml` this page did not touch — comments, key order, keys it does not model —
 come back byte for byte, in the same way `~/.aerospace-edge.toml` does. The one exception is
@@ -100,9 +102,25 @@ Examples: `0xb3202020` is near-black at 70% alpha, `0xffeeeeee` is opaque near-w
 Three lists, one per position on the bar: **Left**, **Centre**, **Right**. These are
 sketchybar's own three positions.
 
+### Layout strip
+
+Above the lists is a strip of chips — one per item, in three drop zones laid out the way the
+bar is. Drag a chip onto another chip to drop it in front of that one, or onto a zone's empty
+space to append it to the end of that position. A drag between zones moves the item's
+`cluster`; a drag within one reorders it.
+
+The strip and the lists edit the same array, so they can never show different orders. It is a
+**schematic**, not a rendering: it says what sits where, not what sketchybar will draw. Nothing
+here reproduces sketchybar's fonts, padding or metrics — the preview below is the real bar.
+
+A chip drawn with a dashed orange outline will not render yet: either it is a **privileged**
+item waiting on a helper binary that ships in a later release, or it is an item whose `id` this
+release does not recognise. It still drags, and its place in the bar is still written to
+`bar.toml`.
+
 **Order is document order.** A list's order is the order its items are drawn in, and it is the
 order the `[[item]]` tables appear in `bar.toml`. There is no index key to keep consistent.
-Drag a row inside its list to reorder it.
+Drag a row inside its list to reorder it, or drag its chip in the strip above.
 
 **Add item** lists the whole catalog, grouped. Adding an item appends it to the end of that
 list, seeded with the catalog's defaults so the file states what is in effect rather than
@@ -173,6 +191,33 @@ Not config options — nothing here touches your TOML.
 Whether sketchybar is installed, and the path of the `bar.toml` this page writes. Without
 sketchybar the page still edits and saves; it just tells you that nothing renders yet. Install
 it with `brew install sketchybar`.
+
+### Live preview
+
+While sketchybar is running, every edit on this page is pushed straight to the bar at the top
+of the screen — a drag reorders the real items, a colour change repaints the real bar. **No
+file is written.** This is why the strip is schematic: fidelity comes from the renderer that is
+already drawing, so there is no second implementation of sketchybar's metrics to drift.
+
+Edits are coalesced, so a drag costs a couple of sketchybar calls rather than one per frame,
+and the state you stop on is always the state left on screen.
+
+The readout says which of three things is happening:
+
+- **Edits move the running bar as you drag** — the preview is live.
+- **Not live** — sketchybar isn't installed or isn't running. The chips still drag and the page
+  still saves; only the push is skipped.
+- **Preview unavailable** — a push failed. Your edits are untouched and Save still applies them;
+  only the on-screen preview stopped following.
+
+Live editing leaves the running bar in a state that matches **no file**. AeroSpace-edge puts it
+back for you:
+
+- **Revert** reloads sketchybar from the last saved `bar.toml`, then re-reads the form from it.
+  The bar on screen and the file agree again.
+- **Closing the window with unsaved edits** does the same restore to the bar.
+- **Save** writes the files and reloads from them, which reconciles the preview with disk by
+  construction — there is nothing to undo.
 
 ### Reload sketchybar
 

@@ -101,6 +101,7 @@ enum SettingHelpTopic: String, CaseIterable {
     case barAccentColor
     case barPopupBackgroundColor
     case barPopupBorderColor
+    case barChipStrip
     case barItems
     case sketchybarStatus
     case sketchybarReload
@@ -236,6 +237,12 @@ enum SettingHelpTopic: String, CaseIterable {
                 barColor("Set the popup background colour.", "The fill behind the panel an item opens when it is clicked.", "bar.colors.popup-background")
             case .barPopupBorderColor:
                 barColor("Set the popup outline colour.", "The outline of the panel an item opens when it is clicked.", "bar.colors.popup-border")
+            case .barChipStrip:
+                help(
+                    "Drag a chip between the three positions, or within one, to place an item.",
+                    "The strip is a schematic of the bar, not a picture of it: it says which items sit left, centre and right and in what order, and it edits the same list the rows below do. While sketchybar is running, the bar at the top of the screen follows the drag — that is the preview, so there is nothing here to drift out of sync with it. A dashed chip needs a helper binary that ships in a later release, or is an item this release doesn't recognise; either way it won't render yet.",
+                    ["item.cluster"],
+                )
             case .barItems:
                 help(
                     "Build the bar from the catalog, in the order you drag them into.",
