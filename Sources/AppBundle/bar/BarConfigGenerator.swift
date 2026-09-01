@@ -21,6 +21,89 @@ struct BarHelperPaths: Equatable, Sendable {
     }
 }
 
+/// One `key=value` sketchybar takes, held unquoted.
+///
+/// The two deliveries need different bytes: the generated config is a shell script, so a
+/// value with a space or a quote has to be escaped, while a live push hands sketchybar an
+/// argument vector directly and an escaped value would arrive with the quotes in it. Holding
+/// the value raw and escaping at the last moment is what keeps the two the same command.
+struct BarArgument: Equatable, Sendable {
+    let key: String
+    let value: String
+
+    init(_ key: String, _ value: String) {
+        self.key = key
+        self.value = value
+    }
+
+    init(_ key: String, _ value: Int) {
+        self.init(key, String(value))
+    }
+
+    /// For the config file, where the argument goes through `sh`.
+    var shellText: String { "\(key)=\(BarConfigGenerator.shellArg(value))" }
+    /// For a live push, where it reaches sketchybar as one element of argv.
+    var text: String { "\(key)=\(value)" }
+}
+
+/// A draft resolved into the sketchybar entities it describes, before anything decides how
+/// those entities reach sketchybar.
+///
+/// `BarConfigGenerator` renders one into a `sketchybarrc`; `BarLiveDiff` compares two of
+/// them and pushes the difference to a running bar. Sharing this one resolution is what
+/// keeps a live-edited bar and a saved-then-reloaded bar identical — a second renderer for
+/// the live path would be a second place for the two to drift apart.
+struct BarPlan: Equatable, Sendable {
+    enum Entry: Equatable, Sendable {
+        /// An item the generator refuses to emit, carrying the comment that says why. The
+        /// live diff ignores these: it must never `--add` something the config would not
+        /// contain.
+        case skipped(String)
+        case entity(BarPlanEntity)
+    }
+
+    var bar: [BarArgument] = []
+    var defaults: [BarArgument] = []
+    /// Everything the draft produces, in emission order: items in cluster order, then the
+    /// brackets that span them.
+    var entries: [Entry] = []
+
+    var entities: [BarPlanEntity] {
+        entries.compactMap { if case .entity(let entity) = $0 { entity } else { nil } }
+    }
+}
+
+/// One named thing sketchybar draws.
+struct BarPlanEntity: Equatable, Sendable {
+    /// What `--add` has to create. A graph is a different component from an item and takes
+    /// its width at add time; a bracket takes its members at add time and has no other way
+    /// to learn them, which is why changing a bracket's membership means re-adding it.
+    enum Kind: Equatable, Sendable {
+        case item
+        case graph(width: Int)
+        case bracket(members: [String])
+    }
+
+    let name: String
+    let kind: Kind
+    let cluster: BarCluster
+    let group: BarItemGroup
+    /// What `--set` carries.
+    let properties: [BarArgument]
+    /// Events for `--subscribe`. Empty when the item runs on a timer alone.
+    let events: [String]
+
+    var isBracket: Bool { if case .bracket = kind { true } else { false } }
+
+    var addArguments: [String] {
+        switch kind {
+            case .item: ["--add", "item", name, cluster.rawValue]
+            case .graph(let width): ["--add", "graph", name, cluster.rawValue, String(width)]
+            case .bracket(let members): ["--add", "bracket", name] + members
+        }
+    }
+}
+
 /// Turns a `BarDraft` into the bytes of a `sketchybarrc`.
 ///
 /// Pure: no I/O, no environment reads, no path resolution. `SketchybarBackend` does all
@@ -45,10 +128,12 @@ enum BarConfigGenerator {
     private static let iconFontStyle = "Semibold:14.0"
     private static let labelFontStyle = "Semibold:13.0"
 
-    static func generate(_ draft: BarDraft, helpers: BarHelperPaths) -> String {
-        var blocks: [String] = [header(), barBlock(draft), defaultBlock(draft)]
+    /// Resolves a draft into the entities it describes, without deciding how they are
+    /// delivered. `generate` renders this; `BarLiveDiff` diffs two of them.
+    static func plan(_ draft: BarDraft, helpers: BarHelperPaths) -> BarPlan {
+        var plan = BarPlan(bar: barArguments(draft), defaults: defaultArguments(draft))
 
-        var emitted: [EmittedItem] = []
+        var emitted: [BarPlanEntity] = []
         // Repeated ids — `custom` is the one a user can reasonably add twice — get a
         // numeric suffix, so two escape hatches do not overwrite each other's properties.
         var occurrences: [String: Int] = [:]
@@ -60,21 +145,47 @@ enum BarConfigGenerator {
                 let name = count == 1 ? base : "\(base).\(count)"
                 switch emit(item, name: name, colors: draft.colors, helpers: helpers) {
                     case .skipped(let comment):
-                        blocks.append(comment)
-                    case .emitted(let emittedItem, let block):
-                        emitted.append(emittedItem)
-                        blocks.append(block)
+                        plan.entries.append(.skipped(comment))
+                    case .emitted(let entity):
+                        emitted.append(entity)
+                        plan.entries.append(.entity(entity))
                 }
             }
         }
 
-        blocks.append(contentsOf: brackets(for: emitted, draft: draft))
-        blocks.append("sketchybar --update")
-        return blocks.joined(separator: "\n\n") + "\n"
+        plan.entries.append(contentsOf: brackets(for: emitted, draft: draft).map { .entity($0) })
+        return plan
+    }
+
+    static func generate(_ draft: BarDraft, helpers: BarHelperPaths) -> String {
+        render(plan(draft, helpers: helpers))
     }
 
     static func generateData(_ draft: BarDraft, helpers: BarHelperPaths) -> Data {
         Data(generate(draft, helpers: helpers).utf8)
+    }
+
+    private static func render(_ plan: BarPlan) -> String {
+        var blocks: [String] = [
+            header(),
+            command("sketchybar --bar", plan.bar.map(\.shellText)),
+            command("sketchybar --default", plan.defaults.map(\.shellText)),
+        ]
+        for entry in plan.entries {
+            switch entry {
+                case .skipped(let comment):
+                    blocks.append(comment)
+                case .entity(let entity):
+                    var lines = ["sketchybar " + entity.addArguments.joined(separator: " ")]
+                    lines.append(command("sketchybar --set \(entity.name)", entity.properties.map(\.shellText)))
+                    if !entity.events.isEmpty {
+                        lines.append("sketchybar --subscribe \(entity.name) \(entity.events.joined(separator: " "))")
+                    }
+                    blocks.append(lines.joined(separator: "\n"))
+            }
+        }
+        blocks.append("sketchybar --update")
+        return blocks.joined(separator: "\n\n") + "\n"
     }
 
     // MARK: - Fixed sections
@@ -88,61 +199,55 @@ enum BarConfigGenerator {
         """
     }
 
-    private static func barBlock(_ draft: BarDraft) -> String {
+    private static func barArguments(_ draft: BarDraft) -> [BarArgument] {
         let geometry = draft.geometry
-        return command("sketchybar --bar", [
-            "position=top",
-            "height=\(geometry.height)",
-            "margin=\(geometry.margin)",
-            "y_offset=\(geometry.yOffset)",
-            "corner_radius=\(geometry.cornerRadius)",
-            "border_width=\(geometry.borderWidth)",
-            "padding_left=\(geometry.paddingLeft)",
-            "padding_right=\(geometry.paddingRight)",
-            "color=\(shellArg(draft.colors.background))",
-            "border_color=\(shellArg(draft.colors.border))",
-        ])
+        return [
+            BarArgument("position", "top"),
+            BarArgument("height", geometry.height),
+            BarArgument("margin", geometry.margin),
+            BarArgument("y_offset", geometry.yOffset),
+            BarArgument("corner_radius", geometry.cornerRadius),
+            BarArgument("border_width", geometry.borderWidth),
+            BarArgument("padding_left", geometry.paddingLeft),
+            BarArgument("padding_right", geometry.paddingRight),
+            BarArgument("color", draft.colors.background),
+            BarArgument("border_color", draft.colors.border),
+        ]
     }
 
-    private static func defaultBlock(_ draft: BarDraft) -> String {
+    private static func defaultArguments(_ draft: BarDraft) -> [BarArgument] {
         let colors = draft.colors
-        return command("sketchybar --default", [
-            "icon.font=\(shellArg("\(BarIconFont.sfSymbols.fontFamily):\(iconFontStyle)"))",
-            "icon.color=\(shellArg(colors.icon))",
-            "icon.padding_left=6",
-            "icon.padding_right=4",
-            "label.font=\(shellArg("\(BarIconFont.sfSymbols.fontFamily):\(labelFontStyle)"))",
-            "label.color=\(shellArg(colors.label))",
-            "label.padding_left=0",
-            "label.padding_right=6",
-            "background.drawing=off",
-            "background.corner_radius=6",
-            "background.height=24",
-            "popup.background.color=\(shellArg(colors.popupBackground))",
-            "popup.background.border_color=\(shellArg(colors.popupBorder))",
-            "popup.background.border_width=1",
-            "popup.background.corner_radius=6",
-        ])
+        return [
+            BarArgument("icon.font", "\(BarIconFont.sfSymbols.fontFamily):\(iconFontStyle)"),
+            BarArgument("icon.color", colors.icon),
+            BarArgument("icon.padding_left", 6),
+            BarArgument("icon.padding_right", 4),
+            BarArgument("label.font", "\(BarIconFont.sfSymbols.fontFamily):\(labelFontStyle)"),
+            BarArgument("label.color", colors.label),
+            BarArgument("label.padding_left", 0),
+            BarArgument("label.padding_right", 6),
+            BarArgument("background.drawing", "off"),
+            BarArgument("background.corner_radius", 6),
+            BarArgument("background.height", 24),
+            BarArgument("popup.background.color", colors.popupBackground),
+            BarArgument("popup.background.border_color", colors.popupBorder),
+            BarArgument("popup.background.border_width", 1),
+            BarArgument("popup.background.corner_radius", 6),
+        ]
     }
 
     // MARK: - Items
 
-    private struct EmittedItem {
-        let name: String
-        let cluster: BarCluster
-        let group: BarItemGroup
-    }
-
     private enum Emission {
         case skipped(String)
-        case emitted(EmittedItem, String)
+        case emitted(BarPlanEntity)
     }
 
     private struct Program {
         /// `--add item` unless the item draws a rolling graph, which is a different
         /// sketchybar component and takes its width at add time.
         var graphWidth: Int?
-        var properties: [String] = []
+        var properties: [BarArgument] = []
         var events: [String] = []
     }
 
@@ -162,18 +267,14 @@ enum BarConfigGenerator {
             return .skipped("# \(name): no script path set, not generated")
         }
 
-        var lines: [String] = []
-        if let width = program.graphWidth {
-            lines.append("sketchybar --add graph \(name) \(item.cluster.rawValue) \(width)")
-        } else {
-            lines.append("sketchybar --add item \(name) \(item.cluster.rawValue)")
-        }
-        lines.append(command("sketchybar --set \(name)", program.properties))
-        if !program.events.isEmpty {
-            lines.append("sketchybar --subscribe \(name) \(program.events.joined(separator: " "))")
-        }
-        let emitted = EmittedItem(name: name, cluster: item.cluster, group: catalog.group)
-        return .emitted(emitted, lines.joined(separator: "\n"))
+        return .emitted(BarPlanEntity(
+            name: name,
+            kind: program.graphWidth.map { .graph(width: $0) } ?? .item,
+            cluster: item.cluster,
+            group: catalog.group,
+            properties: program.properties,
+            events: program.events,
+        ))
     }
 
     private static func program(
@@ -200,17 +301,17 @@ enum BarConfigGenerator {
                 }
                 body += " printf ' '; done | sed 's/ $//'"
                 program.properties += [
-                    "icon.color=\(shellArg(string(item, catalog, "focused-color", fallback: colors.accent)))",
-                    "update_freq=1",
-                    "script=\(shellArg("sketchybar --set $NAME label=\"$(\(body))\""))",
+                    BarArgument("icon.color", string(item, catalog, "focused-color", fallback: colors.accent)),
+                    BarArgument("update_freq", 1),
+                    BarArgument("script", "sketchybar --set $NAME label=\"$(\(body))\""),
                 ]
                 program.events = ["front_app_switched", "space_change", "display_change"]
 
             case "front-app":
-                if !bool(item, catalog, "show-icon") { program.properties.append("icon.drawing=off") }
+                if !bool(item, catalog, "show-icon") { program.properties.append(BarArgument("icon.drawing", "off")) }
                 let maxLength = int(item, catalog, "max-length")
                 let label = maxLength > 0 ? "\"$(printf '%.\(maxLength)s' \"$INFO\")\"" : "\"$INFO\""
-                program.properties.append("script=\(shellArg("sketchybar --set $NAME label=\(label)"))")
+                program.properties.append(BarArgument("script", "sketchybar --set $NAME label=\(label)"))
                 program.events = ["front_app_switched"]
 
             case "mode":
@@ -222,7 +323,7 @@ enum BarConfigGenerator {
                 } else {
                     body += "; \(show)"
                 }
-                program.properties += ["update_freq=1", "script=\(shellArg(body))"]
+                program.properties += [BarArgument("update_freq", 1), BarArgument("script", body)]
 
             case "floats":
                 let showCount = bool(item, catalog, "show-count")
@@ -247,9 +348,9 @@ enum BarConfigGenerator {
                     + " | grep '|floating$' | head -n1 | cut -d'|' -f1);"
                     + " [ -n \"$id\" ] && \(cli) focus --window-id \"$id\""
                 program.properties += [
-                    "update_freq=2",
-                    "script=\(shellArg(body))",
-                    "click_script=\(shellArg(click))",
+                    BarArgument("update_freq", 2),
+                    BarArgument("script", body),
+                    BarArgument("click_script", click),
                 ]
                 program.events = ["front_app_switched", "space_change"]
 
@@ -261,16 +362,16 @@ enum BarConfigGenerator {
                     + " then c=\(warningColor); else c=\(colors.icon); fi;"
                     + " sketchybar --set $NAME icon.color=$c label.color=$c\(label)"
                 program.properties += [
-                    "update_freq=\(int(item, catalog, "update-freq"))",
-                    "script=\(shellArg(body))",
+                    BarArgument("update_freq", int(item, catalog, "update-freq")),
+                    BarArgument("script", body),
                 ]
                 program.events = ["power_source_change", "system_woke"]
 
             case "clock":
                 let body = "sketchybar --set $NAME label=\"$(date +\(shellArg(string(item, catalog, "format"))))\""
                 program.properties += [
-                    "update_freq=\(int(item, catalog, "update-freq"))",
-                    "script=\(shellArg(body))",
+                    BarArgument("update_freq", int(item, catalog, "update-freq")),
+                    BarArgument("script", body),
                 ]
 
             case "cpu":
@@ -282,11 +383,11 @@ enum BarConfigGenerator {
                 if bool(item, catalog, "show-graph") {
                     program.graphWidth = 40
                     body += "; sketchybar --push $NAME \"$(awk -v u=\"$u\" 'BEGIN {printf \"%.2f\", u/100}')\""
-                    program.properties.append("graph.color=\(shellArg(colors.accent))")
+                    program.properties.append(BarArgument("graph.color", colors.accent))
                 }
                 program.properties += [
-                    "update_freq=\(int(item, catalog, "update-freq"))",
-                    "script=\(shellArg(body))",
+                    BarArgument("update_freq", int(item, catalog, "update-freq")),
+                    BarArgument("script", body),
                 ]
 
             case "network":
@@ -310,8 +411,8 @@ enum BarConfigGenerator {
                     body += "sketchybar --set $NAME label=\"\(parts.joined(separator: " "))\""
                 }
                 program.properties += [
-                    "update_freq=\(int(item, catalog, "update-freq"))",
-                    "script=\(shellArg(body))",
+                    BarArgument("update_freq", int(item, catalog, "update-freq")),
+                    BarArgument("script", body),
                 ]
 
             case "weather":
@@ -321,8 +422,8 @@ enum BarConfigGenerator {
                 let url = "https://wttr.in/\(path)?format=%t&\(unit)"
                 let body = "sketchybar --set $NAME label=\"$(curl -sf --max-time 10 \(shellArg(url)) | tr -d '+ ')\""
                 program.properties += [
-                    "update_freq=\(int(item, catalog, "update-freq"))",
-                    "script=\(shellArg(body))",
+                    BarArgument("update_freq", int(item, catalog, "update-freq")),
+                    BarArgument("script", body),
                 ]
 
             case "apple-menu":
@@ -335,14 +436,14 @@ enum BarConfigGenerator {
                     default:
                         "osascript -e \(shellArg("\(front) to click menu bar item 1 of menu bar 1"))"
                 }
-                program.properties.append("click_script=\(shellArg(click))")
+                program.properties.append(BarArgument("click_script", click))
                 if bool(item, catalog, "show-label") {
                     program.properties += [
-                        "update_freq=3600",
-                        "script=\(shellArg("sketchybar --set $NAME label=\"$(sw_vers -productVersion)\""))",
+                        BarArgument("update_freq", 3600),
+                        BarArgument("script", "sketchybar --set $NAME label=\"$(sw_vers -productVersion)\""),
                     ]
                 } else {
-                    program.properties.append("label.drawing=off")
+                    program.properties.append(BarArgument("label.drawing", "off"))
                 }
 
             case "secure-input":
@@ -355,7 +456,7 @@ enum BarConfigGenerator {
                     + " if [ -n \"$pid\" ] && [ \"$pid\" != 0 ];"
                     + " then n=$(ps -p \"$pid\" -o comm= 2>/dev/null | sed 's|.*/||');"
                     + " sketchybar --set $NAME drawing=on\(label); else \(inactive); fi"
-                program.properties += ["update_freq=2", "script=\(shellArg(body))"]
+                program.properties += [BarArgument("update_freq", 2), BarArgument("script", body)]
 
             case "custom":
                 let script = string(item, catalog, "script")
@@ -363,11 +464,11 @@ enum BarConfigGenerator {
                 // Passed through as written: sketchybar runs `script` as a command line,
                 // and the documented examples pass arguments, so quoting it as one path
                 // would break them. A path with a space is the user's to quote.
-                program.properties.append("script=\(shellArg(script))")
+                program.properties.append(BarArgument("script", script))
                 let frequency = int(item, catalog, "update-freq")
                 // sketchybar reads `update_freq=0` as "never on a timer", which is what an
                 // events-only item wants, but saying so explicitly is noise.
-                if frequency > 0 { program.properties.append("update_freq=\(frequency)") }
+                if frequency > 0 { program.properties.append(BarArgument("update_freq", frequency)) }
                 program.events = strings(item, catalog, "events")
 
             default:
@@ -376,7 +477,7 @@ enum BarConfigGenerator {
         return program
     }
 
-    private static func iconProperties(_ item: BarItem, _ catalog: BarCatalogItem) -> [String] {
+    private static func iconProperties(_ item: BarItem, _ catalog: BarCatalogItem) -> [BarArgument] {
         // `BarItem` carries no icon choice yet, so the catalog's first icon is the default
         // and an `icon` key in `[item.settings]` overrides it. The name goes out verbatim:
         // resolving an SF Symbols name to the character sketchybar draws needs the font,
@@ -384,37 +485,39 @@ enum BarConfigGenerator {
         let chosen = string(item, catalog, "icon", fallback: catalog.icons.first?.name ?? "")
         guard !chosen.isEmpty else { return [] }
         let font = catalog.icons.first { $0.name == chosen }?.font ?? catalog.icons.first?.font ?? .sfSymbols
-        return ["icon=\(shellArg(chosen))", "icon.font=\(shellArg("\(font.fontFamily):\(iconFontStyle)"))"]
+        return [BarArgument("icon", chosen), BarArgument("icon.font", "\(font.fontFamily):\(iconFontStyle)")]
     }
 
     // MARK: - Brackets
 
-    private static func brackets(for emitted: [EmittedItem], draft: BarDraft) -> [String] {
-        var blocks: [String] = []
+    private static func brackets(for emitted: [BarPlanEntity], draft: BarDraft) -> [BarPlanEntity] {
+        var brackets: [BarPlanEntity] = []
         for cluster in BarCluster.allCases {
             // Only *adjacent* items of one catalog group are bracketed. A bracket spanning
             // a gap would draw its border around the items in between as well.
             for run in runs(of: emitted.filter { $0.cluster == cluster }) where run.count > 1 {
                 guard let group = run.first?.group else { continue }
-                let name = "\(BarCatalog.namePrefix)bracket.\(cluster.rawValue).\(slug(group))"
-                let members = run.map(\.name).joined(separator: " ")
-                blocks.append(
-                    "sketchybar --add bracket \(name) \(members)\n"
-                        + command("sketchybar --set \(name)", [
-                            "background.drawing=on",
-                            "background.border_color=\(shellArg(draft.colors.accent))",
-                            "background.border_width=\(draft.geometry.borderWidth)",
-                            "background.corner_radius=\(draft.geometry.cornerRadius)",
-                            "background.height=26",
-                        ]),
-                )
+                brackets.append(BarPlanEntity(
+                    name: "\(BarCatalog.namePrefix)bracket.\(cluster.rawValue).\(slug(group))",
+                    kind: .bracket(members: run.map(\.name)),
+                    cluster: cluster,
+                    group: group,
+                    properties: [
+                        BarArgument("background.drawing", "on"),
+                        BarArgument("background.border_color", draft.colors.accent),
+                        BarArgument("background.border_width", draft.geometry.borderWidth),
+                        BarArgument("background.corner_radius", draft.geometry.cornerRadius),
+                        BarArgument("background.height", 26),
+                    ],
+                    events: [],
+                ))
             }
         }
-        return blocks
+        return brackets
     }
 
-    private static func runs(of items: [EmittedItem]) -> [[EmittedItem]] {
-        var result: [[EmittedItem]] = []
+    private static func runs(of items: [BarPlanEntity]) -> [[BarPlanEntity]] {
+        var result: [[BarPlanEntity]] = []
         for item in items {
             if result.last?.last?.group == item.group {
                 result[result.count - 1].append(item)
